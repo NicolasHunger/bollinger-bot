@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Tests und Reports
+.coverage
+coverage.xml
+htmlcov/
+reports/
+test-results/
+playwright-report/
+
+# Laufzeitdaten und Geheimnisse
+.env
+*.db
+*.sqlite3
+/data/
+
+# Lokale Werkzeuge
+.DS_Store
+.idea/
+.vscode/
+CLAUDE.md
+.claude/settings.local.json
