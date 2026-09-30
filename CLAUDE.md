@@ -29,6 +29,33 @@ und offene Entscheide stehen im `README.md`.
 - COBOL als Projektbasis verworfen: COBOL Check ist seit Mai 2026 archiviert und meldet
   Testfehler mit Exit-Code 0, Sonar analysiert COBOL nur in Enterprise-Plänen.
 
+## Aufteilung und aktueller Stand (30.09.2026)
+
+Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
+
+| Person | Spur | Pakete |
+|---|---|---|
+| Lucas | Strategie und Ablauf | #8a.1 Grundgerüst, #1 Bollinger-Berechnung, #2 Kauf- und Verkaufsregeln, #6 `tick()`, Polling-Schleife und SQLite |
+| Valentin | Börse | #3 Bitget-Client: Signatur und Kerzen, #4 Bitget-Client: Orders und Kontostand, #5 Risiko-Check |
+| Nicolas | Infra und Dashboard | #8a.2 Pipeline (Build, Test, SonarQube Cloud), #8b Deploy auf die VM, #7 Dashboard |
+
+- **Nicolas ist krank** und steigt später ein. Lucas und Valentin arbeiten bis dahin ohne ihn
+  weiter. Seine Pakete nicht übernehmen, ausser er oder das Team sagt es ausdrücklich.
+- **#8a ist darum geteilt:** #8a.1 Grundgerüst (Projektstruktur, `pyproject.toml`, pytest läuft
+  lokal) macht Lucas, Valentin reviewt. #8a.2 Pipeline bleibt bei Nicolas, weil GitHub Secrets,
+  Pages und SonarQube Cloud Admin-Rechte im Repo brauchen, die nur er hat.
+- **#8a.1 muss zuerst gemergt sein.** Alle anderen Pakete bauen auf dem Grundgerüst auf. Wer
+  vorher startet, legt keine eigene Projektstruktur an, sondern wartet auf diesen PR.
+- **Bis #8a.2 steht, gibt es keine Pipeline:** vor jedem Merge `pytest` lokal laufen lassen.
+- **Reviews im Ring:** Lucas reviewt Valentin, Nicolas reviewt Lucas, Valentin reviewt Nicolas.
+  Solange Nicolas krank ist, reviewt Valentin die PRs von Lucas (#8a.1, #1, #2). #6 reviewt wieder
+  Nicolas.
+- **Gemeinsam festlegen, nicht allein entscheiden:** die Port-Schnittstelle zwischen `tick()`
+  (Lucas) und dem `BitgetClient` (Valentin) sowie das SQLite-Schema zwischen `tick()` (Lucas) und
+  dem Dashboard (Nicolas). Änderungen daran mit der anderen Person absprechen.
+- **Nur im eigenen Paket arbeiten.** Fällt in einem fremden Paket etwas auf, im PR kommentieren
+  statt selbst ändern.
+
 ## Bewertungsrubrik (Kurzfassung)
 
 - Teststrategie kurz im README
@@ -44,10 +71,7 @@ und offene Entscheide stehen im `README.md`.
 
 - Sprache Deutsch, Schweizer Schreibweise («ss» statt «ß»), auch in Commit-Messages.
 - Laufend kleine, nachvollziehbare Commits. Jedes Arbeitspaket aus dem README als eigener Branch
-  und Pull Request. Wer was macht und wer reviewt, steht in der Arbeitspakete-Tabelle im README:
-  Lucas Strategie und Ablauf (#1, #2, #6), Valentin Börse (#3, #4, #5), Nicolas Infra und
-  Dashboard (#7, #8a, #8b). Reviews im Ring: Lucas reviewt Valentin, Nicolas reviewt Lucas,
-  Valentin reviewt Nicolas.
+  und Pull Request. Wer was macht, steht im Abschnitt «Aufteilung und aktueller Stand» unten.
 - API-Keys nie ins Repo. In automatischen Tests ist Bitget immer gemockt.
 - Die Lehrperson bewertet KI-gestützte Projekte stärker nach Aufwand, und wir müssen den Code
   erklären können: Code erklären statt nur liefern und die KI-Nutzung im README nachführen.

@@ -130,20 +130,23 @@ PRs pro Person.
 
 | # | Paket | Wer | Review |
 |---|---|---|---|
-| 1 | Bollinger-Berechnung | Lucas | Nicolas |
-| 2 | Kauf- und Verkaufsregeln | Lucas | Nicolas |
+| 1 | Bollinger-Berechnung | Lucas | Valentin |
+| 2 | Kauf- und Verkaufsregeln | Lucas | Valentin |
 | 3 | Bitget-Client: Signatur und Kerzen | Valentin | Lucas |
 | 4 | Bitget-Client: Orders und Kontostand | Valentin | Lucas |
 | 5 | Risiko-Check | Valentin | Lucas |
 | 6 | `tick()`, Polling-Schleife und SQLite | Lucas | Nicolas |
 | 7 | Dashboard | Nicolas | Valentin |
-| 8a | Grundgerüst und Pipeline (Build, Test, SonarQube Cloud) | Nicolas | Valentin |
+| 8a.1 | Grundgerüst (Projektstruktur, `pyproject.toml`, pytest läuft lokal) | Lucas | Valentin |
+| 8a.2 | Pipeline (Build, Test, SonarQube Cloud) | Nicolas | Valentin |
 | 8b | Deploy auf die VM | Nicolas | Valentin |
 
 - **Reviews im Ring, entlang der Abhängigkeiten:** Lucas reviewt Valentin (`tick()` benutzt den
   Client), Nicolas reviewt Lucas (das Dashboard liest die SQLite-Tabellen), Valentin reviewt
-  Nicolas.
-- **Zuerst 8a:** Das Grundgerüst muss gemergt sein, bevor die anderen Pakete starten.
+  Nicolas. Ausnahme: Die ersten PRs von Lucas (8a.1, 1 und 2) reviewt Valentin, weil Nicolas
+  zum Projektstart ausfällt.
+- **Zuerst 8a.1:** Das Grundgerüst muss gemergt sein, bevor die anderen Pakete starten. Bis die
+  Pipeline (8a.2) steht, lassen wir `pytest` vor jedem Merge lokal laufen.
 - **Gemeinsam festlegen:** die Port-Schnittstelle zwischen `tick()` und dem Client sowie das
   SQLite-Schema zwischen `tick()` und dem Dashboard.
 - **Doku:** Testkonzept Valentin, Planung und Architektur nachführen Nicolas, die Reflexion
