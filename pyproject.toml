@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bollinger-bot"
+version = "0.1.0"
+description = "Trading-Bot mit der Bollinger-Strategie auf dem Bitget-Demo-Konto (Schulprojekt M450)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "httpx",
+    "streamlit",
+]
+
+# Nur für Entwicklung und Tests, landet nicht im Docker-Image.
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-mock",
+    "respx",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# importlib: Testdateien in verschiedenen Ordnern dürfen gleich heissen.
+addopts = "--import-mode=importlib --strict-markers"
