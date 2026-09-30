@@ -7,7 +7,7 @@ Bitget handelt, also mit Spielgeld. Projektarbeit im Modul 450 «Applikationen t
 > Schulprojekt mit Fokus auf Testing. Der Bot handelt ausschliesslich im Demo-Modus von Bitget.
 > Nichts hier ist eine Anlageberatung.
 
-- **Team:** Nicolas Hunger, Lucas Weisshaar
+- **Team:** Nicolas Hunger, Lucas Weisshaar und Valentin Ernst
 - **Modul:** M450 «Applikationen testen», TBZ, Klasse WUP25
 - **Abgabe und Präsentation:** Mi 28.10.2026
 
