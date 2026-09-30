@@ -69,6 +69,22 @@ flowchart LR
 | CI/CD | GitHub Actions, SonarQube Cloud, GitHub Pages, GitHub Container Registry |
 | Betrieb | Docker Compose auf einer Cloud-VM |
 
+## Entwicklung
+
+Voraussetzung: Python 3.12 oder neuer.
+
+```bash
+python3 -m venv .venv            # eigene Python-Umgebung nur für dieses Projekt
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"          # Projekt und Test-Werkzeuge installieren
+pytest                           # alle Tests ausführen
+```
+
+- Der Code liegt in `src/bollinger_bot/`, die Unit-Tests in `tests/unit/`. Die Integrationstests
+  kommen nach `tests/integration/`, sobald der erste entsteht.
+- `-e` installiert das Projekt «editierbar»: Änderungen am Code wirken sofort, ohne neu zu
+  installieren.
+
 ## Teststrategie
 
 _Entwurf, wird im Projekt verfeinert._
@@ -179,7 +195,8 @@ nachgeführt.
 - **Für die Dokumentation:** Den ersten Entwurf dieses READMEs hat Claude Code aus unserem
   Interview erstellt.
 - **Zum Schreiben von Code:** _noch offen_
-- **Zum automatischen Erstellen von Code durch einen Agenten:** _noch offen_
+- **Zum automatischen Erstellen von Code durch einen Agenten:** Das Grundgerüst (`pyproject.toml`,
+  Ordnerstruktur, erster Test) hat Claude Code angelegt.
 - **Zum Reviewen oder Optimieren:** _noch offen_
 
 ## Kursunterlagen
