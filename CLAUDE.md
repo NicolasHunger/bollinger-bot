@@ -2,7 +2,7 @@
 
 ## Was dieses Repo ist
 
-Projektarbeit von Nicolas Hunger und Lucas Weisshaar im **Modul 450 «Applikationen testen»**
+Projektarbeit von Nicolas Hunger, Lucas Weisshaar und Valentin Ernst im **Modul 450 «Applikationen testen»**
 (TBZ, Klasse WUP25), Abgabe und Präsentation Mi 28.10.2026: ein Python-Trading-Bot, der mit der
 Bollinger-Strategie auf dem Bitget-Demo-Konto handelt. Idee, Architektur, Teststrategie, Planung
 und offene Entscheide stehen im `README.md`.
@@ -44,8 +44,11 @@ und offene Entscheide stehen im `README.md`.
 
 - Sprache Deutsch, Schweizer Schreibweise («ss» statt «ß»), auch in Commit-Messages.
 - Laufend kleine, nachvollziehbare Commits. Jedes Arbeitspaket aus dem README als eigener Branch
-  und Pull Request; die andere Person reviewt.
+  und Pull Request. Wer was macht und wer reviewt, steht in der Arbeitspakete-Tabelle im README:
+  Lucas Strategie und Ablauf (#1, #2, #6), Valentin Börse (#3, #4, #5), Nicolas Infra und
+  Dashboard (#7, #8a, #8b). Reviews im Ring: Lucas reviewt Valentin, Nicolas reviewt Lucas,
+  Valentin reviewt Nicolas.
 - API-Keys nie ins Repo. In automatischen Tests ist Bitget immer gemockt.
 - Die Lehrperson bewertet KI-gestützte Projekte stärker nach Aufwand, und wir müssen den Code
   erklären können: Code erklären statt nur liefern und die KI-Nutzung im README nachführen.
-- Beide sind Trading-Neulinge: Fachbegriffe (Kerze, Band, σ, Spot/Futures) kurz erklären.
+- Alle drei sind Trading-Neulinge: Fachbegriffe (Kerze, Band, σ, Spot/Futures) kurz erklären.

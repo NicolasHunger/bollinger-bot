@@ -125,19 +125,29 @@ _Entwurf, wird im Projekt verfeinert._
 
 ### Arbeitspakete
 
-Jedes Paket bekommt einen eigenen Branch und Pull Request, die andere Person reviewt ihn. Ziel:
-mindestens 3 aktiv diskutierte PRs pro Person.
+Jedes Paket bekommt einen eigenen Branch und Pull Request. Ziel: mindestens 3 aktiv diskutierte
+PRs pro Person.
 
-| # | Paket | Wer |
-|---|---|---|
-| 1 | Bollinger-Berechnung | offen |
-| 2 | Kauf- und Verkaufsregeln | offen |
-| 3 | Bitget-Client: Signatur und Kerzen | offen |
-| 4 | Bitget-Client: Orders und Kontostand | offen |
-| 5 | Risiko-Check | offen |
-| 6 | `tick()`, Polling-Schleife und SQLite | offen |
-| 7 | Dashboard | offen |
-| 8 | Pipeline und Deploy auf die VM | offen |
+| # | Paket | Wer | Review |
+|---|---|---|---|
+| 1 | Bollinger-Berechnung | Lucas | Nicolas |
+| 2 | Kauf- und Verkaufsregeln | Lucas | Nicolas |
+| 3 | Bitget-Client: Signatur und Kerzen | Valentin | Lucas |
+| 4 | Bitget-Client: Orders und Kontostand | Valentin | Lucas |
+| 5 | Risiko-Check | Valentin | Lucas |
+| 6 | `tick()`, Polling-Schleife und SQLite | Lucas | Nicolas |
+| 7 | Dashboard | Nicolas | Valentin |
+| 8a | Grundgerüst und Pipeline (Build, Test, SonarQube Cloud) | Nicolas | Valentin |
+| 8b | Deploy auf die VM | Nicolas | Valentin |
+
+- **Reviews im Ring, entlang der Abhängigkeiten:** Lucas reviewt Valentin (`tick()` benutzt den
+  Client), Nicolas reviewt Lucas (das Dashboard liest die SQLite-Tabellen), Valentin reviewt
+  Nicolas.
+- **Zuerst 8a:** Das Grundgerüst muss gemergt sein, bevor die anderen Pakete starten.
+- **Gemeinsam festlegen:** die Port-Schnittstelle zwischen `tick()` und dem Client sowie das
+  SQLite-Schema zwischen `tick()` und dem Dashboard.
+- **Doku:** Testkonzept Valentin, Planung und Architektur nachführen Nicolas, die Reflexion
+  schreibt jede Person für ihren Teil.
 
 ### Offene Entscheide
 
