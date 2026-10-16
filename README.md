@@ -196,7 +196,8 @@ nachgeführt.
   Interview erstellt.
 - **Zum Schreiben von Code:** _noch offen_
 - **Zum automatischen Erstellen von Code durch einen Agenten:** Das Grundgerüst (`pyproject.toml`,
-  Ordnerstruktur, erster Test) hat Claude Code angelegt.
+  Ordnerstruktur, erster Test) hat Claude Code angelegt. Die Bollinger-Berechnung (#1) samt
+  Unit-Tests hat Claude Code geschrieben, die Soll-Werte haben wir von Hand nachgerechnet.
 - **Zum Reviewen oder Optimieren:** _noch offen_
 
 ## Kursunterlagen
