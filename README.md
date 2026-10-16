@@ -17,8 +17,9 @@ Der Bot läuft rund um die Uhr in einem Container auf einer Cloud-VM:
 
 1. Einmal pro Minute fragt er über die REST-API von Bitget nach, ob eine neue Kerze abgeschlossen ist.
 2. Wenn ja, berechnet er die Bollinger-Bänder aus den letzten Schlusskursen.
-3. Schliesst eine Kerze unter dem unteren Band, kauft er. Wann er verkauft (oberes Band oder
-   Mittelband), legen wir noch fest.
+3. Schliesst eine Kerze unter dem unteren Band, kauft er. Er verkauft, sobald eine Kerze über dem
+   Mittelband schliesst (der Kurs ist zur Mitte zurückgekehrt) oder mehr als 3 % unter dem
+   Kaufpreis (Stop-Loss, begrenzt den Verlust). Es ist höchstens eine Position gleichzeitig offen.
 4. Ein Risiko-Check begrenzt die Positionsgrösse und rundet Menge und Preis auf die Stellen, die
    Bitget erlaubt.
 5. Signale, Trades und Kontostand speichert er in SQLite. Ein Streamlit-Dashboard zeigt den Kurs
@@ -173,7 +174,6 @@ PRs pro Person.
 - Spot oder USDT-M-Futures? Im Demo-Modus von Bitget prüfen, ob Spot angeboten wird. Sonst
   Futures mit Hebel 1 und nur Long-Positionen.
 - Handelspaar (z.B. BTCUSDT) und Kerzen-Intervall (z.B. 15 Minuten)
-- Verkaufsregel (oberes Band oder Mittelband) und Stop-Loss
 - Anbieter der Cloud-VM (z.B. Hetzner oder Infomaniak)
 
 ## Testkonzept

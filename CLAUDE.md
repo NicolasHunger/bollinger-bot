@@ -71,6 +71,20 @@ pip install -e ".[dev]"
 pytest                           # erwartet: alle Tests grün
 ```
 
+**macOS mit iCloud Drive:** Liegt das Repo in einem von iCloud synchronisierten Ordner (z.B.
+`Documents`), markiert iCloud die `.pth`-Dateien in der `.venv` als versteckt. Neuere
+Python-Versionen (beobachtet mit 3.14) ignorieren versteckte `.pth`-Dateien, dann meldet pytest
+`No module named 'bollinger_bot'`. Lösung: die `.venv` ausserhalb von iCloud anlegen und
+verlinken:
+
+```bash
+python3 -m venv ~/.venvs/bollinger-bot
+ln -s ~/.venvs/bollinger-bot .venv
+echo ".venv" >> .git/info/exclude   # Verknüpfung lokal ignorieren
+```
+
+Danach wie oben aktivieren und `pip install -e ".[dev]"` ausführen.
+
 ### Wo was hinkommt
 
 - **Code:** `src/bollinger_bot/`, pro Baustein eine Datei (z.B. `bollinger.py`,
@@ -101,7 +115,9 @@ pytest                           # erwartet: alle Tests grün
 ### Noch offen, vor dem jeweiligen Paket klären
 
 - **Spot oder USDT-M-Futures:** bestimmt die Endpunkte in #3 und #4. Vor #3 entscheiden.
-- **Verkaufsregel** (oberes Band oder Mittelband) und Stop-Loss: vor #2 entscheiden.
+- **Verkaufsregel und Stop-Loss: entschieden (17.10.2026, Vorschlag Lucas, Bestätigung durch
+  Valentin im PR zu #2):** Verkauf, wenn eine Kerze über dem Mittelband schliesst, oder mehr als
+  3 % unter dem Kaufpreis (Stop-Loss). Höchstens eine offene Position, kein Nachkaufen.
 - **Port-Schnittstelle** (welche Funktionen `tick()` vom Client erwartet): Lucas und Valentin
   legen sie gemeinsam fest, bevor #3 und #6 starten.
 - **SQLite-Schema:** Lucas und Nicolas legen es gemeinsam fest, bevor #6 und #7 starten.
