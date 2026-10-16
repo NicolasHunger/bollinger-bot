@@ -82,6 +82,10 @@ pytest                           # alle Tests ausführen
 
 - Der Code liegt in `src/bollinger_bot/`, die Unit-Tests in `tests/unit/`. Die Integrationstests
   kommen nach `tests/integration/`, sobald der erste entsteht.
+- Unit- und Integrationstests trennen wir nur über die Ordner: `pytest tests/unit` bzw.
+  `pytest tests/integration`.
+- Die Abhängigkeiten in der `pyproject.toml` haben Versionsgrenzen: mindestens die Version, mit
+  der wir entwickeln, höchstens bis zum nächsten Major-Release.
 - `-e` installiert das Projekt «editierbar»: Änderungen am Code wirken sofort, ohne neu zu
   installieren.
 

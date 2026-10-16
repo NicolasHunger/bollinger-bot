@@ -106,20 +106,21 @@ pytest                           # erwartet: alle Tests grün
   legen sie gemeinsam fest, bevor #3 und #6 starten.
 - **SQLite-Schema:** Lucas und Nicolas legen es gemeinsam fest, bevor #6 und #7 starten.
 
-Offene Punkte aus dem Review von Valentin zu PR #1
-(https://github.com/NicolasHunger/bollinger-bot/pull/1):
+Aus dem Review von Valentin zu PR #1
+(https://github.com/NicolasHunger/bollinger-bot/pull/1#issuecomment-5912599081):
 
-- **Python-Version:** `pyproject.toml` verlangt 3.12 oder neuer, mit 3.11 bricht die Installation
-  ab. Dabei bleiben oder senken? Docker-Image und Pipeline (#8a.2) sollen dieselbe Version fest
-  verwenden.
-- **Versionsgrenzen** für die Abhängigkeiten (z.B. `httpx>=0.27,<1`), damit ein neues Release
-  nicht kurz vor der Abgabe den Build bricht. Vor #1 klären.
-- **Unit- und Integrationstests trennen:** nur über die Ordner oder zusätzlich per Marker
-  (`@pytest.mark.integration`)? `--strict-markers` ist aktiv: Ein Marker muss in der
-  `pyproject.toml` unter `markers` registriert sein, sonst schlägt der Test fehl. Vor #1 klären.
-- **`coverage.xml`:** schon jetzt in `addopts` oder erst mit der Pipeline (#8a.2)?
-- **Streamlit** als Pflicht-Abhängigkeit oder als eigenes Extra `dashboard`? Hängt davon ab, ob
-  Bot und Dashboard im selben Image laufen.
+- **Entschieden (17.10.2026):**
+  - **Python 3.12 oder neuer** bleibt. Docker-Image und Pipeline (#8a.2) verwenden 3.12 fest.
+  - **Versionsgrenzen:** Untergrenze ist die Version, mit der wir entwickeln, Obergrenze das
+    nächste Major-Release (z.B. `httpx>=0.28,<1`). Neue Abhängigkeiten bekommen Grenzen nach
+    demselben Muster.
+  - **Unit- und Integrationstests nur über die Ordner trennen**, keine pytest-Marker.
+    `--strict-markers` bleibt an, damit vertippte Marker auffallen.
+  - **`tests/unit/test_grundgeruest.py`** wird mit #1 gelöscht.
+- **Noch offen, entscheidet Nicolas mit der Pipeline (#8a.2):**
+  - **`coverage.xml`** schon in `addopts` oder nur in der Pipeline erzeugen?
+  - **Streamlit** als Pflicht-Abhängigkeit oder als eigenes Extra `dashboard`? Hängt davon ab, ob
+    Bot und Dashboard im selben Image laufen.
 
 Getroffene Entscheide hier und im README unter «Offene Entscheide» nachführen.
 
