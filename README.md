@@ -52,8 +52,9 @@ flowchart LR
 
 - **`tick()`** enthält einen ganzen Durchgang: Kerzen holen, Signal berechnen, Risiko prüfen,
   eventuell eine Order platzieren, speichern. Die Polling-Schleife ruft nur `tick()` auf.
-- **Port:** `tick()` kennt die Börse nur über eine Schnittstelle. In den Tests ersetzt ein Mock
-  den echten `BitgetClient`.
+- **Port:** `tick()` kennt die Börse nur über eine Schnittstelle (`Boerse` in
+  `src/bollinger_bot/port.py`: Kerzen holen, Kontostand abfragen, kaufen, verkaufen). In den
+  Tests ersetzt ein Mock den echten `BitgetClient`.
 - **Strategie und Risiko-Check** sind reine Funktionen ohne I/O und darum einfach zu testen.
 
 ## Stack
