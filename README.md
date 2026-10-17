@@ -56,6 +56,17 @@ flowchart LR
   den echten `BitgetClient`.
 - **Strategie und Risiko-Check** sind reine Funktionen ohne I/O und darum einfach zu testen.
 
+### Datenbank
+
+`tick()` schreibt über `src/bollinger_bot/speicher.py` in eine SQLite-Datei, das Dashboard liest
+daraus. Alle Zeitpunkte stehen als Text im Format ISO 8601 in UTC in der Datenbank.
+
+| Tabelle | Inhalt | Wofür |
+|---|---|---|
+| `signale` | pro abgeschlossener Kerze: Startzeit, Schlusskurs, drei Bänder, Signal (`kaufen`, `verkaufen`, `halten`) | Kurs mit Bändern im Dashboard, «Kerze schon ausgewertet?» |
+| `trades` | Zeit, Seite (`kauf`, `verkauf`), Menge, Preis, Order-ID | Käufe und Verkäufe im Dashboard, offene Position nach einem Neustart |
+| `kontostaende` | Zeit, Währung, Betrag | Verlauf des Kontostands im Dashboard |
+
 ## Stack
 
 | Bereich | Werkzeug |
