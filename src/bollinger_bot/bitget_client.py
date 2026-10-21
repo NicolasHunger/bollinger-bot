@@ -178,6 +178,8 @@ class BitgetClient:
 
         Die zurückgegebene Menge ist schon ohne Gebühr: Bitget zieht die Gebühr beim Kauf von den
         gekauften BTC ab. Genau diese Menge liegt danach auf dem Konto und lässt sich verkaufen.
+        Bitget rundet die gekaufte Menge auf 6 Stellen, darum wird nicht der ganze Betrag
+        ausgegeben (Rauchtest: für 5 USDT wurden 4.92 USDT ausgegeben).
         """
         if betrag <= 0:
             raise ValueError(f"betrag muss grösser als 0 sein, erhalten: {betrag}")
@@ -185,9 +187,9 @@ class BitgetClient:
         info = self._warte_auf_ausfuehrung(order_id)
         gekauft = float(info["baseVolume"])
         gebuehr = self._gebuehr(info)
-        # Bitget verlangt im Spot-Demo 0.2 % Gebühr. Ist der Abzug grösser als 1 %, haben wir
-        # `feeDetail` falsch verstanden: Das Beispiel in der Bitget-Doku ist in sich nicht
-        # stimmig, und ohne echte Demo-Order konnten wir das Format nicht prüfen.
+        # Bitget verlangt im Spot-Demo 0.1 % Gebühr (Rauchtest vom 21.10.2026). Ist der Abzug
+        # 1 % oder mehr, stimmt etwas mit `feeDetail` nicht: Dann lieber ohne Gebühr rechnen
+        # als eine viel zu kleine Menge melden.
         if gebuehr >= gekauft * 0.01:
             log.warning("Gebühr %s bei %s gekauft unplausibel, rechne ohne", gebuehr, gekauft)
             gebuehr = 0.0

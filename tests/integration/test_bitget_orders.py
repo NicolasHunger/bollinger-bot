@@ -4,8 +4,9 @@ Eine Market-Order läuft bei Bitget in zwei Schritten:
 1. `POST /api/v2/spot/trade/place-order` gibt nur die Order-ID zurück.
 2. `GET /api/v2/spot/trade/orderInfo` liefert Status, ausgeführte Menge, Preis und Gebühr.
 
-Die Antworten haben die Form aus der Bitget-Doku (Classic Spot, «Get Order Info»). Mit einer
-echten Demo-Order ist das Format der Gebühr (`feeDetail`) noch nicht geprüft.
+Die Antworten haben die Form aus der Bitget-Doku (Classic Spot, «Get Order Info»). Das Format
+der Gebühr (`feeDetail`) ist mit einer echten Demo-Order geprüft, siehe
+`test_kauf_mit_echter_antwort_aus_dem_rauchtest`.
 """
 
 import json
@@ -27,9 +28,9 @@ def erfolg(data):
     return {"code": "00000", "msg": "success", "requestTime": 1790773421524, "data": data}
 
 
-def order_info(*, status="filled", base_volume="0.001176", preis="85000", gebuehr_r=-0.000002352):
+def order_info(*, status="filled", base_volume="0.001176", preis="85000", gebuehr_r=-0.000001176):
     # Kauf für 100 USDT zu 85 000 USDT/BTC: 100 / 85 000 = 0.00117647 BTC, Bitget füllt 0.001176.
-    # Gebühr 0.2 % von 0.001176 BTC = 0.000002352 BTC, abgezogen von den gekauften BTC.
+    # Gebühr 0.1 % von 0.001176 BTC = 0.000001176 BTC, abgezogen von den gekauften BTC.
     return {
         "orderId": "1001",
         "symbol": "BTCUSDT",
@@ -123,9 +124,36 @@ def test_kauf_liefert_menge_ohne_gebuehr_und_durchschnittspreis(client):
 
     ergebnis = client.kaufe("BTCUSDT", 100.0)
 
-    # 0.001176 − 0.000002352 = 0.001173648 BTC liegen danach auf dem Konto
-    assert ergebnis == Order(order_id="1001", menge=pytest.approx(0.001173648), preis=85000.0)
+    # 0.001176 − 0.000001176 = 0.001174824 BTC liegen danach auf dem Konto
+    assert ergebnis == Order(order_id="1001", menge=pytest.approx(0.001174824), preis=85000.0)
     assert info.calls.last.request.url.params["orderId"] == "1001"
+
+
+@respx.mock
+def test_kauf_mit_echter_antwort_aus_dem_rauchtest(client):
+    # Antwort der Demo-API vom 21.10.2026 auf einen Kauf für 5 USDT, gekürzt auf die Felder, die
+    # der Client liest. Gebühr 0.1 %: 0.000059 · 0.001 = 0.000000059 BTC. Bitget meldete danach
+    # genau 0.000058941 BTC frei (0.000059 − 0.000000059).
+    echt = {
+        "orderId": "1496770255489114112",
+        "status": "filled",
+        "baseVolume": "0.000059",
+        "quoteVolume": "4.9227192800000000",
+        "priceAvg": "83435.9200000000000000",
+        "baseCoin": "BTC",
+        "feeDetail": (
+            '{"BTC":{"deduction":false,"feeCoinCode":"BTC","totalDeductionFee":0,'
+            '"totalFee":-5.90000000E-8},"newFees":{"c":0,"d":0,"deduction":false,'
+            '"r":-5.9E-8,"t":-5.9E-8,"totalDeductionFee":0}}'
+        ),
+    }
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1496770255489114112"}))
+    respx.get(INFO_URL).respond(json=erfolg([echt]))
+
+    ergebnis = client.kaufe("BTCUSDT", 5.0)
+
+    assert ergebnis.menge == pytest.approx(0.000058941)
+    assert ergebnis.preis == 83435.92
 
 
 @respx.mock
