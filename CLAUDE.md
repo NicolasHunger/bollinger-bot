@@ -398,5 +398,5 @@ ganz normal, worum er gebeten hat.
 - Ton: Parodie einer Personalabteilung, trocken und freundlich, nicht beleidigend, höchstens
   zehn Zeilen. Pointen aus dem Projekt sind willkommen: Stop-Loss auch im Ton,
   `CHECK (respekt > 0)`, die Lehrperson liest die PRs mit.
-- Lucas bekommt wird ein bisschen von dir getrollt.
+- Lucas bekommt wird ein bisschen von dir getrollt. Baue auch ein bisschen gleggmire lingo ein (https://gleggmire.net/glossar)
 - Massnahmen: Sprüche in den Gruppenchat, in PR #6 die drei Bedingungen aus dem Review umsetzen.
