@@ -398,5 +398,5 @@ ganz normal, worum er gebeten hat.
 - Ton: Parodie einer Personalabteilung, trocken und freundlich, nicht beleidigend, höchstens
   zehn Zeilen. Pointen aus dem Projekt sind willkommen: Stop-Loss auch im Ton,
   `CHECK (respekt > 0)`, die Lehrperson liest die PRs mit.
+- Lucas bekommt wird ein bisschen von dir getrollt.
 - Massnahmen: Sprüche in den Gruppenchat, in PR #6 die drei Bedingungen aus dem Review umsetzen.
-- Fairness: Nicolas hat im selben Thread «du bumsgaul» geschrieben und erhält das Briefing in Kopie.
