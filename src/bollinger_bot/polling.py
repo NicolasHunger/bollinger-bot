@@ -12,6 +12,7 @@ from datetime import UTC, datetime, timedelta
 
 log = logging.getLogger(__name__)
 
+EINE_MINUTE = timedelta(minutes=1)
 EINE_STUNDE = timedelta(hours=1)
 
 
@@ -23,10 +24,19 @@ def letzte_abgeschlossene_kerze(jetzt: datetime, intervall: timedelta) -> dateti
     """
     if jetzt.tzinfo is None:
         raise ValueError(f"Zeit ohne Zeitzone: {jetzt}. Bitte mit Zeitzone angeben.")
-    # Nur Intervalle, die eine Stunde ohne Rest teilen (1, 5, 15, 30 Minuten, 1 Stunde). Längere
+    # Nur ganze Minuten, die eine Stunde ohne Rest teilen (1, 5, 15, 30 Minuten, 1 Stunde). Welche
+    # Texte wie "15min" der Bot unterstützt, steht in der Tabelle INTERVALLE im Bitget-Client.
+    # tick() übersetzt den Text damit in ein timedelta. Sekunden-Kerzen hat Bitget nicht. Längere
     # Kerzen brauchen wir nicht, und ob Bitget sie nach UTC ausrichtet, haben wir nicht geprüft.
-    if intervall <= timedelta(0) or EINE_STUNDE % intervall != timedelta(0):
-        raise ValueError(f"Intervall muss eine Stunde ohne Rest teilen, erhalten: {intervall}")
+    if (
+        intervall <= timedelta(0)
+        or intervall % EINE_MINUTE != timedelta(0)
+        or EINE_STUNDE % intervall != timedelta(0)
+    ):
+        raise ValueError(
+            "Intervall muss aus ganzen Minuten bestehen und eine Stunde ohne Rest teilen "
+            f"(z.B. 1, 5, 15, 30 Minuten oder 1 Stunde), erhalten: {intervall}"
+        )
 
     # Sekunden seit 1.1.1970 UTC auf ein Vielfaches des Intervalls abrunden: Das ergibt den
     # Start der laufenden Kerze. Die abgeschlossene Kerze davor beginnt ein Intervall früher.
@@ -66,8 +76,10 @@ def polling_schleife(
             tick()
         except Exception:
             # Ein Fehler (z.B. Bitget kurz nicht erreichbar) darf den Bot nicht beenden: Fehler
-            # protokollieren und beim nächsten Durchgang neu versuchen. Ctrl+C ist keine
-            # `Exception` und beendet die Schleife weiterhin.
+            # protokollieren und beim nächsten Durchgang neu versuchen. Nur `Exception` abfangen,
+            # nie `BaseException`: Ctrl+C und `docker stop` (Docker Compose mit
+            # `stop_signal: SIGINT`) kommen als `KeyboardInterrupt` an und müssen die Schleife
+            # beenden.
             log.exception("tick() fehlgeschlagen, neuer Versuch in %s Sekunden", pause_sekunden)
         schlafen(pause_sekunden)
         durchgang += 1
