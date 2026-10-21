@@ -47,7 +47,8 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
   Pages und SonarQube Cloud Admin-Rechte im Repo brauchen, die nur er hat.
 - **#8a.1 ist erledigt** (PR #1, gemergt am 30.09.2026). Alle anderen Pakete bauen auf diesem
   Grundgerüst auf: keine eigene Projektstruktur anlegen, sondern `main` pullen.
-- **Bis #8a.2 steht, gibt es keine Pipeline:** vor jedem Merge `pytest` lokal laufen lassen.
+- **Pipeline (#8a.2):** `.github/workflows/pipeline.yml` prüft jeden PR (Aufbau im README unter
+  «Pipeline»). Mit roter Pipeline wird nicht gemergt.
 - **Reviews im Ring:** Lucas reviewt Valentin, Nicolas reviewt Lucas, Valentin reviewt Nicolas.
   Für die bereits offenen PRs von Lucas gilt: Valentin reviewt PR #2 bis #5 (PR #5 ist die
   Schnittstelle zu seinem Client), Nicolas reviewt PR #6 und #7 (PR #6 ist das Schema für sein
@@ -93,8 +94,8 @@ Nicolas gibt es noch keinen Branch.
 - [ ] **Zuerst:** AP 8a.2 Pipeline (Build, Test, Reports, SonarQube Cloud). Ohne sie fehlen in
       der Rubrik die Tests in der Pipeline, die automatischen Reports und die Coverage.
 - [ ] PR #6 (SQLite-Schema, liest sein Dashboard) und PR #7 reviewen
-- [ ] Offene Punkte aus Valentins Review zu PR #1 entscheiden: `coverage.xml` in `addopts` oder
-      nur in der Pipeline, Streamlit als Pflicht-Abhängigkeit oder Extra `dashboard`
+- [ ] Offenen Punkt aus Valentins Review zu PR #1 entscheiden: Streamlit als Pflicht-Abhängigkeit
+      oder Extra `dashboard` (`coverage.xml` ist entschieden: nur in der Pipeline)
 - [ ] Anbieter der Cloud-VM wählen, AP 8b Deploy auf die VM
 - [ ] AP 7 Dashboard
 - [ ] Planung und Architektur im README nachführen
@@ -155,8 +156,8 @@ pytest                           # erwartet: alle Tests grün
 
 - **Code nie direkt auf `main` committen.** Pro Arbeitspaket ein Branch, immer von aktuellem
   `main` abgezweigt (`git switch main && git pull && git switch -c <paket>`).
-- **Vor jedem Push und vor jedem Merge `pytest` lokal laufen lassen**, solange es keine Pipeline
-  gibt.
+- **Vor jedem Push `pytest` lokal laufen lassen.** Die Pipeline prüft jeden PR noch einmal,
+  gemergt wird nur mit grüner Pipeline.
 - **PR-Beschreibung:** was der PR macht, wie man ihn testet, und Fragen ans Review.
 - **Nicht selbst mergen, bevor reviewt wurde.** Die Rubrik verlangt aktiv kommentierte und
   gechallengte PRs: Der Reviewer hinterlässt Fragen oder Änderungswünsche, erst nach seinem
@@ -183,7 +184,8 @@ Offene Punkte aus dem Review von Valentin zu PR #1
 - **Unit- und Integrationstests trennen:** nur über die Ordner oder zusätzlich per Marker
   (`@pytest.mark.integration`)? `--strict-markers` ist aktiv: Ein Marker muss in der
   `pyproject.toml` unter `markers` registriert sein, sonst schlägt der Test fehl. Vor #1 klären.
-- **`coverage.xml`:** schon jetzt in `addopts` oder erst mit der Pipeline (#8a.2)?
+- **`coverage.xml`: entschieden (21.10.2026, Nicolas):** nur in der Pipeline. Coverage, JUnit-XML
+  und HTML-Report erzeugt der Workflow, `addopts` bleibt ohne Report-Optionen.
 - **Streamlit** als Pflicht-Abhängigkeit oder als eigenes Extra `dashboard`? Hängt davon ab, ob
   Bot und Dashboard im selben Image laufen.
 
@@ -370,9 +372,11 @@ spricht es im passenden PR an und führt den Entscheid hier nach.
   per SQL lesend aus derselben Datei, schreibt nie. Der Speicher läuft im WAL-Modus, Lesen während
   der Bot schreibt ist also kein Problem. Bot und Dashboard brauchen dieselbe Datei (`BOT_DB_PFAD`,
   in Docker Compose ein gemeinsames Volume).
-- Pipeline: Python 3.12, Installation mit `pip install -e ".[dev]"`, Tests getrennt mit
-  `pytest tests/unit` und `pytest tests/integration`. Coverage für SonarQube Cloud mit
-  `--cov=bollinger_bot --cov-report=xml`, Testresultate mit `--junitxml=…`.
+- Pipeline: `.github/workflows/pipeline.yml`, Python 3.12, Installation mit
+  `pip install -e ".[dev]"`, Tests getrennt mit `pytest tests/unit` und `pytest tests/integration`.
+  Coverage für SonarQube Cloud mit `--cov=bollinger_bot --cov-branch --cov-report=xml`,
+  Testresultate mit `--junitxml=…`, HTML-Report mit pytest-html. Die Reports liegen pro Ordner
+  unter `reports/unit/` und `reports/integration/`.
 
 ### Noch offen, im Review von PR #5 klären
 

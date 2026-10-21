@@ -65,7 +65,7 @@ flowchart LR
 | HTTP | httpx |
 | Datenhaltung | SQLite |
 | Dashboard | Streamlit |
-| Tests | pytest, pytest-mock, respx, pytest-cov |
+| Tests | pytest, pytest-mock, respx, pytest-cov, pytest-html |
 | CI/CD | GitHub Actions, SonarQube Cloud, GitHub Pages, GitHub Container Registry |
 | Betrieb | Docker Compose auf einer Cloud-VM |
 
@@ -112,12 +112,39 @@ _Entwurf, wird im Projekt verfeinert._
 
 ## Pipeline
 
-```text
-Build ──► Test ──► Deploy (nur auf main, nur wenn alle Tests grün sind)
-           │        ├─ Testreport   → GitHub Pages
-           │        ├─ Docker-Image → GitHub Container Registry
-           │        └─ Cloud-VM     → docker compose pull && docker compose up -d
-           └─ JUnit-XML → Testresultate im PR, coverage.xml → SonarQube Cloud
+GitHub Actions mit dem Workflow [`pipeline.yml`](.github/workflows/pipeline.yml). Er läuft bei
+jedem Pull Request, nach jedem Merge auf `main` und von Hand (Tab «Actions», «Pipeline», «Run
+workflow»). Aufgebaut wie in der
+[Kursunterlage](https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/projekt/ci-cd.md):
+Build, Test, Testresultate veröffentlichen.
+
+```mermaid
+flowchart LR
+    build["Build<br/>Paket bauen"] --> unit["Unit-Tests<br/>pytest tests/unit"]
+    build --> integration["Integrationstests<br/>pytest tests/integration"]
+    unit & integration --> resultate["Testresultate<br/>Check und Kommentar im PR"]
+    unit & integration -->|"nur main, nur grün"| pages["Testreport<br/>GitHub Pages"]
+```
+
+| Job | Was er macht | Wann |
+|---|---|---|
+| Build | baut das Paket (Wheel), installiert und importiert es | immer |
+| Unit-Tests, Integrationstests | derselbe Job pro Testordner: `pytest` mit JUnit-XML, `coverage.xml` und HTML-Reports, alles als Artefakt im Pipeline-Lauf | nach dem Build |
+| Testresultate veröffentlichen | Check «Testresultate» am Commit, Kommentar mit den Zahlen im PR | auch bei roten Tests |
+| Testreport auf GitHub Pages | Testresultate und Coverage pro Testordner als Webseite | nur auf `main`, nur wenn alle Tests grün sind |
+
+- **Testreport:** <https://nicolashunger.github.io/bollinger-bot/>
+- **Reports nur in der Pipeline:** Coverage, JUnit-XML und HTML-Reports erzeugt nur der Workflow,
+  nicht `addopts` in der `pyproject.toml`. Lokal bleibt `pytest` schnell und ohne Report-Dateien.
+- **Coverage mit Zweigen** (`--cov-branch`): Gezählt wird nicht nur, welche Zeilen laufen, sondern
+  auch, ob bei jedem `if` beide Wege getestet sind (Zweigabdeckung).
+- **Folgt:** SonarQube Cloud (eigener PR), Docker-Image in die GitHub Container Registry und
+  Deploy auf die Cloud-VM (AP 8b), beide nur bei grünen Tests.
+
+Dieselben Reports lokal (landen in `reports/` und `htmlcov/`, beide stehen in der `.gitignore`):
+
+```bash
+pytest tests/unit --html=reports/unit.html --self-contained-html --cov=bollinger_bot --cov-branch --cov-report=html
 ```
 
 ## Geheimnisse
@@ -175,6 +202,8 @@ PRs pro Person.
 - Handelspaar (z.B. BTCUSDT) und Kerzen-Intervall (z.B. 15 Minuten)
 - Verkaufsregel (oberes Band oder Mittelband) und Stop-Loss
 - Anbieter der Cloud-VM (z.B. Hetzner oder Infomaniak)
+- **Entschieden: Reports nur in der Pipeline** (21.10.2026). Coverage, JUnit-XML und HTML-Report
+  erzeugt der Workflow, `addopts` in der `pyproject.toml` bleibt ohne Report-Optionen.
 
 ## Testkonzept
 
@@ -196,7 +225,9 @@ nachgeführt.
   Interview erstellt.
 - **Zum Schreiben von Code:** _noch offen_
 - **Zum automatischen Erstellen von Code durch einen Agenten:** Das Grundgerüst (`pyproject.toml`,
-  Ordnerstruktur, erster Test) hat Claude Code angelegt.
+  Ordnerstruktur, erster Test) hat Claude Code angelegt. Den Workflow der Pipeline
+  (`.github/workflows/pipeline.yml`) hat Claude Code mit Nicolas geschrieben und Schritt für
+  Schritt erklärt. Die Entscheide zu den Reports und zu pytest-html hat Nicolas getroffen.
 - **Zum Reviewen oder Optimieren:** _noch offen_
 
 ## Kursunterlagen
