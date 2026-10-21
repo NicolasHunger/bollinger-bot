@@ -2,10 +2,15 @@
 
 `tick()` schreibt hinein, das Dashboard liest daraus. Die Datei überlebt einen Neustart des Bots:
 Danach weiss er aus den Trades, ob eine Position offen ist und zu welchem Preis gekauft wurde.
+Eine Datei gilt für genau ein Handelspaar und ein Kerzen-Intervall.
 
 SQLite kennt keinen eigenen Datentyp für Zeitpunkte. Wir speichern sie als Text im Format
-ISO 8601 in UTC, z.B. `2026-10-17T12:00:00+00:00`. In diesem Format sortiert SQLite die Texte
-automatisch richtig nach Zeit.
+ISO 8601 in UTC, z.B. `2026-10-17T12:00:00.000000+00:00`. In diesem Format sortiert SQLite die
+Texte automatisch richtig nach Zeit.
+
+Fehler: Verstösse gegen die Regeln der Datenbank (CHECK, NOT NULL, UNIQUE) werfen
+`sqlite3.IntegrityError`. Was Python vor dem Schreiben prüft (Zeit ohne Zeitzone, höchstens eine
+offene Position), wirft `ValueError`. In beiden Fällen wird nichts gespeichert.
 """
 
 import sqlite3
@@ -16,35 +21,48 @@ from pathlib import Path
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS signale (
     startzeit    TEXT PRIMARY KEY,  -- Beginn der Kerze; pro Kerze höchstens ein Eintrag
-    schlusskurs  REAL NOT NULL,
-    mittelband   REAL NOT NULL,
+    eroeffnung   REAL NOT NULL CHECK (eroeffnung > 0),
+    hoch         REAL NOT NULL CHECK (hoch > 0),
+    tief         REAL NOT NULL CHECK (tief > 0),
+    schlusskurs  REAL NOT NULL CHECK (schlusskurs > 0),
+    mittelband   REAL NOT NULL,  -- Bänder dürfen negativ sein, darum kein > 0
     oberes_band  REAL NOT NULL,
     unteres_band REAL NOT NULL,
-    signal       TEXT NOT NULL CHECK (signal IN ('kaufen', 'verkaufen', 'halten'))
+    signal       TEXT NOT NULL CHECK (signal IN ('kaufen', 'verkaufen', 'halten')),
+    -- Eine echte Kerze erfüllt das immer. Fängt ab, wenn tick() Felder vertauscht.
+    CHECK (tief <= eroeffnung AND eroeffnung <= hoch),
+    CHECK (tief <= schlusskurs AND schlusskurs <= hoch),
+    CHECK (unteres_band <= mittelband AND mittelband <= oberes_band)
 );
 
 CREATE TABLE IF NOT EXISTS trades (
     id       INTEGER PRIMARY KEY AUTOINCREMENT,
     zeit     TEXT NOT NULL,
     seite    TEXT NOT NULL CHECK (seite IN ('kauf', 'verkauf')),
-    menge    REAL NOT NULL,
-    preis    REAL NOT NULL,
+    menge    REAL NOT NULL CHECK (menge > 0),
+    preis    REAL NOT NULL CHECK (preis > 0),
     order_id TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS kontostaende (
     zeit     TEXT NOT NULL,
     waehrung TEXT NOT NULL,
-    betrag   REAL NOT NULL
+    betrag   REAL NOT NULL CHECK (betrag >= 0)
 );
 """
 
 
 @dataclass(frozen=True)
 class SignalEintrag:
-    """Auswertung einer abgeschlossenen Kerze: Kurs, Bänder und Entscheid."""
+    """Auswertung einer abgeschlossenen Kerze: Kurse, Bänder und Entscheid.
+
+    Die Kurse heissen wie in `Kerze` (port.py), nur `schluss` heisst hier `schlusskurs`.
+    """
 
     startzeit: datetime
+    eroeffnung: float
+    hoch: float
+    tief: float
     schlusskurs: float
     mittelband: float
     oberes_band: float
@@ -65,6 +83,8 @@ class Trade:
 
 @dataclass(frozen=True)
 class Kontostand:
+    """Frei verfügbares Guthaben einer Währung, wie es `hole_kontostand()` liefert."""
+
     zeit: datetime
     waehrung: str
     betrag: float
@@ -75,8 +95,8 @@ def _als_text(zeit: datetime) -> str:
         raise ValueError(
             f"Zeit ohne Zeitzone: {zeit}. Bitte mit Zeitzone angeben, z.B. tzinfo=UTC."
         )
-    # Immer in UTC und auf Sekunden genau: gleich lange Texte sortieren sicher richtig.
-    return zeit.astimezone(UTC).isoformat(timespec="seconds")
+    # Immer in UTC und auf Mikrosekunden genau: gleich lange Texte sortieren sicher richtig.
+    return zeit.astimezone(UTC).isoformat(timespec="microseconds")
 
 
 def _als_zeit(text: str) -> datetime:
@@ -84,9 +104,17 @@ def _als_zeit(text: str) -> datetime:
 
 
 class Speicher:
-    """Zugriff auf die SQLite-Datei. Legt die Tabellen beim ersten Öffnen selbst an."""
+    """Zugriff auf die SQLite-Datei. Legt Ordner und Tabellen beim ersten Öffnen selbst an.
+
+    Eine Instanz hält eine offene Verbindung, und die darf nur der Thread benutzen, der die
+    Instanz erstellt hat (sonst `sqlite3.ProgrammingError`). Streamlit führt Sitzungen in
+    mehreren Threads aus: Das Dashboard öffnet darum pro Durchlauf einen eigenen
+    `with Speicher(pfad) as speicher:`, statt eine Instanz zu teilen.
+    """
 
     def __init__(self, pfad: str | Path):
+        # Fehlt der Ordner (z.B. data/), meldet sqlite3 nur «unable to open database file».
+        Path(pfad).parent.mkdir(parents=True, exist_ok=True)
         self._db = sqlite3.connect(pfad)
         # WAL-Modus: Das Dashboard kann lesen, während der Bot schreibt, ohne dass einer wartet.
         self._db.execute("PRAGMA journal_mode=WAL")
@@ -116,11 +144,15 @@ class Speicher:
         with self._db:
             cursor = self._db.execute(
                 """INSERT INTO signale
-                   (startzeit, schlusskurs, mittelband, oberes_band, unteres_band, signal)
-                   VALUES (?, ?, ?, ?, ?, ?)
+                   (startzeit, eroeffnung, hoch, tief, schlusskurs,
+                    mittelband, oberes_band, unteres_band, signal)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                    ON CONFLICT (startzeit) DO NOTHING""",
                 (
                     _als_text(eintrag.startzeit),
+                    eintrag.eroeffnung,
+                    eintrag.hoch,
+                    eintrag.tief,
                     eintrag.schlusskurs,
                     eintrag.mittelband,
                     eintrag.oberes_band,
@@ -133,7 +165,8 @@ class Speicher:
     def hole_signale(self) -> list[SignalEintrag]:
         """Alle gespeicherten Signale, älteste zuerst."""
         zeilen = self._db.execute(
-            """SELECT startzeit, schlusskurs, mittelband, oberes_band, unteres_band, signal
+            """SELECT startzeit, eroeffnung, hoch, tief, schlusskurs,
+                      mittelband, oberes_band, unteres_band, signal
                FROM signale ORDER BY startzeit"""
         ).fetchall()
         return [SignalEintrag(_als_zeit(zeile[0]), *zeile[1:]) for zeile in zeilen]
@@ -146,6 +179,22 @@ class Speicher:
     # --- Trades ---
 
     def speichere_trade(self, trade: Trade) -> None:
+        """Speichert einen ausgeführten Kauf oder Verkauf.
+
+        Es ist höchstens eine Position offen: Ein Kauf bei offener Position und ein Verkauf ohne
+        offene Position werfen einen ValueError. Eine schon gespeicherte Order-ID wirft einen
+        sqlite3.IntegrityError.
+        """
+        position = self.offene_position()
+        if trade.seite == "kauf" and position is not None:
+            raise ValueError(
+                f"Kauf {trade.order_id} abgelehnt: Es ist schon eine Position offen "
+                f"(Kauf {position.order_id}). Zuerst verkaufen."
+            )
+        if trade.seite == "verkauf" and position is None:
+            raise ValueError(
+                f"Verkauf {trade.order_id} abgelehnt: Es ist keine Position offen."
+            )
         with self._db:
             self._db.execute(
                 "INSERT INTO trades (zeit, seite, menge, preis, order_id) VALUES (?, ?, ?, ?, ?)",
