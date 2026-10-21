@@ -193,7 +193,7 @@ def test_abgebrochene_order_ohne_ausfuehrung_ist_ein_fehler(client):
 
 @respx.mock
 def test_abgelehnte_order_wird_als_bitget_fehler_geworfen(client):
-    # Beispiel-Fehlercode, z.B. bei zu wenig Guthaben
+    # Echte Antwort der Demo-API bei leerem Spot-Konto (Rauchtest vom 21.10.2026), HTTP 400
     respx.post(ORDER_URL).respond(400, json={"code": "43012", "msg": "Insufficient balance"})
     info = respx.get(INFO_URL)
 
