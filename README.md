@@ -338,7 +338,11 @@ nachgeführt.
   Reviews von PR #12. Die Entscheide zu den Reports, zu pytest-html und zu den Funden von
   SonarQube Cloud hat Nicolas getroffen, GitHub Pages und SonarQube Cloud hat er selbst
   eingerichtet.
-- **Zum Reviewen oder Optimieren:** _noch offen_
+- **Zum Reviewen oder Optimieren:** Die Reviews von PR #6 und PR #7 hat Nicolas mit Claude Code
+  vorbereitet: Claude Code hat die PRs lokal getestet, Randfälle nachgeprüft und die Kommentare
+  formuliert. Die inhaltlichen Entscheide (z.B. Kerzen im Dashboard, Kontostand als Gesamtwert,
+  `stop_signal: SIGINT`) und den Review-Status hat Nicolas getroffen, gepostet wurde erst nach
+  Durchsicht.
 
 ## Kursunterlagen
 
