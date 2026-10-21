@@ -17,14 +17,19 @@ import base64
 import hashlib
 import hmac
 import json
+import logging
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from typing import Any
 from urllib.parse import urlencode
 
 import httpx
 
-from bollinger_bot.port import Kerze
+from bollinger_bot.port import Kerze, Order
+
+log = logging.getLogger(__name__)
 
 BASIS_URL = "https://api.bitget.com"
 
@@ -39,6 +44,11 @@ INTERVALLE = {
 }
 
 MAX_KERZEN = 1000  # mehr liefert Bitget pro Anfrage nicht
+
+# Eine Market-Order ist meist nach wenigen Millisekunden ausgeführt. Wir fragen den Status bis zu
+# 10-mal im Abstand von einer halben Sekunde ab, bevor wir aufgeben.
+ORDER_ABFRAGEN = 10
+ORDER_PAUSE_SEKUNDEN = 0.5
 
 
 class BitgetFehler(Exception):
@@ -78,6 +88,11 @@ def _als_zeit(millisekunden: str | int) -> datetime:
     return datetime.fromtimestamp(int(millisekunden) / 1000, UTC)
 
 
+def _als_text(zahl: float) -> str:
+    """Zahl als Text ohne Exponent: `str(0.00001)` ergibt "1e-05", Bitget will "0.00001"."""
+    return format(Decimal(str(zahl)), "f")
+
+
 class BitgetClient:
     """Spricht mit Bitget im Demo-Modus. Erfüllt den Port `Boerse` aus `port.py`.
 
@@ -94,11 +109,13 @@ class BitgetClient:
         basis_url: str = BASIS_URL,
         timeout_sekunden: float = 10,
         uhr: Callable[[], datetime] = _jetzt,
+        schlafen: Callable[[float], None] = time.sleep,
     ):
         self._api_key = api_key
         self._api_secret = api_secret
         self._passphrase = passphrase
         self._uhr = uhr  # nur für den Zeitstempel der Signatur, Tests übergeben eine feste Zeit
+        self._schlafen = schlafen  # Warten auf die Ausführung einer Order, Tests warten nicht echt
         self._http = httpx.Client(base_url=basis_url, timeout=timeout_sekunden)
 
     def schliessen(self) -> None:
@@ -140,7 +157,117 @@ class BitgetClient:
         abgeschlossen = [k for k in kerzen if k.startzeit + dauer <= serverzeit]
         return abgeschlossen[-anzahl:]
 
+    def hole_kontostand(self, waehrung: str) -> float:
+        """Frei verfügbares Guthaben, z.B. `hole_kontostand("USDT")`. 0.0, wenn keins da ist.
+
+        Frei verfügbar (`available`) heisst: ohne Beträge in offenen Orders (`frozen`).
+        """
+        antwort = self._anfrage("GET", "/api/v2/spot/account/assets", params={"coin": waehrung})
+        for eintrag in antwort["data"] or []:
+            # Bitget schreibt die Währung mal gross, mal klein ("usdt" im Beispiel der Doku)
+            if eintrag.get("coin", "").upper() == waehrung.upper():
+                return float(eintrag["available"])
+        return 0.0
+
+    def kaufe(self, symbol: str, betrag: float) -> Order:
+        """Market-Order: kauft sofort für `betrag` USDT.
+
+        Bitget will bei einer Market-Kauforder den Betrag in USDT, nicht die Menge in BTC: Wie
+        viel BTC man für 100 USDT bekommt, steht erst nach der Ausführung fest. Den Betrag hat der
+        Risiko-Check schon abgerundet (`risiko.kaufbetrag`).
+
+        Die zurückgegebene Menge ist schon ohne Gebühr: Bitget zieht die Gebühr beim Kauf von den
+        gekauften BTC ab. Genau diese Menge liegt danach auf dem Konto und lässt sich verkaufen.
+        Bitget rundet die gekaufte Menge auf 6 Stellen, darum wird nicht der ganze Betrag
+        ausgegeben (Rauchtest: für 5 USDT wurden 4.92 USDT ausgegeben).
+        """
+        if betrag <= 0:
+            raise ValueError(f"betrag muss grösser als 0 sein, erhalten: {betrag}")
+        order_id = self._platziere(symbol, seite="buy", groesse=betrag)
+        info = self._warte_auf_ausfuehrung(order_id)
+        gekauft = float(info["baseVolume"])
+        gebuehr = self._gebuehr(info)
+        # Bitget verlangt im Spot-Demo 0.1 % Gebühr (Rauchtest vom 21.10.2026). Ist der Abzug
+        # 1 % oder mehr, stimmt etwas mit `feeDetail` nicht: Dann lieber ohne Gebühr rechnen
+        # als eine viel zu kleine Menge melden.
+        if gebuehr >= gekauft * 0.01:
+            log.warning("Gebühr %s bei %s gekauft unplausibel, rechne ohne", gebuehr, gekauft)
+            gebuehr = 0.0
+        return Order(order_id=order_id, menge=gekauft - gebuehr, preis=float(info["priceAvg"]))
+
+    def verkaufe(self, symbol: str, menge: float) -> Order:
+        """Market-Order: verkauft sofort `menge` BTC.
+
+        Die Menge hat der Risiko-Check schon auf die erlaubten Stellen abgerundet
+        (`risiko.verkaufsmenge`). Die Gebühr zieht Bitget beim Verkauf von den erhaltenen USDT ab,
+        die verkaufte Menge bleibt also gleich.
+        """
+        if menge <= 0:
+            raise ValueError(f"menge muss grösser als 0 sein, erhalten: {menge}")
+        order_id = self._platziere(symbol, seite="sell", groesse=menge)
+        info = self._warte_auf_ausfuehrung(order_id)
+        return Order(
+            order_id=order_id, menge=float(info["baseVolume"]), preis=float(info["priceAvg"])
+        )
+
     # --- Hilfsfunktionen ---
+
+    def _platziere(self, symbol: str, *, seite: str, groesse: float) -> str:
+        """Schickt eine Market-Order und gibt die Order-ID zurück.
+
+        `groesse` ist beim Kauf ein Betrag in USDT, beim Verkauf eine Menge in BTC.
+        """
+        antwort = self._anfrage(
+            "POST",
+            "/api/v2/spot/trade/place-order",
+            body={
+                "symbol": symbol,
+                "side": seite,
+                "orderType": "market",
+                "force": "gtc",  # verlangt Bitget immer, wirkt aber nur bei Limit-Orders
+                "size": _als_text(groesse),
+            },
+        )
+        return antwort["data"]["orderId"]
+
+    def _warte_auf_ausfuehrung(self, order_id: str) -> dict[str, Any]:
+        """Fragt den Status der Order ab, bis sie ausgeführt ist, und gibt die Details zurück.
+
+        Bitget bestätigt beim Platzieren nur die Order-ID. Preis, Menge und Gebühr stehen erst in
+        `orderInfo`. Eine Market-Order endet als `filled` (ganz ausgeführt) oder `cancelled` (im
+        dünnen Demo-Markt nur teilweise ausgeführt, der Rest verfällt).
+        """
+        for versuch in range(ORDER_ABFRAGEN):
+            antwort = self._anfrage(
+                "GET", "/api/v2/spot/trade/orderInfo", params={"orderId": order_id}
+            )
+            infos = antwort["data"] or []  # kurz nach dem Platzieren manchmal noch leer
+            if infos and infos[0].get("status") in ("filled", "cancelled"):
+                info = infos[0]
+                if float(info.get("baseVolume") or 0) <= 0:
+                    raise BitgetFehler(f"Order {order_id} wurde nicht ausgeführt")
+                return info
+            if versuch < ORDER_ABFRAGEN - 1:
+                self._schlafen(ORDER_PAUSE_SEKUNDEN)
+        # Die Order kann danach trotzdem noch ausgeführt werden. Die Order-ID steht in der Meldung,
+        # damit man sie im Log findet und auf Bitget nachschauen kann.
+        raise BitgetFehler(f"Order {order_id} nach {ORDER_ABFRAGEN} Abfragen nicht ausgeführt")
+
+    @staticmethod
+    def _gebuehr(info: dict[str, Any]) -> float:
+        """Gebühr, die Bitget von der gekauften Währung abgezogen hat, als positive Zahl.
+
+        `feeDetail` ist JSON als Text. Unter `newFees.r` steht, was von der erhaltenen Währung
+        abgezogen wurde (negativ). Wer die Gebühr mit BGB-Rabatt bezahlt, hat dort 0.
+        """
+        try:
+            details = json.loads(info.get("feeDetail") or "{}")
+            return abs(float(details.get("newFees", {}).get("r", 0)))
+        except (ValueError, TypeError, AttributeError):
+            # Die Order ist zu diesem Zeitpunkt schon ausgeführt. Ein Fehler hier darf den Trade
+            # nicht verschwinden lassen: lieber ohne Gebühr weiterrechnen und es protokollieren.
+            log.warning("Gebühr nicht lesbar, rechne ohne Gebühr: %r", info.get("feeDetail"))
+            return 0.0
 
     @staticmethod
     def _als_kerze(zeile: list[str]) -> Kerze:
