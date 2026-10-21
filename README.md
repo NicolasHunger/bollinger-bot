@@ -62,7 +62,7 @@ flowchart LR
 | Bereich | Werkzeug |
 |---|---|
 | Sprache | Python |
-| Börse | Bitget REST-API im Demo-Modus |
+| Börse | Bitget REST-API im Demo-Modus, Spot-Handel |
 | HTTP | httpx |
 | Datenhaltung | SQLite |
 | Dashboard | Streamlit |
@@ -171,8 +171,9 @@ PRs pro Person.
 
 ### Offene Entscheide
 
-- Spot oder USDT-M-Futures? Im Demo-Modus von Bitget prüfen, ob Spot angeboten wird. Sonst
-  Futures mit Hebel 1 und nur Long-Positionen.
+- **Entschieden: Spot statt USDT-M-Futures.** Bitget bietet Spot im Demo-Modus an (geprüft am
+  30.09.2026). Spot heisst: Der Bot kauft echte (Spiel-)Bitcoin und verkauft sie wieder, ohne
+  Hebel und ohne Positionsmodi. Endpunkte: Classic-Konto, `/api/v2/spot/…`.
 - Handelspaar (z.B. BTCUSDT) und Kerzen-Intervall (z.B. 15 Minuten)
 - Verkaufsregel (oberes Band oder Mittelband) und Stop-Loss
 - Anbieter der Cloud-VM (z.B. Hetzner oder Infomaniak)
