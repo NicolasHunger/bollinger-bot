@@ -2,7 +2,8 @@
 
 Prüft, was die Mocks in den automatischen Tests nicht prüfen können: ob Bitget unsere Signatur
 annimmt, ob das Demo-Konto die Classic-Endpunkte `/api/v2/spot/…` verwendet und wie die Gebühr
-in einer echten Order aussieht. Läuft nie in der Pipeline.
+in einer echten Order aussieht. Läuft nie in der Pipeline und liegt darum nicht im Paket
+`src/bollinger_bot/`: So zählt es auch nicht zur Coverage.
 
 Die Demo-Keys kommen aus den Umgebungsvariablen oder aus der Datei `.env` im Projektordner
 (gitignored):
@@ -13,8 +14,10 @@ Die Demo-Keys kommen aus den Umgebungsvariablen oder aus der Datei `.env` im Pro
 
 Aufruf:
 
-    python -m bollinger_bot.rauchtest           # nur lesen: Kerzen und Kontostand
-    python -m bollinger_bot.rauchtest --order   # zusätzlich Kauf für 5 USDT und Verkauf
+    python scripts/rauchtest.py           # nur lesen: Kerzen und Kontostand
+    python scripts/rauchtest.py --order   # zusätzlich Kauf für 5 USDT und Verkauf
+
+Voraussetzung: das Projekt ist installiert (`pip install -e ".[dev]"`).
 
 Gibt nie einen Key aus.
 """
