@@ -112,8 +112,9 @@ Aus dem Review von Valentin zu PR #1
 - **Entschieden (17.10.2026):**
   - **Python 3.12 oder neuer** bleibt. Docker-Image und Pipeline (#8a.2) verwenden 3.12 fest.
   - **Versionsgrenzen:** Untergrenze ist die Version, mit der wir entwickeln, Obergrenze das
-    nächste Major-Release (z.B. `httpx>=0.28,<1`). Neue Abhängigkeiten bekommen Grenzen nach
-    demselben Muster.
+    nächste Release, das Bestehendes brechen darf: das nächste Major-Release
+    (z.B. `streamlit>=1.64,<2`), bei Paketen unter 1.0 die nächste Minor-Version
+    (z.B. `httpx>=0.28,<0.29`). Neue Abhängigkeiten bekommen Grenzen nach demselben Muster.
   - **Unit- und Integrationstests nur über die Ordner trennen**, keine pytest-Marker.
     `--strict-markers` bleibt an, damit vertippte Marker auffallen.
   - **`tests/unit/test_grundgeruest.py`** wird mit #1 gelöscht.

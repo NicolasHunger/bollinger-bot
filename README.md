@@ -85,7 +85,8 @@ pytest                           # alle Tests ausführen
 - Unit- und Integrationstests trennen wir nur über die Ordner: `pytest tests/unit` bzw.
   `pytest tests/integration`.
 - Die Abhängigkeiten in der `pyproject.toml` haben Versionsgrenzen: mindestens die Version, mit
-  der wir entwickeln, höchstens bis zum nächsten Major-Release.
+  der wir entwickeln, höchstens bis zum nächsten Release, das Bestehendes brechen darf. Das ist
+  das nächste Major-Release, bei Paketen unter 1.0 schon die nächste Minor-Version.
 - `-e` installiert das Projekt «editierbar»: Änderungen am Code wirken sofort, ohne neu zu
   installieren.
 
