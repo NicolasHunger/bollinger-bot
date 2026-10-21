@@ -58,70 +58,81 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
 - **Nur im eigenen Paket arbeiten.** Fällt in einem fremden Paket etwas auf, im PR kommentieren
   statt selbst ändern.
 
-### Offene Aufgaben pro Person (Stand 21.10.2026)
+### Offene Aufgaben pro Person (Stand 21.10.2026, nach den ersten Reviews)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
-Abgabe und Präsentation: Mi 28.10.2026, also noch 7 Tage. Stand auf GitHub: PR #1 gemergt,
-PR #2 bis #7 von Lucas offen und noch ohne einen einzigen Review-Kommentar. Von Valentin und
-Nicolas gibt es noch keinen Branch.
+Abgabe und Präsentation: Mi 28.10.2026, also noch 7 Tage.
+
+Stand auf GitHub: PR #1 gemergt. PR #2 bis #7 (Lucas) sind reviewt, die Forderungen aus den
+Reviews sind umgesetzt (PR #2 bis #4 approved, PR #5 bis #7 warten auf das erneute Review).
+Valentin hat PR #8 (Risiko-Check), #9 (Client: Signatur und Kerzen, Draft, baut auf PR #5 auf),
+#10 (Client: Orders und Kontostand, Draft, baut auf #9 auf) und #11 (Testkonzept) offen.
+Nicolas hat PR #12 (Pipeline: Tests und Reports) offen, von Valentin approved.
 
 **Lucas** (Strategie und Ablauf)
 
 - [x] AP 8a.1 Grundgerüst (PR #1, gemergt)
-- [ ] PR #2 bis #7 durch die Reviews bringen, auf Kommentare antworten (Inhalt siehe «Stand der
-      Arbeit von Lucas» unten)
-- [ ] AP 6, Teil 3: `tick()`, sobald PR #3 bis #7 gemergt sind
-- [ ] KI-Nutzung im README nachführen (alle PRs von Lucas sind mit Claude Code entstanden)
-- [ ] Im PR #5 nachfragen: erlaubte Stellen und Mindestbetrag für den Risiko-Check, Gebühren
-      bei der Kaufmenge
-- [ ] PRs von Valentin reviewen (AP 3, AP 4, AP 5)
+- [x] Review-Forderungen in PR #2 bis #7 umgesetzt und beantwortet
+- [x] KI-Nutzung im README nachgeführt (in PR #3)
+- [ ] PR #2 bis #4 mergen (approved), PR #5 bis #7 nach dem erneuten Review
+- [ ] **PRs von Valentin reviewen:** PR #8, #9, #10, #11 (Lucas ist überall als Reviewer
+      eingetragen). PR #9 und #10 erst nach PR #5, weil sie darauf aufbauen.
+- [ ] AP 6, Teil 3: `tick()` und Einstiegspunkt (mit `logging.basicConfig`), sobald PR #3 bis
+      #10 gemergt sind
 - [ ] Eigene Reflexion (TDD, Code Reviews, KI-Nutzung)
 
 **Valentin** (Börse)
 
-- [ ] **Zuerst:** PR #5 (Port) reviewen. Ohne ihn kann der `BitgetClient` nicht anfangen.
-- [ ] PR #2, #3, #4 reviewen. In PR #4 die Verkaufsregel bestätigen (Mittelband, Stop-Loss 3 %).
-- [ ] Spot oder Futures entscheiden (vor AP 3)
-- [ ] AP 3 Bitget-Client: Signatur und Kerzen
-- [ ] AP 4 Bitget-Client: Orders und Kontostand
-- [ ] AP 5 Risiko-Check
-- [ ] Testkonzept (Doku)
+- [x] PR #2 bis #5 reviewt
+- [x] Spot entschieden (README in PR #9)
+- [ ] PR #5 erneut reviewen (`kaufe` nimmt jetzt `betrag`), dann approven
+- [ ] AP 3 und AP 4: PR #9 und #10 aus dem Draft holen, sobald PR #5 gemergt ist
+- [ ] AP 5 Risiko-Check: PR #8 durch das Review bringen
+- [ ] Testkonzept: PR #11 durch das Review bringen
 - [ ] Eigene Reflexion
 
 **Nicolas** (Infra und Dashboard)
 
-- [ ] **Zuerst:** AP 8a.2 Pipeline (Build, Test, Reports, SonarQube Cloud). Ohne sie fehlen in
-      der Rubrik die Tests in der Pipeline, die automatischen Reports und die Coverage.
-- [ ] PR #6 (SQLite-Schema, liest sein Dashboard) und PR #7 reviewen
+- [x] PR #6 und #7 reviewt
+- [ ] PR #6 und #7 erneut reviewen, dann approven
+- [ ] **Zuerst:** AP 8a.2 Pipeline mergen (PR #12, approved), danach laufen alle PRs durch die
+      Pipeline. SonarQube Cloud anbinden, falls noch nicht in PR #12.
 - [ ] Offene Punkte aus Valentins Review zu PR #1 entscheiden: `coverage.xml` in `addopts` oder
       nur in der Pipeline, Streamlit als Pflicht-Abhängigkeit oder Extra `dashboard`
-- [ ] Anbieter der Cloud-VM wählen, AP 8b Deploy auf die VM
+- [ ] Anbieter der Cloud-VM wählen, AP 8b Deploy auf die VM (`stop_signal: SIGINT`, siehe
+      Abmachungen)
 - [ ] AP 7 Dashboard
+- [ ] PR #11 (Testkonzept) reviewen
 - [ ] Planung und Architektur im README nachführen
 - [ ] Eigene Reflexion
 
 **Alle zusammen**
 
-- [ ] Handelspaar und Kerzen-Intervall festlegen (README, «Offene Entscheide»)
+- [ ] Handelspaar und Kerzen-Intervall festlegen (Vorschlag: BTCUSDT, 15min; README, «Offene
+      Entscheide»)
+- [ ] Merge-Reihenfolge: PR #12 (Pipeline), dann #2, #3, #4, #5, dann #9 und #10 (bauen auf #5
+      auf), #6, #7, #8, #11. Konflikte beim Mergen sind möglich: PR #12, #2 und #7 ändern alle die
+      Liste `dev` in der `pyproject.toml` (pytest-html, Versionsgrenzen, tzdata; alles behalten),
+      und mehrere PRs ändern das README.
 - [ ] Präsentation (10 Minuten): Endprodukt, Testing, Reports, Reflexion, Fazit
 
 **Zeitplan bis zur Abgabe** (Vorschlag)
 
 | Bis | Was |
 |---|---|
-| Mi 21.10. | Unterricht Code Reviews: PR #5 zuerst, dann die übrigen PRs. Spot/Futures, Handelspaar, Intervall entscheiden. |
-| Fr 23.10. | Pipeline läuft (AP 8a.2), PR #2 bis #7 gemergt, erster PR von Valentin (AP 3) offen |
-| So 25.10. | AP 4, AP 5, `tick()` und Dashboard als PR offen |
-| Di 27.10. | Deploy (AP 8b), alles gemergt, Doku, Reflexion und Präsentation fertig |
+| Do 22.10. | PR #2 bis #8 gemergt, Pipeline angefangen |
+| Fr 23.10. | Pipeline läuft (AP 8a.2), PR #9 bis #11 gemergt, `tick()` als PR offen |
+| So 25.10. | `tick()` und Dashboard gemergt, VM eingerichtet |
+| Di 27.10. | Deploy (AP 8b), Bot läuft auf der VM, Doku, Reflexion und Präsentation fertig |
 | Mi 28.10. | Abgabe und Präsentation |
 
-**Notfallplan:** Gibt es bis Fr 23.10. keinen `BitgetClient`, wird der Umfang gekürzt. Die
-Rubrik bewertet vor allem Tests, Reports, PRs und Doku, nicht ob der Bot echt handelt. Dann zeigt
-die Präsentation `tick()` mit gemockter Börse und das Dashboard mit Testdaten.
+**Notfallplan:** Läuft der Bot bis So 25.10. nicht auf der VM, zeigt die Präsentation `tick()`
+mit gemockter Börse und das Dashboard mit Testdaten. Die Rubrik bewertet vor allem Tests,
+Reports, PRs und Doku, nicht ob der Bot echt handelt.
 
 Der Abschnitt «Noch offen, vor dem jeweiligen Paket klären» weiter unten wird erst mit PR #2 und
 PR #4 aktualisiert. Bis dahin gilt: Verkaufsregel und Testtrennung sind in diesen PRs
-entschieden, der Port-Vorschlag ist PR #5, der Schema-Vorschlag ist PR #6.
+entschieden, Spot ist entschieden (PR #9), Port und Schema stehen in PR #5 und #6.
 
 ## Entwicklung: Einrichten und Regeln
 
@@ -210,33 +221,35 @@ Getroffene Entscheide hier und im README unter «Offene Entscheide» nachführen
   erklären können: Code erklären statt nur liefern und die KI-Nutzung im README nachführen.
 - Alle drei sind Trading-Neulinge: Fachbegriffe (Kerze, Band, σ, Spot/Futures) kurz erklären.
 
-## Stand der Arbeit von Lucas (21.10.2026)
+## Stand der PRs und Schnittstellen (21.10.2026, nach den ersten Reviews)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README. Die Nummern
 stimmen nicht überein. In den älteren Abschnitten weiter oben steht «#n» allein immer für das
 Arbeitspaket.
 
-Alle PRs zweigen direkt von `main` ab und hängen nicht voneinander ab: Sie lassen sich in
-beliebiger Reihenfolge reviewen und mergen. Solange ein PR offen ist, liegt sein Code nur auf
-dessen Branch. **Nicht in einen eigenen Branch kopieren**, sondern den PR zuerst reviewen und
-mergen, dann `main` pullen. Wer etwas aus einem PR braucht, reviewt diesen zuerst (Valentin: PR #5).
+Solange ein PR offen ist, liegt sein Code nur auf dessen Branch. **Nicht in einen eigenen Branch
+kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 
-| PR | Branch | Inhalt | Dateien |
-|---|---|---|---|
-| #1 ✅ | `grundgeruest` | AP 8a.1: Projektstruktur, `pyproject.toml`, pytest | |
-| #2 | `review-pr1-versionen` | Antwort auf Valentins Review zu PR #1: Versionsgrenzen, Testtrennung nur über Ordner | `pyproject.toml` |
-| #3 | `bollinger-berechnung` | AP 1: Bollinger-Bänder | `bollinger.py`, `tests/unit/test_bollinger.py` |
-| #4 | `kauf-verkaufsregeln` | AP 2: Kauf- und Verkaufsregeln mit Stop-Loss | `regeln.py`, `tests/unit/test_regeln.py` |
-| #5 | `port-schnittstelle` | Vorschlag Port: Schnittstelle `tick()` ↔ Börse | `port.py`, `tests/unit/test_port.py` |
-| #6 | `sqlite-speicher` | AP 6, Teil 1: SQLite-Speicher | `speicher.py`, `tests/integration/test_speicher.py` |
-| #7 | `polling-schleife` | AP 6, Teil 2: «Kerze fertig?» und Polling-Schleife | `polling.py`, `tests/unit/test_polling.py` |
-| – | – | AP 6, Teil 3: `tick()`, setzt alles zusammen | folgt, wenn PR #3 bis #7 gemergt sind |
+| PR | Branch | Wer | Inhalt | Stand |
+|---|---|---|---|---|
+| #1 | `grundgeruest` | Lucas | AP 8a.1: Projektstruktur, `pyproject.toml`, pytest | ✅ gemergt |
+| #2 | `review-pr1-versionen` | Lucas | Versionsgrenzen, Testtrennung nur über Ordner | approved |
+| #3 | `bollinger-berechnung` | Lucas | AP 1: `bollinger.py`, KI-Nutzung im README | approved |
+| #4 | `kauf-verkaufsregeln` | Lucas | AP 2: `regeln.py`, Hinweis «Warum der Bot kaum Geld verdient» | approved |
+| #5 | `port-schnittstelle` | Lucas | Port: `port.py` | Review-Forderungen umgesetzt, wartet auf Valentin |
+| #6 | `sqlite-speicher` | Lucas | AP 6, Teil 1: `speicher.py` | Review-Forderungen umgesetzt, wartet auf Nicolas |
+| #7 | `polling-schleife` | Lucas | AP 6, Teil 2: `polling.py` | Review-Wünsche umgesetzt, wartet auf Nicolas |
+| #8 | `risiko-check` | Valentin | AP 5: `risiko.py` | wartet auf Review (Lucas) |
+| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | Draft, Basis `port-schnittstelle` |
+| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Draft, Basis `bitget-kerzen` |
+| #11 | `testkonzept` | Valentin | Testkonzept im README | wartet auf Review (Lucas, Nicolas) |
+| #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | approved |
+| – | – | Lucas | AP 6, Teil 3: `tick()` und Einstiegspunkt | folgt nach den Merges |
 
-Code liegt unter `src/bollinger_bot/`. PR #3 löscht ausserdem den Platzhalter
-`tests/unit/test_grundgeruest.py`. PR #4 legt die Verkaufsregel fest (Mittelband, Stop-Loss 3 %)
-und ergänzt einen Hinweis zu iCloud und `.venv` auf macOS.
+PR #9 und #10 bauen auf PR #5 auf: Beim Mergen von PR #5 den Branch `port-schnittstelle` löschen
+lassen, dann zeigt PR #9 automatisch auf `main` (und danach #10 auf `main`, sobald #9 gemergt ist).
 
-### Öffentliche Schnittstellen in den PRs
+### Öffentliche Schnittstellen
 
 ```python
 # bollinger.py (PR #3): reine Funktion
@@ -252,29 +265,30 @@ def entscheide(*, schlusskurs: float, unteres_band: float, mittelband: float,
     # kaufpreis None = keine Position. Kauf: schlusskurs < unteres_band.
     # Verkauf: schlusskurs > mittelband oder < kaufpreis · (100 − stop_loss_prozent) / 100
 
-# port.py (PR #5): die Börse, wie tick() sie sieht
+# port.py (PR #5): die Börse, wie tick() sie sieht (Spot)
 @dataclass(frozen=True)
 class Kerze: startzeit: datetime; eroeffnung: float; hoch: float; tief: float; schluss: float; volumen: float
 @dataclass(frozen=True)
-class Order: order_id: str; menge: float; preis: float
+class Order: order_id: str; menge: float; preis: float  # menge beim Kauf schon ohne Gebühr, preis = Durchschnitt
 class Boerse(Protocol):
     def hole_kerzen(self, symbol: str, intervall: str, anzahl: int) -> list[Kerze]  # nur abgeschlossene, älteste zuerst
     def hole_kontostand(self, waehrung: str) -> float                                # frei verfügbar
-    def kaufe(self, symbol: str, menge: float) -> Order                              # Market-Order
-    def verkaufe(self, symbol: str, menge: float) -> Order                           # Market-Order
+    def kaufe(self, symbol: str, betrag: float) -> Order                             # Market-Order, betrag in USDT
+    def verkaufe(self, symbol: str, menge: float) -> Order                           # Market-Order, menge in BTC
 
 # speicher.py (PR #6): einziger Zugang zur SQLite-Datei
 @dataclass(frozen=True)
-class SignalEintrag: startzeit: datetime; schlusskurs: float; mittelband: float; oberes_band: float; unteres_band: float; signal: str
+class SignalEintrag: startzeit: datetime; eroeffnung: float; hoch: float; tief: float; schlusskurs: float
+                     mittelband: float; oberes_band: float; unteres_band: float; signal: str
 @dataclass(frozen=True)
 class Trade: zeit: datetime; seite: str; menge: float; preis: float; order_id: str   # seite "kauf" | "verkauf"
 @dataclass(frozen=True)
-class Kontostand: zeit: datetime; waehrung: str; betrag: float
-class Speicher:  # Speicher(pfad), auch als `with Speicher(pfad) as speicher:`
+class Kontostand: zeit: datetime; waehrung: str; betrag: float   # betrag = frei verfügbares Guthaben
+class Speicher:  # Speicher(pfad), auch als `with Speicher(pfad) as speicher:`; legt den Ordner an
     speichere_signal(eintrag) -> bool         # False, wenn die Kerze schon gespeichert ist
     hole_signale() -> list[SignalEintrag]     # älteste zuerst
     letzte_signal_startzeit() -> datetime | None
-    speichere_trade(trade) -> None
+    speichere_trade(trade) -> None            # ValueError: Kauf bei offener Position, Verkauf ohne
     hole_trades() -> list[Trade]
     offene_position() -> Trade | None         # letzter Kauf ohne Verkauf danach
     speichere_kontostand(kontostand) -> None
@@ -282,52 +296,86 @@ class Speicher:  # Speicher(pfad), auch als `with Speicher(pfad) as speicher:`
 
 # polling.py (PR #7)
 def letzte_abgeschlossene_kerze(jetzt: datetime, intervall: timedelta) -> datetime
+    # ValueError, wenn intervall keine ganze Zahl von Minuten ist oder eine Stunde nicht teilt
 def neue_kerze_fertig(jetzt: datetime, intervall: timedelta, zuletzt_ausgewertet: datetime | None) -> bool
 def polling_schleife(tick: Callable[[], None], *, pause_sekunden: float = 60,
                      schlafen: Callable[[float], None] = time.sleep, durchlaeufe: int | None = None) -> None
-    # fängt Fehler aus tick() ab, protokolliert sie und läuft weiter
+    # fängt Exception aus tick() ab und läuft weiter; KeyboardInterrupt beendet die Schleife
+
+# risiko.py (PR #8, Valentin): reine Funktionen, rundet immer ab
+@dataclass(frozen=True)
+class Handelsregeln: mengen_stellen: int; betrag_stellen: int; mindestbetrag: float
+BTCUSDT_SPOT = Handelsregeln(mengen_stellen=6, betrag_stellen=2, mindestbetrag=1.0)
+def kaufbetrag(*, guthaben: float, anteil_prozent: float, regeln: Handelsregeln,
+               hoechstbetrag: float | None = None) -> float   # USDT, 0.0 unter dem Mindestbetrag
+def verkaufsmenge(*, bestand: float, kurs: float, regeln: Handelsregeln) -> float  # BTC, 0.0 wenn Wert < Mindestbetrag
+
+# bitget_client.py (PR #9, #10, Valentin): erfüllt Boerse
+INTERVALLE = {"1min": timedelta(minutes=1), "5min": …, "15min": …, "30min": …, "1h": timedelta(hours=1)}
+class BitgetFehler(Exception): code: str | None
+class BitgetClient:
+    def __init__(self, *, api_key: str, api_secret: str, passphrase: str, basis_url=…,
+                 timeout_sekunden: float = 10, uhr=…, schlafen=…)
 ```
 
 Tabellen der SQLite-Datei (Details im README unter «Datenbank», sobald PR #6 gemergt ist):
-`signale` (Primärschlüssel `startzeit`), `trades` (`order_id` eindeutig), `kontostaende`.
-Die Datenbank prüft `signal` und `seite` selbst per `CHECK`.
+`signale` (Primärschlüssel `startzeit`, mit Eröffnung, Hoch, Tief), `trades` (`order_id`
+eindeutig), `kontostaende`. Die Datenbank prüft per `CHECK`: `signal` und `seite` nur erlaubte
+Texte, Kurse, Mengen und Preise grösser als 0, `betrag` mindestens 0, unteres Band ≤ Mittelband ≤
+oberes Band, Tief ≤ Eröffnung und Schluss ≤ Hoch.
 
 ### Geplanter Ablauf von `tick()` (Lucas, nach den Merges)
 
-So werden die Bausteine zusammengesetzt. Die Pakete von Valentin und Nicolas müssen dazu passen.
+So werden die Bausteine zusammengesetzt.
 
 1. `neue_kerze_fertig(jetzt, intervall, speicher.letzte_signal_startzeit())`. Wenn nein: fertig.
-2. `boerse.hole_kerzen(symbol, intervall, n)`. Ist die neueste Kerze noch nicht die erwartete
+   `intervall = bitget_client.INTERVALLE[BOT_INTERVALL]`.
+2. `boerse.hole_kerzen(symbol, BOT_INTERVALL, n)`. Ist die neueste Kerze noch nicht die erwartete
    (`letzte_abgeschlossene_kerze`), liefert Bitget sie noch nicht: abbrechen, nächste Minute
    neu versuchen.
 3. `berechne_baender([k.schluss for k in kerzen], n, k)`
 4. `position = speicher.offene_position()`, dann `entscheide(schlusskurs=…, unteres_band=baender.unten,
    mittelband=baender.mitte, kaufpreis=position.preis if position else None)`
-5. Bei `KAUFEN`: `boerse.hole_kontostand("USDT")`, Menge über den Risiko-Check (AP 5), `boerse.kaufe`,
-   `speicher.speichere_trade(Trade(seite="kauf", …))`. Bei `VERKAUFEN`: `boerse.verkaufe(symbol,
-   position.menge)`, `speichere_trade(Trade(seite="verkauf", …))`.
-6. `speicher.speichere_signal(SignalEintrag(…, signal=signal.value))` und
-   `speicher.speichere_kontostand(…)`.
+5. Bei `KAUFEN`: `betrag = kaufbetrag(guthaben=boerse.hole_kontostand("USDT"), anteil_prozent=…,
+   regeln=BTCUSDT_SPOT)`. Ist der Betrag 0.0, keine Order. Sonst `order = boerse.kaufe(symbol,
+   betrag)` und `speicher.speichere_trade(Trade(seite="kauf", menge=order.menge, preis=order.preis, …))`.
+   Bei `VERKAUFEN`: `menge = verkaufsmenge(bestand=position.menge, kurs=schlusskurs,
+   regeln=BTCUSDT_SPOT)`, bei 0.0 keine Order, sonst `boerse.verkaufe(symbol, menge)` und
+   `speichere_trade(Trade(seite="verkauf", …))`.
+6. `speicher.speichere_signal(SignalEintrag(…, signal=signal.value))` mit Eröffnung, Hoch, Tief der
+   Kerze, danach `speicher.speichere_kontostand(…)` mit den freien USDT (nach jeder ausgewerteten
+   Kerze eine Zeile).
+
+Offene Punkte für das `tick()`-Review (aus den Reviews von Nicolas): Absturz zwischen
+`boerse.kaufe()` und `speichere_trade()` (Bitget hat die Position, die Datei nicht), und ein
+`KeyboardInterrupt` mitten in `tick()`.
 
 Achtung bei den Namen: `Baender` heisst `mitte`/`oben`/`unten`, `SignalEintrag` und `entscheide`
-sagen `mittelband`/`oberes_band`/`unteres_band`. `tick()` übersetzt das.
+sagen `mittelband`/`oberes_band`/`unteres_band`, `Kerze` sagt `schluss`, `SignalEintrag` und
+`entscheide` sagen `schlusskurs`. `tick()` übersetzt das.
 
 ## Abmachungen, damit die Pakete zusammenpassen
 
-Vorschlag von Lucas (17.10.2026), gilt, solange niemand widerspricht. Wer etwas ändern will,
-spricht es im passenden PR an und führt den Entscheid hier nach.
+Vorschlag von Lucas (17.10.2026), ergänzt um die Entscheide aus den Reviews vom 21.10.2026. Wer
+etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier nach.
 
 ### Für alle
 
 - **Zeiten** immer als `datetime` mit Zeitzone, intern in UTC (`datetime.now(UTC)`, nie
   `datetime.now()` ohne Zeitzone). Umrechnung in Schweizer Zeit nur für die Anzeige im Dashboard.
-- **Preise, Mengen, Beträge** als `float`. Gerundet wird einmal, im Risiko-Check (AP 5).
+  Zeitrechnung mit `timedelta` nur in UTC: Auf Zeiten mit `ZoneInfo` rechnet Python mit der
+  Wanduhr und springt bei der Zeitumstellung falsch.
+- **Preise, Mengen, Beträge** als `float`. Gerundet wird einmal, im Risiko-Check (`risiko.py`,
+  immer abgerundet). SQLite speichert `REAL` verlustfrei als dieselbe 64-Bit-Zahl.
 - **Signale** als `"kaufen"`, `"verkaufen"`, `"halten"` (`Signal.value`), Trade-Seiten als `"kauf"`,
   `"verkauf"`.
 - **Code:** deutsche Namen ohne Umlaute im Code (`boerse`, `baender`), Kommentare und Meldungen mit
   Umlauten. Datenklassen `@dataclass(frozen=True)`. Logik als reine Funktionen ohne I/O, wo es
   geht. Bei mehreren Zahlen-Argumenten nur Aufruf mit Namen (`*` in der Signatur).
-  Ungültige Eingaben: `ValueError` mit verständlicher Meldung.
+- **Fehlerarten:** Ungültige Eingaben, die Python prüft: `ValueError` mit verständlicher
+  Meldung. Verstösse gegen Regeln der Datenbank (`CHECK`, `UNIQUE`, `NOT NULL`):
+  `sqlite3.IntegrityError`, die der Speicher nicht umwandelt. Fehler von Bitget oder dem Netz:
+  `BitgetFehler`. Die Polling-Schleife fängt alle `Exception` ab und läuft weiter.
 - **Uhr und Warten** nie fest einbauen, sondern als Argument übergeben, damit Tests eine Fake-Uhr
   nutzen können (Muster: `FakeUhr` in `tests/unit/test_polling.py`).
 - **Tests:** Unit-Tests in `tests/unit/`, alles mit echter Datei, Datenbank oder gemocktem HTTP in
@@ -336,56 +384,59 @@ spricht es im passenden PR an und führt den Entscheid hier nach.
 - **Mocks:** Den Port mit `mocker.create_autospec(Boerse, instance=True)` mocken (Beispiel in
   `tests/unit/test_port.py`), nie mit einem freien `Mock()`: Der Autospec-Mock lehnt falsche
   Methodennamen und Argumente ab. Bitget-HTTP in den Client-Tests mit respx mocken.
+- **Logging** konfiguriert nur der Einstiegspunkt (mit `tick()`), einmal mit
+  `logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")`.
+  Module holen sich nur `logging.getLogger(__name__)`.
 - **Umgebungsvariablen** (nur auf der VM in `.env`, nie im Repo): `BITGET_API_KEY`,
   `BITGET_API_SECRET`, `BITGET_PASSPHRASE` für die Demo-Keys, `BOT_DB_PFAD` für die SQLite-Datei
-  (Vorschlag: `data/bot.db`, `/data/` ist gitignored). Handelspaar und Kerzen-Intervall sind noch
-  offen (README, «Offene Entscheide»).
+  (Vorschlag: `data/bot.db`, `/data/` ist gitignored, der Speicher legt den Ordner selbst an),
+  `BOT_INTERVALL` im Bitget-Format (Vorschlag: `15min`, gültig sind die Schlüssel von
+  `bitget_client.INTERVALLE`). Handelspaar noch offen (Vorschlag: `BTCUSDT`).
 
-### Für Valentin: `BitgetClient` (AP 3, AP 4)
+### Bitget und Risiko-Check (Valentin, entschieden im Review von PR #5)
 
-- Datei `src/bollinger_bot/bitget_client.py`, Klasse `BitgetClient`, die alle vier Methoden von
-  `Boerse` mit genau diesen Signaturen anbietet. Erben von `Boerse` ist nicht nötig.
-- `hole_kerzen`: nur abgeschlossene Kerzen (die laufende herausfiltern), älteste zuerst,
-  `startzeit` aus dem Millisekunden-Zeitstempel von Bitget als UTC
-  (`datetime.fromtimestamp(ms / 1000, UTC)`), Zahlen von Text in `float` umwandeln.
-- `kaufe` und `verkaufe`: Market-Order, Rückgabe `Order` mit tatsächlich ausgeführter Menge und
-  Durchschnittspreis.
-- Jeder Request mit Header `paptrading: 1`. Fehler (Netzwerk, Bitget-Fehlercode) als Exception
-  werfen, nicht verschlucken: Die Polling-Schleife protokolliert sie und versucht es eine Minute
-  später erneut.
-- Keys aus den Umgebungsvariablen oben, im Konstruktor übergeben (nicht im Client selbst lesen),
-  damit die Tests Fake-Keys übergeben können.
-- Tests in `tests/integration/test_bitget_client.py` mit respx, nie gegen das echte Bitget.
+- **Spot**, Endpunkte `/api/v2/spot/…`, jeder Request mit Header `paptrading: 1`.
+- `kaufe(symbol, betrag)` nimmt den Betrag in **USDT** (so will es Bitget bei Market-Kauforders),
+  `verkaufe(symbol, menge)` die Menge in **BTC**.
+- `Order.menge` ist beim Kauf schon **ohne Gebühr** (Bitget zieht 0.1 % von den gekauften BTC ab).
+  Genau diese Menge liegt danach auf dem Konto und wird später verkauft.
+- Der Client filtert die laufende Kerze mit der **Uhr von Bitget** (`requestTime`), nicht mit der
+  eigenen: Bitget legt eine neue Kerze erst 1 bis 2 s nach dem Schluss an, und die Uhr der VM kann
+  falsch gehen.
+- Nach dem Platzieren fragt der Client die Order ab, bis sie ausgeführt ist, und nimmt Menge und
+  Durchschnittspreis von dort.
+- Erlaubte Stellen und Mindestbetrag sind **feste Werte** in `risiko.py` (`BTCUSDT_SPOT`), keine
+  fünfte Port-Methode.
+- Die Texte der Intervalle und ihre Dauer stehen an **einer** Stelle: `bitget_client.INTERVALLE`.
+  `polling.py` prüft zusätzlich selbst (ganze Minuten, teilt eine Stunde).
+- Der Client hat einen Timeout (10 s). Nie ausschalten: Ein hängender Request liesse den Bot ohne
+  Fehlermeldung stillstehen.
+- Keys werden dem Konstruktor übergeben, nur der Einstiegspunkt liest sie aus der Umgebung.
 
-### Für Valentin: Risiko-Check (AP 5)
-
-- Datei `src/bollinger_bot/risiko.py`, reine Funktion ohne I/O. `tick()` braucht daraus: aus
-  verfügbarem Guthaben in USDT und aktuellem Kurs die Kaufmenge, abgerundet auf die Stellen, die
-  Bitget erlaubt, und 0 (oder ein klares Signal), wenn der Mindestbetrag nicht erreicht ist.
-  Signatur und Namen entscheidet Valentin, bitte mit Argumenten nur per Namen.
-
-### Für Nicolas: Dashboard (AP 7) und Pipeline (AP 8a.2, AP 8b)
+### Datenbank und Dashboard (Nicolas, entschieden im Review von PR #6)
 
 - Das Dashboard liest nur über `Speicher` (`hole_signale`, `hole_trades`, `hole_kontostaende`) oder
-  per SQL lesend aus derselben Datei, schreibt nie. Der Speicher läuft im WAL-Modus, Lesen während
-  der Bot schreibt ist also kein Problem. Bot und Dashboard brauchen dieselbe Datei (`BOT_DB_PFAD`,
-  in Docker Compose ein gemeinsames Volume).
+  per SQL lesend aus derselben Datei, schreibt nie. WAL-Modus: Lesen während der Bot schreibt ist
+  kein Problem. Bot und Dashboard brauchen dieselbe Datei (`BOT_DB_PFAD`, in Docker Compose ein
+  gemeinsames Volume).
+- **Eine Datei gilt für genau ein Handelspaar und ein Intervall.** Wer wechselt, setzt einen neuen
+  `BOT_DB_PFAD`.
+- `kontostaende.betrag` ist das **frei verfügbare** Guthaben. `tick()` speichert nach jeder
+  ausgewerteten Kerze eine Zeile mit den freien USDT. Den Gesamtwert (freie USDT + offene Menge ×
+  Schlusskurs) rechnet das Dashboard selbst.
+- Eine `Speicher`-Instanz nur in dem Thread benutzen, der sie geöffnet hat. Streamlit nutzt
+  mehrere Threads, das Dashboard öffnet darum pro Durchlauf einen eigenen `with Speicher(pfad)`.
+- Das Dashboard warnt, wenn die letzte ausgewertete Kerze (`letzte_signal_startzeit()`) länger als
+  zwei Intervalle her ist. So fällt ein Dauerfehler (z.B. ungültiger API-Key) auf.
+
+### Pipeline und Deploy (Nicolas)
+
 - Pipeline: Python 3.12, Installation mit `pip install -e ".[dev]"`, Tests getrennt mit
   `pytest tests/unit` und `pytest tests/integration`. Coverage für SonarQube Cloud mit
   `--cov=bollinger_bot --cov-report=xml`, Testresultate mit `--junitxml=…`.
-
-### Noch offen, im Review von PR #5 klären
-
-Die ersten beiden und der letzte Punkt stehen schon als Fragen im PR #5, die anderen noch nicht.
-
-- Filtert der Client die laufende Kerze, oder `tick()`? (Vorschlag: der Client)
-- Intervall: Der Port nimmt Text wie `"15min"` (Bitget-Format), `polling.py` rechnet mit
-  `timedelta(minutes=15)`. Wer übersetzt?
-- Woher kommen die erlaubten Stellen und der Mindestbetrag für den Risiko-Check: feste Werte in
-  der Konfiguration oder eine fünfte Port-Methode, die sie bei Bitget abfragt?
-- Gebühren: Ist `Order.menge` beim Kauf schon abzüglich Gebühr? Sonst will `verkaufe` später mehr
-  verkaufen, als auf dem Konto liegt.
-- Spot oder Futures: Bei Futures heisst `verkaufe` eigentlich «Position schliessen».
+- Docker Compose: `stop_signal: SIGINT` für den Bot. Dann kommt im Bot ein `KeyboardInterrupt` an,
+  und die Polling-Schleife endet sofort (sonst ignoriert der Prozess mit PID 1 das SIGTERM, und
+  Docker beendet ihn nach 10 s hart).
 
 ## HR-Briefing für Lucas (bis auf Widerruf durch Nicolas)
 
