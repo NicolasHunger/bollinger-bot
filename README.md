@@ -195,9 +195,13 @@ nachgeführt.
 - **Für die Dokumentation:** Den ersten Entwurf dieses READMEs hat Claude Code aus unserem
   Interview erstellt.
 - **Zum Schreiben von Code:** _noch offen_
-- **Zum automatischen Erstellen von Code durch einen Agenten:** Das Grundgerüst (`pyproject.toml`,
-  Ordnerstruktur, erster Test) hat Claude Code angelegt. Die Bollinger-Berechnung (#1) samt
-  Unit-Tests hat Claude Code geschrieben, die Soll-Werte haben wir von Hand nachgerechnet.
+- **Zum automatischen Erstellen von Code durch einen Agenten:** Den Code und die Tests von Lucas
+  (Grundgerüst, Bollinger-Berechnung, Kauf- und Verkaufsregeln, Port-Schnittstelle,
+  SQLite-Speicher, Polling-Schleife; PR #1 bis #7) hat Claude Code geschrieben, ebenso die
+  Änderungen nach den Reviews und die Entwürfe der Antworten auf die Reviews. Lucas hat die
+  Vorgaben gemacht, die Entscheide getroffen und die Antworten freigegeben. Die Soll-Werte in den
+  Tests sind von Hand hergeleitet (Rechnung als Kommentar im Test). Die Werte der
+  Bollinger-Berechnung hat Valentin im Review nachgerechnet.
 - **Zum Reviewen oder Optimieren:** _noch offen_
 
 ## Kursunterlagen

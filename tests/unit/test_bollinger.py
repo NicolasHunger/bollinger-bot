@@ -67,8 +67,13 @@ def test_gleiche_kurse_ergeben_baender_auf_dem_mittelband():
 
 
 def test_genau_n_kurse_reichen():
-    # Grenzwert: n Kurse sind das Minimum
-    berechne_baender([10, 12, 14], n=3)
+    # Grenzwert: n Kurse sind das Minimum. k = 2 ist Standard, also dieselbe Rechnung wie im
+    # README-Beispiel: Mitte (10 + 12 + 14) / 3 = 12, Bänder 12 ± 2 · 1.63299 = 12 ± 3.26599
+    baender = berechne_baender([10, 12, 14], n=3)
+
+    assert baender.mitte == pytest.approx(12)
+    assert baender.oben == pytest.approx(15.26599, abs=1e-5)
+    assert baender.unten == pytest.approx(8.73401, abs=1e-5)
 
 
 def test_ein_kurs_zu_wenig_wirft_fehler():
