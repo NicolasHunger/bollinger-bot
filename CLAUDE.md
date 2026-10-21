@@ -30,7 +30,7 @@ und offene Entscheide stehen im `README.md`.
 - COBOL als Projektbasis verworfen: COBOL Check ist seit Mai 2026 archiviert und meldet
   Testfehler mit Exit-Code 0, Sonar analysiert COBOL nur in Enterprise-Plänen.
 
-## Aufteilung und aktueller Stand (30.09.2026)
+## Aufteilung und aktueller Stand (21.10.2026)
 
 Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
 
@@ -40,8 +40,8 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
 | Valentin | Börse | #3 Bitget-Client: Signatur und Kerzen, #4 Bitget-Client: Orders und Kontostand, #5 Risiko-Check |
 | Nicolas | Infra und Dashboard | #8a.2 Pipeline (Build, Test, SonarQube Cloud), #8b Deploy auf die VM, #7 Dashboard |
 
-- **Nicolas ist krank** und steigt später ein. Lucas und Valentin arbeiten bis dahin ohne ihn
-  weiter. Seine Pakete nicht übernehmen, ausser er oder das Team sagt es ausdrücklich.
+- **Nicolas ist seit dem 21.10.2026 wieder gesund** und übernimmt seine Pakete selbst (AP 8a.2,
+  AP 8b, AP 7). Bis dahin hat niemand daran gearbeitet.
 - **#8a ist darum geteilt:** #8a.1 Grundgerüst (Projektstruktur, `pyproject.toml`, pytest läuft
   lokal) macht Lucas, Valentin reviewt. #8a.2 Pipeline bleibt bei Nicolas, weil GitHub Secrets,
   Pages und SonarQube Cloud Admin-Rechte im Repo brauchen, die nur er hat.
@@ -49,13 +49,79 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
   Grundgerüst auf: keine eigene Projektstruktur anlegen, sondern `main` pullen.
 - **Bis #8a.2 steht, gibt es keine Pipeline:** vor jedem Merge `pytest` lokal laufen lassen.
 - **Reviews im Ring:** Lucas reviewt Valentin, Nicolas reviewt Lucas, Valentin reviewt Nicolas.
-  Solange Nicolas krank ist, reviewt Valentin die PRs von Lucas (#8a.1, #1, #2). #6 reviewt wieder
-  Nicolas.
+  Für die bereits offenen PRs von Lucas gilt: Valentin reviewt PR #2 bis #5 (PR #5 ist die
+  Schnittstelle zu seinem Client), Nicolas reviewt PR #6 und #7 (PR #6 ist das Schema für sein
+  Dashboard) und später `tick()`.
 - **Gemeinsam festlegen, nicht allein entscheiden:** die Port-Schnittstelle zwischen `tick()`
   (Lucas) und dem `BitgetClient` (Valentin) sowie das SQLite-Schema zwischen `tick()` (Lucas) und
   dem Dashboard (Nicolas). Änderungen daran mit der anderen Person absprechen.
 - **Nur im eigenen Paket arbeiten.** Fällt in einem fremden Paket etwas auf, im PR kommentieren
   statt selbst ändern.
+
+### Offene Aufgaben pro Person (Stand 21.10.2026)
+
+«PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
+Abgabe und Präsentation: Mi 28.10.2026, also noch 7 Tage. Stand auf GitHub: PR #1 gemergt,
+PR #2 bis #7 von Lucas offen und noch ohne einen einzigen Review-Kommentar. Von Valentin und
+Nicolas gibt es noch keinen Branch.
+
+**Lucas** (Strategie und Ablauf)
+
+- [x] AP 8a.1 Grundgerüst (PR #1, gemergt)
+- [ ] PR #2 bis #7 durch die Reviews bringen, auf Kommentare antworten (Inhalt siehe «Stand der
+      Arbeit von Lucas» unten)
+- [ ] AP 6, Teil 3: `tick()`, sobald PR #3 bis #7 gemergt sind
+- [ ] KI-Nutzung im README nachführen (alle PRs von Lucas sind mit Claude Code entstanden)
+- [ ] Im PR #5 nachfragen: erlaubte Stellen und Mindestbetrag für den Risiko-Check, Gebühren
+      bei der Kaufmenge
+- [ ] PRs von Valentin reviewen (AP 3, AP 4, AP 5)
+- [ ] Eigene Reflexion (TDD, Code Reviews, KI-Nutzung)
+
+**Valentin** (Börse)
+
+- [ ] **Zuerst:** PR #5 (Port) reviewen. Ohne ihn kann der `BitgetClient` nicht anfangen.
+- [ ] PR #2, #3, #4 reviewen. In PR #4 die Verkaufsregel bestätigen (Mittelband, Stop-Loss 3 %).
+- [ ] Spot oder Futures entscheiden (vor AP 3)
+- [ ] AP 3 Bitget-Client: Signatur und Kerzen
+- [ ] AP 4 Bitget-Client: Orders und Kontostand
+- [ ] AP 5 Risiko-Check
+- [ ] Testkonzept (Doku)
+- [ ] Eigene Reflexion
+
+**Nicolas** (Infra und Dashboard)
+
+- [ ] **Zuerst:** AP 8a.2 Pipeline (Build, Test, Reports, SonarQube Cloud). Ohne sie fehlen in
+      der Rubrik die Tests in der Pipeline, die automatischen Reports und die Coverage.
+- [ ] PR #6 (SQLite-Schema, liest sein Dashboard) und PR #7 reviewen
+- [ ] Offene Punkte aus Valentins Review zu PR #1 entscheiden: `coverage.xml` in `addopts` oder
+      nur in der Pipeline, Streamlit als Pflicht-Abhängigkeit oder Extra `dashboard`
+- [ ] Anbieter der Cloud-VM wählen, AP 8b Deploy auf die VM
+- [ ] AP 7 Dashboard
+- [ ] Planung und Architektur im README nachführen
+- [ ] Eigene Reflexion
+
+**Alle zusammen**
+
+- [ ] Handelspaar und Kerzen-Intervall festlegen (README, «Offene Entscheide»)
+- [ ] Präsentation (10 Minuten): Endprodukt, Testing, Reports, Reflexion, Fazit
+
+**Zeitplan bis zur Abgabe** (Vorschlag)
+
+| Bis | Was |
+|---|---|
+| Mi 21.10. | Unterricht Code Reviews: PR #5 zuerst, dann die übrigen PRs. Spot/Futures, Handelspaar, Intervall entscheiden. |
+| Fr 23.10. | Pipeline läuft (AP 8a.2), PR #2 bis #7 gemergt, erster PR von Valentin (AP 3) offen |
+| So 25.10. | AP 4, AP 5, `tick()` und Dashboard als PR offen |
+| Di 27.10. | Deploy (AP 8b), alles gemergt, Doku, Reflexion und Präsentation fertig |
+| Mi 28.10. | Abgabe und Präsentation |
+
+**Notfallplan:** Gibt es bis Fr 23.10. keinen `BitgetClient`, wird der Umfang gekürzt. Die
+Rubrik bewertet vor allem Tests, Reports, PRs und Doku, nicht ob der Bot echt handelt. Dann zeigt
+die Präsentation `tick()` mit gemockter Börse und das Dashboard mit Testdaten.
+
+Der Abschnitt «Noch offen, vor dem jeweiligen Paket klären» weiter unten wird erst mit PR #2 und
+PR #4 aktualisiert. Bis dahin gilt: Verkaufsregel und Testtrennung sind in diesen PRs
+entschieden, der Port-Vorschlag ist PR #5, der Schema-Vorschlag ist PR #6.
 
 ## Entwicklung: Einrichten und Regeln
 
@@ -144,7 +210,7 @@ Getroffene Entscheide hier und im README unter «Offene Entscheide» nachführen
   erklären können: Code erklären statt nur liefern und die KI-Nutzung im README nachführen.
 - Alle drei sind Trading-Neulinge: Fachbegriffe (Kerze, Band, σ, Spot/Futures) kurz erklären.
 
-## Stand der Arbeit von Lucas (17.10.2026)
+## Stand der Arbeit von Lucas (21.10.2026)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README. Die Nummern
 stimmen nicht überein. In den älteren Abschnitten weiter oben steht «#n» allein immer für das
