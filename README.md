@@ -178,8 +178,102 @@ PRs pro Person.
 
 ## Testkonzept
 
-_Folgt, klein gehalten nach der
-[Vorlage aus den Kursunterlagen](https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/testkonzept/README.md)._
+Klein gehalten nach der
+[Vorlage aus den Kursunterlagen](https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/testkonzept/README.md)
+(IEEE 829). Welche Ebene womit getestet wird, steht oben unter [Teststrategie](#teststrategie).
+
+### Testobjekte
+
+Die Bausteine aus der [Architektur](#architektur), je eine Datei in `src/bollinger_bot/`:
+
+| Baustein | Datei | Art | Tests |
+|---|---|---|---|
+| Bollinger-Berechnung | `bollinger.py` | reine Funktion | Unit |
+| Kauf- und Verkaufsregeln | `regeln.py` | reine Funktion | Unit |
+| Risiko-Check | `risiko.py` | reine Funktion | Unit |
+| Port zur Börse | `port.py` | Schnittstelle (`Protocol`) | Unit (Mock nach Vorbild des Ports) |
+| Bitget-Client | `bitget_client.py` | Adapter zu Bitget | Unit (Signatur), Integration (respx) |
+| SQLite-Speicher | `speicher.py` | Adapter zur Datenbank | Integration (echte temporäre Datei) |
+| Polling | `polling.py` | Zeitlogik und Schleife | Unit (Fake-Uhr) |
+| `tick()` | folgt | setzt alles zusammen | Integration (Port gemockt, echte DB) |
+| Dashboard | folgt | Streamlit | E2E (`AppTest` mit Testdaten) |
+
+### Zu testende Funktionen
+
+- **Rechnen:** Bänder mit σ geteilt durch n, Kaufbetrag und Verkaufsmenge abgerundet auf die
+  Stellen von Bitget, Mindestbetrag von 1 USDT
+- **Entscheiden:** Kauf unter dem unteren Band, Verkauf über dem Mittelband oder beim Stop-Loss,
+  höchstens eine offene Position
+- **Mit Bitget sprechen:** Signatur, Header `paptrading: 1`, nur abgeschlossene Kerzen, Market-Orders
+  mit Menge ohne Gebühr, Fehler von Bitget und Netzwerkfehler als `BitgetFehler`
+- **Speichern:** Signale, Trades und Kontostände, jede Kerze nur einmal, offene Position nach
+  einem Neustart, Zeiten immer in UTC
+- **Ablauf:** eine neue Kerze wird genau einmal ausgewertet, ein Fehler in `tick()` beendet den
+  Bot nicht
+
+### Nicht getestet
+
+- **Echte Bitget-API in der Pipeline.** Die Pipeline hat keine API-Keys. Ob Bitget die Anfragen
+  wirklich annimmt, prüfen wir einmal von Hand (siehe unten, Testaufgaben).
+- **Gewinn der Strategie.** Ziel ist, dass der Bot die Regeln korrekt umsetzt, nicht, dass er
+  Geld verdient.
+- **Performance und Last.** Der Bot macht eine Anfrage pro Minute.
+- **Docker-Image und VM.** Der Deploy wird nur dadurch geprüft, dass der Container startet.
+
+### Vorgehen
+
+- **Grenzwerte:** Jede Grenze wird genau auf der Grenze und knapp daneben getestet, z.B. Kurs
+  genau auf dem Band, Kaufbetrag genau 1.00 USDT und 0.99 USDT, Kerze genau beim Schluss und
+  1 ms davor.
+- **Soll-Werte unabhängig berechnet:** von Hand (Rechnung als Kommentar im Test) oder mit einem
+  anderen Werkzeug, z.B. die Signaturen mit `openssl`.
+- **Abhängigkeiten ersetzt:** Bitget mit respx (HTTP) oder einem Autospec-Mock des Ports, die
+  Uhr mit einer Fake-Uhr, das Warten mit einer Fake-Funktion. Die Datenbank ist echt, aber eine
+  temporäre Datei pro Test.
+- **Testdaten nah an der Wirklichkeit:** Die Bitget-Antworten in den Tests haben die Form echter
+  Antworten der Demo-API.
+
+### Bestanden, wenn
+
+- alle Tests grün sind. Ein roter Test verhindert den Merge und den Deploy.
+- die Coverage den Quality Gate von SonarQube Cloud erfüllt (Standard: 80 % auf neuem Code).
+- der Reviewer im PR die Soll-Werte mindestens eines Tests selbst nachgerechnet hat.
+
+Gefundene Fehler halten wir im PR als Kommentar fest. Schwere Fehler (falsche Order, falscher
+Betrag, Absturz) blockieren den Merge, leichte (Text, Logmeldung) dürfen in einem Folge-PR kommen.
+
+### Ergebnisse
+
+- **JUnit-XML** aus pytest: Testresultate im PR und in GitHub Actions
+- **HTML-Testreport** auf GitHub Pages
+- **`coverage.xml`** aus pytest-cov für SonarQube Cloud
+
+### Testaufgaben
+
+| Ebene | Befehl | Wann |
+|---|---|---|
+| Unit | `pytest tests/unit` | lokal vor jedem Push, in der Pipeline bei jedem PR |
+| Integration | `pytest tests/integration` | lokal vor jedem Push, in der Pipeline bei jedem PR |
+| E2E Dashboard | folgt mit #7 | in der Pipeline bei jedem PR |
+| Rauchtest Bitget | von Hand mit Demo-Key: Kerzen holen, Kontostand, ein Kauf und ein Verkauf für 5 USDT | einmal vor dem ersten Deploy |
+
+Der Rauchtest prüft, was die Mocks nicht prüfen können: ob Bitget die Signatur annimmt, ob das
+Demo-Konto die Classic-Endpunkte `/api/v2/spot/…` verwendet und wie die Gebühr in `feeDetail`
+wirklich aussieht.
+
+### Testumgebung
+
+- Python 3.12, Installation mit `pip install -e ".[dev]"` (siehe [Entwicklung](#entwicklung))
+- lokal: Windows und macOS, in der Pipeline: Ubuntu auf GitHub Actions
+- kein Netzwerk nötig, keine API-Keys, keine echte Datenbank ausser temporären Dateien
+
+### Zeitplan und Verantwortung
+
+- Wer einen Baustein schreibt, schreibt seine Tests im selben PR (siehe
+  [Arbeitspakete](#arbeitspakete)). Kein TDD, die Tests entstehen mit dem Code.
+- Wer reviewt, führt die Tests lokal aus und rechnet mindestens einen Soll-Wert nach.
+- Bis Mi 21.10.: Unit- und Integrationstests aller Bausteine ausser `tick()` und Dashboard.
+  Bis Mi 28.10.: `tick()`, Dashboard, Rauchtest, Reports in der Pipeline.
 
 ## Reflexion
 
@@ -193,7 +287,8 @@ nachgeführt.
 - **Als Nachschlagewerk:** Claude Code (Anthropic) für die Projektfindung per Interview, für
   Recherchen (Bitget-Demo-API, Test-Werkzeuge für COBOL) und zur Erklärung der Bollinger-Bänder.
 - **Für die Dokumentation:** Den ersten Entwurf dieses READMEs hat Claude Code aus unserem
-  Interview erstellt.
+  Interview erstellt. Den Entwurf des Testkonzepts hat Claude Code nach der Vorlage aus den
+  Kursunterlagen geschrieben.
 - **Zum Schreiben von Code:** _noch offen_
 - **Zum automatischen Erstellen von Code durch einen Agenten:** Das Grundgerüst (`pyproject.toml`,
   Ordnerstruktur, erster Test) hat Claude Code angelegt.
