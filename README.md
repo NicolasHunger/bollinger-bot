@@ -36,6 +36,16 @@ Der Bot läuft rund um die Uhr in einem Container auf einer Cloud-VM:
 Beispiel mit n = 3, k = 2 und den Kursen 10, 12, 14: Mittelband 12, σ ≈ 1.633, Bänder bei 8.73
 und 15.27. Mit σ geteilt durch n − 1 kämen 8.00 und 16.00 heraus, ein typischer Fehler.
 
+### Warum der Bot kaum Geld verdient
+
+Gemessen von Valentin an rund 1000 15-Minuten-Kerzen BTCUSDT (Oktober 2026): Vom unteren Band
+bis zum Mittelband sind es im Median nur etwa 0.45 %. Bitget verlangt 0.1 % Gebühr pro Order
+(geprüft mit einer Demo-Order), für Kauf und Verkauf also 0.2 %. Ein normaler Trade bringt damit
+etwa 0.45 % − 0.2 % ≈ 0.25 %, und ein einziger Stop-Loss von 3 % frisst den Gewinn von über
+10 solchen Trades (3 % ÷ 0.25 % = 12). Dazu prüft der Bot den Stop-Loss nur beim Kerzenschluss:
+Fällt der Kurs während der Kerze stark, kann der Verlust grösser als 3 % werden. Das bleibt
+bewusst so, denn das Projekt soll das Testen zeigen, nicht Gewinn erzielen.
+
 ## Architektur
 
 ```mermaid

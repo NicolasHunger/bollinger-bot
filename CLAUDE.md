@@ -116,7 +116,7 @@ Danach wie oben aktivieren und `pip install -e ".[dev]"` ausführen.
 
 - **Spot oder USDT-M-Futures:** bestimmt die Endpunkte in #3 und #4. Vor #3 entscheiden.
 - **Verkaufsregel und Stop-Loss: entschieden (17.10.2026, Vorschlag Lucas, Bestätigung durch
-  Valentin im PR zu #2):** Verkauf, wenn eine Kerze über dem Mittelband schliesst, oder mehr als
+  Valentin in PR #4):** Verkauf, wenn eine Kerze über dem Mittelband schliesst, oder mehr als
   3 % unter dem Kaufpreis (Stop-Loss). Höchstens eine offene Position, kein Nachkaufen.
 - **Port-Schnittstelle** (welche Funktionen `tick()` vom Client erwartet): Lucas und Valentin
   legen sie gemeinsam fest, bevor #3 und #6 starten.
