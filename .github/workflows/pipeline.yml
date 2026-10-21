@@ -1,0 +1,167 @@
+# Pipeline (AP 8a.2): Build, Test und Veröffentlichen der Testresultate, wie in der Kursunterlage
+# https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/projekt/ci-cd.md
+name: Pipeline
+
+on:
+  pull_request:        # jeder PR, bei jedem Push in den PR
+  push:
+    branches: [main]   # jeder Merge auf main
+  workflow_dispatch:   # von Hand starten, im Tab «Actions»
+
+# Standard für alle Jobs: nur den Code lesen. Was ein Job mehr darf, steht beim Job.
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"   # fest, dieselbe Version kommt ins Docker-Image (AP 8b)
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Paket bauen
+        run: pip wheel --no-deps --wheel-dir dist .
+      - name: Gebautes Paket installieren und importieren
+        run: |
+          pip install dist/*.whl
+          python -c "import bollinger_bot"
+      - uses: actions/upload-artifact@v7
+        with:
+          name: paket
+          path: dist/
+
+  test:
+    name: ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    # Derselbe Job zweimal, einmal pro Testordner. fail-fast aus: Ein roter Unit-Test bricht
+    # die Integrationstests nicht ab.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Unit-Tests
+            ebene: unit
+          - name: Integrationstests
+            ebene: integration
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Abhängigkeiten installieren
+        run: pip install -e ".[dev]"
+      - name: pytest tests/${{ matrix.ebene }}
+        env:
+          EBENE: ${{ matrix.ebene }}
+        run: |
+          # tests/integration/ kommt erst mit PR #6. Ohne den Ordner bricht pytest mit
+          # Exit-Code 4 ab.
+          if [ ! -d "tests/$EBENE" ]; then
+            echo "::notice::tests/$EBENE/ gibt es noch nicht, nichts zu testen."
+            exit 0
+          fi
+          pytest "tests/$EBENE" \
+            -o junit_suite_name="$EBENE" \
+            --junitxml="reports/$EBENE/junit.xml" \
+            --html="reports/$EBENE/tests.html" --self-contained-html \
+            --cov=bollinger_bot --cov-branch \
+            --cov-report=term \
+            --cov-report=xml:"reports/$EBENE/coverage.xml" \
+            --cov-report=html:"reports/$EBENE/coverage"
+      - name: Reports hochladen
+        if: ${{ !cancelled() }}   # gerade bei roten Tests braucht es die Reports
+        uses: actions/upload-artifact@v7
+        with:
+          name: testreport-${{ matrix.ebene }}
+          path: reports/
+          if-no-files-found: ignore
+
+  testresultate:
+    name: Testresultate veröffentlichen
+    needs: test
+    # Auch bei roten Tests, aber nicht, wenn die Tests gar nicht liefen (Build rot).
+    if: ${{ !cancelled() && needs.test.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write          # Check «Testresultate» am Commit
+      pull-requests: write   # Kommentar mit den Zahlen im PR
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: testreport-*
+          merge-multiple: true
+          path: reports
+      - uses: EnricoMi/publish-unit-test-result-action@v2
+        with:
+          files: reports/**/junit.xml
+          check_name: Testresultate
+
+  pages:
+    name: Testreport auf GitHub Pages
+    needs: test
+    # Nur auf main. Ohne Statusfunktion wie always() im if läuft der Job nur, wenn alle Tests
+    # grün sind.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write      # auf GitHub Pages veröffentlichen
+      id-token: write   # Pages prüft damit, dass der Upload aus diesem Workflow kommt
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:        # nie zwei Veröffentlichungen gleichzeitig
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: testreport-*
+          merge-multiple: true
+          path: site
+      - name: Startseite erzeugen
+        run: |
+          eintrag() {   # $1 Ordner, $2 Titel
+            if [ -d "site/$1" ]; then
+              echo "<li>$2: <a href=\"$1/tests.html\">Testresultate</a>, <a href=\"$1/coverage/index.html\">Coverage</a></li>"
+            else
+              echo "<li>$2: noch keine Tests</li>"
+            fi
+          }
+          commit="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
+          lauf="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          mkdir -p site
+          cat > site/index.html <<EOF
+          <!doctype html>
+          <html lang="de">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Testreport Bollinger-Bot</title>
+            <style>body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }</style>
+          </head>
+          <body>
+            <h1>Testreport Bollinger-Bot</h1>
+            <p>Commit <a href="$commit">${GITHUB_SHA::7}</a> vom $(TZ=Europe/Zurich date '+%d.%m.%Y, %H:%M'),
+              <a href="$lauf">Pipeline-Lauf</a></p>
+            <ul>
+              $(eintrag unit Unit-Tests)
+              $(eintrag integration Integrationstests)
+            </ul>
+          </body>
+          </html>
+          EOF
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5
