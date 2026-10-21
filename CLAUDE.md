@@ -139,8 +139,8 @@ Deploy je als eigenen PR.
       approven oder Änderungen verlangen.
 - [ ] **PR #12 mergen:** zuerst `main` in den Branch holen und den Konflikt in der `CLAUDE.md`
       lösen. Unter Settings → Pages die Quelle «GitHub Actions» setzen, das kann nur er als Admin.
-- [ ] **SonarQube Cloud** als eigener PR: beide `coverage.xml` angeben
-      (`reports/*/coverage.xml`), Quality Gate einrichten.
+- [x] **SonarQube Cloud** als eigener PR («Pipeline: SonarQube Cloud»): beide `coverage.xml`
+      (`reports/*/coverage.xml`), Quality Gate «Sonar way», Automatic Analysis aus.
 - [ ] **Dashboard (AP 7)** als eigener PR: liest über `Speicher` (pro Durchlauf ein eigenes
       `with Speicher(pfad)`), zeigt Kerzen mit Eröffnung, Hoch und Tief, die Bänder, Käufe und
       Verkäufe und den Gesamtwert (freie USDT + offene Menge × Schlusskurs), warnt, wenn die
@@ -628,6 +628,9 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
   Coverage für SonarQube Cloud mit `--cov=bollinger_bot --cov-branch --cov-report=xml`,
   Testresultate mit `--junitxml=…`, HTML-Report mit pytest-html. Die Reports liegen pro Ordner
   unter `reports/unit/` und `reports/integration/`.
+- SonarQube Cloud: Einstellungen in `sonar-project.properties`, Token als GitHub Secret
+  `SONAR_TOKEN`, «Automatic Analysis» im Sonar-Projekt aus. Der Job läuft nur bei grünen Tests und
+  liest `coverage.xml` und `junit.xml` beider Testordner.
 - Docker Compose: `stop_signal: SIGINT` für den Bot. Dann kommt im Bot ein `KeyboardInterrupt` an,
   und die Polling-Schleife endet sofort (sonst ignoriert der Prozess mit PID 1 das SIGTERM, und
   Docker beendet ihn nach 10 s hart).
