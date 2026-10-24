@@ -78,15 +78,18 @@ def starte(
         api_secret=konfiguration.api_secret,
         passphrase=konfiguration.passphrase,
     )
-    with Speicher(konfiguration.db_pfad) as speicher:
-        polling_schleife(
-            lambda: tick(
-                boerse=client,
-                speicher=speicher,
-                einstellungen=konfiguration.einstellungen,
-                jetzt=uhr(),
-            ),
-            schlafen=schlafen,
-            durchlaeufe=durchlaeufe,
-        )
-    client.schliessen()
+    try:
+        with Speicher(konfiguration.db_pfad) as speicher:
+            polling_schleife(
+                lambda: tick(
+                    boerse=client,
+                    speicher=speicher,
+                    einstellungen=konfiguration.einstellungen,
+                    jetzt=uhr(),
+                ),
+                schlafen=schlafen,
+                durchlaeufe=durchlaeufe,
+            )
+    finally:
+        # Auch bei Ctrl+C oder einem Fehler: offene Verbindungen zu Bitget schliessen.
+        client.schliessen()
