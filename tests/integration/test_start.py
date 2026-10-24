@@ -7,6 +7,8 @@ in `tmp_path`. Die Fake-Uhr stellt die Zeit beim Warten nur vorwärts, kein Test
 
 import logging
 import runpy
+import sqlite3
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -156,6 +158,19 @@ def test_ctrl_c_beendet_den_bot_und_schliesst_den_client(client_fabrik, konfigur
     client_fabrik.return_value.schliessen.assert_called_once_with()
 
 
+def test_ein_fehler_beim_start_schliesst_den_client_trotzdem(
+    client_fabrik, konfiguration, tmp_path
+):
+    # Der Pfad zeigt auf einen Ordner, darum lässt sich die Datenbank nicht öffnen. Der Fehler
+    # kommt aus starte() heraus, und der Client wird trotzdem geschlossen (finally).
+    konfiguration = replace(konfiguration, db_pfad=tmp_path)
+
+    with pytest.raises(sqlite3.OperationalError):
+        starte(konfiguration, client_fabrik=client_fabrik)
+
+    client_fabrik.return_value.schliessen.assert_called_once_with()
+
+
 def test_start_steht_im_log_ohne_keys(client_fabrik, konfiguration, db_pfad, uhr, caplog):
     caplog.set_level(logging.INFO)
 
@@ -214,11 +229,25 @@ def test_main_nach_ctrl_c_meldet_das_ende_und_gibt_0_zurueck(starte_mock, caplog
     assert "Bot beendet" in caplog.text
 
 
-def test_main_richtet_das_logging_ein(starte_mock, mocker):
+def test_main_laesst_unerwartete_fehler_durch(starte_mock, caplog):
+    # Ein echter Absturz ist kein gewolltes Ende: Traceback und Exit-Code 1 von Python, damit
+    # Docker Compose den Bot (z.B. mit `restart: on-failure`) neu startet.
+    caplog.set_level(logging.INFO)
+    starte_mock.side_effect = RuntimeError("unerwartet")
+
+    with pytest.raises(RuntimeError):
+        main(KEYS, starte=starte_mock)
+
+    assert "Bot beendet" not in caplog.text
+
+
+def test_main_richtet_das_logging_ein(starte_mock, mocker, monkeypatch):
     # Abmachung: Nur der Einstiegspunkt konfiguriert das Logging, die Module loggen nur.
     basic_config = mocker.patch("logging.basicConfig")
+    # Die echte Umgebung hat Keys: Ein leeres Dictionary darf sie nicht ersetzen.
+    monkeypatch.setattr("os.environ", dict(KEYS))
 
-    main({}, starte=starte_mock)
+    assert main({}, starte=starte_mock) == 2
 
     basic_config.assert_called_once_with(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
