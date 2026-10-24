@@ -70,6 +70,10 @@ class AufgezeichneteBoerse:
         Wie bei Bitget geht die Gebühr von den gekauften BTC ab, `Order.menge` ist schon ohne
         Gebühr.
         """
+        if betrag > self._konto["USDT"]:
+            raise ValueError(
+                f"Kauf für {betrag} USDT abgelehnt: frei sind nur {self._konto['USDT']} USDT"
+            )
         kurs = self.hole_kerzen(symbol, "", 1)[-1].schluss
         # Bitget rundet die gekaufte Menge ab und gibt nur aus, was diese Menge kostet.
         gekauft = abrunden(betrag / kurs, BTCUSDT_SPOT.mengen_stellen)
