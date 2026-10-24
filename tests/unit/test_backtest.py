@@ -118,3 +118,19 @@ def test_kauf_zum_schlusskurs_der_letzten_abgeschlossenen_kerze():
     assert order == Order(order_id="sim-1", menge=0.001998, preis=50_000.0)
     assert boerse.hole_kontostand("BTC") == 0.001998
     assert boerse.hole_kontostand("USDT") == 900.0
+
+
+def test_kauf_rundet_die_menge_auf_6_stellen_ab_wie_bitget():
+    # Kurs 30 000, Kauf für 100 USDT: 100 / 30 000 = 0.0033333… BTC. Bitget rundet die gekaufte
+    # Menge auf 6 Stellen ab und gibt nur aus, was diese Menge kostet (Rauchtest von Valentin):
+    #   gekauft 0.003333 BTC, ausgegeben 0.003333 · 30 000 = 99.99 USDT, USDT 1000 − 99.99 = 900.01
+    #   Gebühr 0.003333 · 0.001 = 0.000003333 BTC, auf dem Konto 0.003329667 BTC
+    # Die Menge ohne Gebühr hat mehr als 6 Stellen, wie bei Bitget.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(30_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + MIN_15
+
+    order = boerse.kaufe("BTCUSDT", 100.0)
+
+    assert order.menge == 0.003329667
+    assert boerse.hole_kontostand("BTC") == 0.003329667
+    assert boerse.hole_kontostand("USDT") == 900.01
