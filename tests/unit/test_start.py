@@ -31,3 +31,11 @@ def test_alle_werte_gesetzt():
     assert konfiguration.einstellungen == Einstellungen(
         intervall="5min", intervall_dauer=timedelta(minutes=5)
     )
+
+
+def test_ohne_pfad_und_intervall_gelten_die_standardwerte():
+    konfiguration = lies_konfiguration(KEYS)
+
+    assert konfiguration.db_pfad == Path("data/bot.db")
+    assert konfiguration.einstellungen == Einstellungen()  # BTCUSDT, 15min
+    assert konfiguration.einstellungen.intervall_dauer == timedelta(minutes=15)
