@@ -27,10 +27,12 @@ def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
     if fehlend:
         raise ValueError(f"Umgebungsvariablen fehlen oder sind leer: {', '.join(fehlend)}")
     for name in PFLICHT:
-        if umgebung[name] != umgebung[name].strip():
+        wert = umgebung[name]
+        # isprintable() ist False für Steuerzeichen wie Tabulator oder «\r», nicht für Leerzeichen
+        if wert != wert.strip() or not wert.isprintable():
             # Nur den Namen nennen, nie den Wert: Die Meldung landet im Log.
             raise ValueError(
-                f"{name} hat Leerzeichen oder einen Zeilenumbruch am Rand. "
+                f"{name} hat Leerzeichen am Rand oder Steuerzeichen (z.B. einen Zeilenumbruch). "
                 "Bitte den Wert in der .env prüfen."
             )
     intervall = umgebung.get("BOT_INTERVALL", "15min")
