@@ -8,7 +8,7 @@ from bollinger_bot.bollinger import Baender, berechne_baender
 from bollinger_bot.polling import letzte_abgeschlossene_kerze, neue_kerze_fertig
 from bollinger_bot.port import Boerse, Kerze
 from bollinger_bot.regeln import Signal, entscheide
-from bollinger_bot.risiko import BTCUSDT_SPOT, Handelsregeln, kaufbetrag
+from bollinger_bot.risiko import BTCUSDT_SPOT, Handelsregeln, kaufbetrag, verkaufsmenge
 from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher, Trade
 
 log = logging.getLogger(__name__)
@@ -49,17 +49,27 @@ def tick(
         return None
 
     baender = berechne_baender([k.schluss for k in kerzen], n=einstellungen.n, k=einstellungen.k)
+    position = speicher.offene_position()
     signal = entscheide(
         schlusskurs=kerze.schluss,
         unteres_band=baender.unten,
         mittelband=baender.mitte,
-        kaufpreis=None,
+        kaufpreis=position.preis if position else None,
     )
     if signal is Signal.KAUFEN:
         _kaufe(
             boerse=boerse,
             speicher=speicher,
             einstellungen=einstellungen,
+            kurs=kerze.schluss,
+            jetzt=jetzt,
+        )
+    elif signal is Signal.VERKAUFEN:
+        _verkaufe(
+            boerse=boerse,
+            speicher=speicher,
+            einstellungen=einstellungen,
+            position=position,
             kurs=kerze.schluss,
             jetzt=jetzt,
         )
@@ -105,6 +115,24 @@ def _kaufe(
     order = boerse.kaufe(einstellungen.symbol, betrag)
     speicher.speichere_trade(
         Trade(zeit=jetzt, seite="kauf", menge=order.menge, preis=order.preis, order_id=order.order_id)
+    )
+
+
+def _verkaufe(
+    *,
+    boerse: Boerse,
+    speicher: Speicher,
+    einstellungen: Einstellungen,
+    position: Trade,
+    kurs: float,
+    jetzt: datetime,
+) -> None:
+    menge = verkaufsmenge(bestand=position.menge, kurs=kurs, regeln=einstellungen.regeln)
+    order = boerse.verkaufe(einstellungen.symbol, menge)
+    speicher.speichere_trade(
+        Trade(
+            zeit=jetzt, seite="verkauf", menge=order.menge, preis=order.preis, order_id=order.order_id
+        )
     )
 
 
