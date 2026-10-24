@@ -309,7 +309,7 @@ def test_verkaufen_verkauft_auch_reste_aus_frueheren_abrundungen(boerse, speiche
 
 def test_verkaufen_hoechstens_was_bei_bitget_liegt(boerse, speicher):
     # Gekauft wurden laut Datenbank 0.999 BTC, Bitget meldet nur 0.998 BTC. Mehr zu verkaufen,
-    # als auf dem Konto liegt, lehnt Bitget ab: Verkauft wird min(0.999, 0.998) = 0.998 BTC.
+    # als auf dem Konto liegt, lehnt Bitget ab: Verkauft wird, was bei Bitget liegt, 0.998 BTC.
     position_in_der_datenbank(speicher, preis=97.0, menge=0.999)
     boerse.hole_kerzen.return_value = kerzen(*UEBER_DEM_MITTELBAND)
     guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.998)

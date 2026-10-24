@@ -77,7 +77,7 @@ def tick(
             jetzt=jetzt,
         )
     elif signal is Signal.VERKAUFEN:
-        # entscheide() verkauft nur mit offener Position, `position` ist hier nie None.
+        assert position is not None  # entscheide() verkauft nur mit offener Position
         _verkaufe(
             boerse=boerse,
             speicher=speicher,
@@ -169,26 +169,26 @@ def _verkaufe(
     # Auf dem Demo-Konto gehören alle BTC dem Bot.
     bestand = boerse.hole_kontostand(einstellungen.basiswaehrung)
     menge = verkaufsmenge(bestand=bestand, kurs=kurs, regeln=einstellungen.regeln)
-    if menge == 0.0 and position.menge * kurs >= einstellungen.regeln.mindestbetrag:
-        # Laut Datenbank eine echte Position, bei Bitget fast nichts: Wohl schon verkauft, aber
-        # nicht gespeichert (z.B. Absturz zwischen verkaufe() und dem Speichern).
-        log.error(
-            "Verkaufssignal für die Position aus Order %s (%s %s), bei Bitget liegen aber nur "
-            "%s %s. Wohl schon verkauft. Bitte den Verkauf von Hand nachtragen.",
-            position.order_id,
-            position.menge,
-            einstellungen.basiswaehrung,
-            bestand,
-            einstellungen.basiswaehrung,
-        )
-        return
     if menge == 0.0:
-        log.warning(
-            "Verkaufssignal, aber %s %s sind weniger wert als der Mindestbetrag. "
-            "Die Position bleibt offen.",
-            bestand,
-            einstellungen.basiswaehrung,
-        )
+        if position.menge * kurs >= einstellungen.regeln.mindestbetrag:
+            # Laut Datenbank eine echte Position, bei Bitget fast nichts: Wohl schon verkauft,
+            # aber nicht gespeichert (z.B. Absturz zwischen verkaufe() und dem Speichern).
+            log.error(
+                "Verkaufssignal für die Position aus Order %s (%s %s), bei Bitget liegen aber "
+                "nur %s %s. Wohl schon verkauft. Bitte den Verkauf von Hand nachtragen.",
+                position.order_id,
+                position.menge,
+                einstellungen.basiswaehrung,
+                bestand,
+                einstellungen.basiswaehrung,
+            )
+        else:
+            log.warning(
+                "Verkaufssignal, aber %s %s sind weniger wert als der Mindestbetrag. "
+                "Die Position bleibt offen.",
+                bestand,
+                einstellungen.basiswaehrung,
+            )
         return
 
     order = boerse.verkaufe(einstellungen.symbol, menge)
