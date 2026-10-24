@@ -491,6 +491,25 @@ def test_ein_verkauf_steht_im_log_auch_wenn_das_speichern_scheitert(
     assert "verkauf-1" in caplog.text
 
 
+def test_fehler_im_log_wenn_bitget_die_position_nicht_mehr_hat(boerse, speicher, caplog):
+    # Die Datenbank hat eine offene Position (0.999 · 102 = 101.90 USDT, über dem Mindestbetrag),
+    # bei Bitget liegen aber keine BTC: Ein früherer Verkauf ist ausgeführt, aber nicht
+    # gespeichert worden (Absturz zwischen verkaufe() und speichere_trade()). Das ist kein Staub,
+    # sondern ein Fehler, den man von Hand nachtragen muss: ERROR mit der Order-ID des Kaufs.
+    kauf = position_in_der_datenbank(speicher, preis=97.0, menge=0.999)
+    boerse.hole_kerzen.return_value = kerzen(*UEBER_DEM_MITTELBAND)
+    guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)
+    boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.999, preis=102.0)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.VERKAUFEN
+    boerse.verkaufe.assert_not_called()
+    assert speicher.offene_position() == kauf
+    assert [r.levelname for r in caplog.records] == ["ERROR"]
+    assert "kauf-1" in caplog.text
+
+
 class AbsturzBeimErstenSignal(Speicher):
     """Speicher, der beim ersten `speichere_signal()` abstürzt, wie bei einem Stromausfall."""
 
