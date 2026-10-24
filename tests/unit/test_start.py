@@ -43,6 +43,15 @@ def test_ohne_pfad_und_intervall_gelten_die_standardwerte():
     assert konfiguration.einstellungen.intervall_dauer == timedelta(minutes=15)
 
 
+def test_leere_freiwillige_werte_gelten_als_nicht_gesetzt():
+    # Docker Compose setzt `BOT_DB_PFAD: ${BOT_DB_PFAD}` ohne Wert als leeren Text. Ein leerer
+    # Pfad wäre der aktuelle Ordner, und SQLite stürzte beim Öffnen ab.
+    konfiguration = lies_konfiguration(KEYS | {"BOT_DB_PFAD": "", "BOT_INTERVALL": ""})
+
+    assert konfiguration.db_pfad == Path("data/bot.db")
+    assert konfiguration.einstellungen == Einstellungen()  # 15min
+
+
 def test_alle_fehlenden_keys_stehen_in_einer_meldung():
     with pytest.raises(ValueError) as fehler:
         lies_konfiguration({"BITGET_API_KEY": "fake-key"})
