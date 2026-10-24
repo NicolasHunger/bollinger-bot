@@ -36,6 +36,9 @@ def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
                 "Bitte den Wert in der .env prüfen."
             )
     intervall = umgebung.get("BOT_INTERVALL", "15min")
+    if intervall not in INTERVALLE:
+        erlaubt = ", ".join(INTERVALLE)
+        raise ValueError(f"BOT_INTERVALL {intervall!r} ist ungültig, erlaubt: {erlaubt}")
     return Konfiguration(
         api_key=umgebung["BITGET_API_KEY"],
         api_secret=umgebung["BITGET_API_SECRET"],
