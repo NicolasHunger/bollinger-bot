@@ -131,6 +131,14 @@ def _verkaufe(
     # Meldet Bitget weniger, als gekauft wurde, nur das verkaufen: Mehr lehnt Bitget ab.
     bestand = min(position.menge, boerse.hole_kontostand(einstellungen.basiswaehrung))
     menge = verkaufsmenge(bestand=bestand, kurs=kurs, regeln=einstellungen.regeln)
+    if menge == 0.0:
+        log.warning(
+            "Verkaufssignal, aber %s %s sind weniger wert als der Mindestbetrag. "
+            "Die Position bleibt offen.",
+            bestand,
+            einstellungen.basiswaehrung,
+        )
+        return
     order = boerse.verkaufe(einstellungen.symbol, menge)
     speicher.speichere_trade(
         Trade(
