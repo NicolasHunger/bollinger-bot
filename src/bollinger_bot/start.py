@@ -114,4 +114,5 @@ def main(umgebung: Mapping[str, str] | None = None, *, starte=starte) -> int:
         # Nur die Meldung, kein Traceback: Sie sagt schon, welche Variable falsch ist.
         log.error("%s", fehler)
         return 2
+    starte(konfiguration)
     return 0
