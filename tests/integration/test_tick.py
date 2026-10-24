@@ -314,3 +314,51 @@ def test_verkaufen_ohne_order_wenn_der_wert_unter_dem_mindestbetrag_liegt(
     assert speicher.offene_position() == kauf
     assert [r.levelname for r in caplog.records] == ["WARNING"]
     assert [e.signal for e in speicher.hole_signale()] == ["verkaufen"]
+
+
+class AbsturzBeimErstenSignal(Speicher):
+    """Speicher, der beim ersten `speichere_signal()` abstürzt, wie bei einem Stromausfall."""
+
+    def __init__(self, pfad):
+        super().__init__(pfad)
+        self.abgestuerzt = False
+
+    def speichere_signal(self, eintrag):
+        if not self.abgestuerzt:
+            self.abgestuerzt = True
+            raise RuntimeError("Absturz")
+        return super().speichere_signal(eintrag)
+
+
+def test_nach_absturz_zwischen_kauf_und_signal_wird_nicht_doppelt_gekauft(boerse, tmp_path):
+    boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
+    konto = guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)
+
+    def kauf_bei_bitget(symbol, betrag):
+        konto["USDT"] -= betrag
+        konto["BTC"] += 0.999
+        return Order(order_id="kauf-1", menge=0.999, preis=100.0)
+
+    boerse.kaufe.side_effect = kauf_bei_bitget
+
+    with AbsturzBeimErstenSignal(tmp_path / "bot.db") as speicher:
+        # Erster Durchgang: Kauf und Trade gespeichert, dann Absturz vor dem Signal.
+        with pytest.raises(RuntimeError, match="Absturz"):
+            tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+        assert speicher.hole_signale() == []
+
+        # Eine Minute später: Ohne Signal gilt die Kerze ab 12:00 als nicht ausgewertet. Die
+        # Position steht aber schon in der Datenbank (Kaufpreis 100), darum kein zweiter Kauf:
+        # Schlusskurs 100 liegt nicht über dem Mittelband 105 und nicht unter dem Stop-Loss
+        # 100 · 97 / 100 = 97, also halten.
+        ergebnis = tick(
+            boerse=boerse,
+            speicher=speicher,
+            einstellungen=EINSTELLUNGEN,
+            jetzt=JETZT + timedelta(minutes=1),
+        )
+
+        assert ergebnis is Signal.HALTEN
+        boerse.kaufe.assert_called_once()
+        assert [t.order_id for t in speicher.hole_trades()] == ["kauf-1"]
+        assert [e.signal for e in speicher.hole_signale()] == ["halten"]
