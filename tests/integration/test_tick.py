@@ -170,3 +170,18 @@ def test_kaufen_kauft_und_speichert_den_trade(boerse, speicher):
     assert (eintrag.mittelband, eintrag.oberes_band, eintrag.unteres_band) == (105.0, 108.0, 102.0)
     # Der Kontostand wird nach dem Kauf gelesen: 1000 − 100 = 900 USDT
     assert speicher.hole_kontostaende() == [Kontostand(zeit=JETZT, waehrung="USDT", betrag=900.0)]
+
+
+def test_kaufen_ohne_order_wenn_der_betrag_unter_dem_mindestbetrag_liegt(boerse, speicher, caplog):
+    # 10 % von 5 USDT = 0.50 USDT, unter dem Mindestbetrag von 1 USDT: kaufbetrag() ergibt 0.0.
+    boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
+    guthaben_bei_bitget(boerse, USDT=5.0, BTC=0.0)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.KAUFEN
+    boerse.kaufe.assert_not_called()
+    assert speicher.hole_trades() == []
+    assert [r.levelname for r in caplog.records] == ["WARNING"]
+    # Das Signal wird trotzdem gespeichert, sonst würde dieselbe Kerze jede Minute neu ausgewertet.
+    assert [e.signal for e in speicher.hole_signale()] == ["kaufen"]
