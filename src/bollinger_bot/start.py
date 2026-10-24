@@ -49,3 +49,7 @@ def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
         db_pfad=Path(umgebung.get("BOT_DB_PFAD", "data/bot.db")),
         einstellungen=Einstellungen(intervall=intervall, intervall_dauer=INTERVALLE[intervall]),
     )
+
+
+def starte(konfiguration, *, client_fabrik=None, uhr=None, schlafen=None, durchlaeufe=None):
+    raise NotImplementedError

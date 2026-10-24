@@ -1,0 +1,83 @@
+"""Integrationstests für den Start des Bots: starte() mit echter SQLite-Datei.
+
+Der `BitgetClient` ist ein Autospec-Mock der Klasse: Er prüft auch, mit welchen Argumenten der
+Client erstellt wird, und schickt nie eine Anfrage an Bitget. Gespeichert wird in eine echte Datei
+in `tmp_path`. Die Fake-Uhr stellt die Zeit beim Warten nur vorwärts, kein Test wartet echt.
+"""
+
+from datetime import UTC, datetime, timedelta
+
+import pytest
+
+from bollinger_bot.bitget_client import BitgetClient
+from bollinger_bot.start import Konfiguration, starte
+from bollinger_bot.tick import Einstellungen
+
+# Um 12:16 UTC ist die Kerze ab 12:00 die letzte abgeschlossene (15-Minuten-Kerzen).
+JETZT = datetime(2026, 10, 24, 12, 16, tzinfo=UTC)
+
+
+class FakeUhr:
+    """Uhr für Tests: steht still, bis `schlafe()` sie vorwärts stellt (wie in test_polling.py)."""
+
+    def __init__(self, start):
+        self.zeit = start
+        self.pausen = []
+
+    def jetzt(self):
+        return self.zeit
+
+    def schlafe(self, sekunden):
+        self.pausen.append(sekunden)
+        self.zeit += timedelta(seconds=sekunden)
+
+
+@pytest.fixture
+def client_fabrik(mocker):
+    # Autospec der Klasse: Der Aufruf prüft die Argumente des Konstruktors, `return_value` ist der
+    # Client mit denselben Methoden wie der echte.
+    fabrik = mocker.create_autospec(BitgetClient)
+    fabrik.return_value.hole_kerzen.return_value = []  # Bitget liefert noch keine neue Kerze
+    return fabrik
+
+
+@pytest.fixture
+def db_pfad(tmp_path):
+    return tmp_path / "data" / "bot.db"  # den Ordner data/ gibt es noch nicht
+
+
+@pytest.fixture
+def konfiguration(db_pfad):
+    return Konfiguration(
+        api_key="fake-key",
+        api_secret="fake-secret",
+        passphrase="fake-passphrase",
+        db_pfad=db_pfad,
+        einstellungen=Einstellungen(),  # BTCUSDT, 15min, n = 20
+    )
+
+
+@pytest.fixture
+def uhr():
+    return FakeUhr(JETZT)
+
+
+def test_ein_durchlauf_fragt_bitget_und_legt_die_datenbank_an(
+    client_fabrik, konfiguration, db_pfad, uhr
+):
+    starte(
+        konfiguration,
+        client_fabrik=client_fabrik,
+        uhr=uhr.jetzt,
+        schlafen=uhr.schlafe,
+        durchlaeufe=1,
+    )
+
+    client_fabrik.assert_called_once_with(
+        api_key="fake-key", api_secret="fake-secret", passphrase="fake-passphrase"
+    )
+    client = client_fabrik.return_value
+    client.hole_kerzen.assert_called_once_with("BTCUSDT", "15min", 20)
+    assert db_pfad.exists()
+    assert uhr.pausen == [60]  # einmal eine Minute gewartet
+    client.schliessen.assert_called_once_with()
