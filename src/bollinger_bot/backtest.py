@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from bollinger_bot.port import Kerze, Order
+from bollinger_bot.risiko import BTCUSDT_SPOT, abrunden
 
 
 def lies_kerzen(pfad: str | Path) -> list[Kerze]:
@@ -70,9 +71,10 @@ class AufgezeichneteBoerse:
         Gebühr.
         """
         kurs = self.hole_kerzen(symbol, "", 1)[-1].schluss
-        gekauft = betrag / kurs
+        # Bitget rundet die gekaufte Menge ab und gibt nur aus, was diese Menge kostet.
+        gekauft = abrunden(betrag / kurs, BTCUSDT_SPOT.mengen_stellen)
         gebuehr = gekauft * self._gebuehr_prozent / 100
-        self._konto["USDT"] -= betrag
+        self._konto["USDT"] -= gekauft * kurs
         self._konto["BTC"] += gekauft - gebuehr
         self._orders += 1
         return Order(order_id=f"sim-{self._orders}", menge=gekauft - gebuehr, preis=kurs)
