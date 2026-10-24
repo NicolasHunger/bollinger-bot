@@ -246,8 +246,14 @@ def test_main_nach_ctrl_c_meldet_das_ende_und_gibt_0_zurueck(starte_mock, caplog
     caplog.set_level(logging.INFO)
     starte_mock.side_effect = KeyboardInterrupt
 
-    assert main(KEYS, starte=starte_mock) == 0
+    # Ohne try würde ein durchgelassener KeyboardInterrupt den ganzen pytest-Lauf abbrechen,
+    # statt nur diesen Test scheitern zu lassen.
+    try:
+        code = main(KEYS, starte=starte_mock)
+    except KeyboardInterrupt:
+        pytest.fail("KeyboardInterrupt ging durch main() hindurch")
 
+    assert code == 0
     assert "Bot beendet" in caplog.text
 
 
