@@ -148,6 +148,34 @@ _Entwurf, wird im Projekt verfeinert._
 | Bitget-HTTP in den Client-Tests | respx | Requests und Signatur prüfen, ohne Netzwerk |
 | Uhr | Fake-Uhr | «Ist die Kerze fertig?» testen, ohne zu warten |
 
+### Backtest
+
+Der Backtest spielt den echten `tick()` auf aufgezeichneten Kursen durch, ohne Bitget: Eine
+simulierte Börse (`AufgezeichneteBoerse` in `backtest.py`) erfüllt denselben Port wie der
+Bitget-Client, liefert die Kerzen aus einer CSV und führt Orders zum Schlusskurs aus, mit
+Abrunden auf 6 Stellen und 0.1 % Gebühr wie Bitget. So läuft der ganze Ablauf von der Kerze bis
+zur Datenbank über drei Wochen echter Kurse, in unter einer Sekunde.
+
+- **Daten:** `tests/daten/btcusdt_15min.csv`, 2000 abgeschlossene BTCUSDT-Kerzen à 15 Minuten
+  vom 03.10.2026 18:45 bis 24.10.2026 14:30 UTC, vom öffentlichen Bitget-Endpunkt
+  `history-candles` (kein API-Key nötig). Geholt mit `scripts/kerzen_holen.py`.
+- **Aufruf:** `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db`.
+  Die Datei darf noch nicht existieren, sonst mischen sich zwei Läufe.
+- **Ergebnis mit den Standard-Einstellungen** (n = 20, k = 2, 10 % pro Kauf): 1981 ausgewertete
+  Kerzen, 40 Käufe, 39 Verkäufe, aus 1000 USDT werden 993.07 USDT (−0.69 %). BTC fiel im selben
+  Zeitraum um rund 5.5 %.
+- **Fürs Dashboard:** Die Datei hat dasselbe Schema wie die des Bots. Zeigt `BOT_DB_PFAD` auf
+  sie, liest das Dashboard (AP 7) sie wie die des Bots: auch als Notfall-Demo, falls der Bot
+  nicht auf der VM läuft.
+- **Tests:** `tests/unit/test_backtest.py` prüft die simulierte Börse mit von Hand gerechneten
+  Käufen und Verkäufen, `tests/integration/test_backtest.py` einen kleinen Lauf mit einem Kauf
+  und einem Verkauf und den Lauf auf den echten Daten (Invarianten und aufgezeichnete Zahlen als
+  Charakterisierungstest).
+
+Ein Backtest sagt nichts über künftige Gewinne: Er zeigt nur, was der Bot auf genau diesen Kursen
+getan hätte, und führt jede Order ohne Verzögerung zum Schlusskurs aus. Warum die Strategie kaum
+Geld verdient, steht unter [Warum der Bot kaum Geld verdient](#warum-der-bot-kaum-geld-verdient).
+
 ### Grundsätze
 
 - **Keine echten API-Aufrufe in der Pipeline.** Bitget ist in allen automatischen Tests gemockt.
