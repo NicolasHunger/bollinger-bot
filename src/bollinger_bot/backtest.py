@@ -110,6 +110,11 @@ class AufgezeichneteBoerse:
                 f"Kauf für {betrag} USDT abgelehnt: unter dem Mindestbetrag von "
                 f"{BTCUSDT_SPOT.mindestbetrag} USDT"
             )
+        if abrunden(betrag, BTCUSDT_SPOT.betrag_stellen) != betrag:
+            raise ValueError(
+                f"Kauf für {betrag} USDT abgelehnt: "
+                f"mehr als {BTCUSDT_SPOT.betrag_stellen} Stellen"
+            )
         if betrag > self._konto["USDT"]:
             raise ValueError(
                 f"Kauf für {betrag} USDT abgelehnt: frei sind nur {self._konto['USDT']} USDT"
@@ -126,6 +131,11 @@ class AufgezeichneteBoerse:
         """Verkauft `menge` BTC zum selben Kurs wie kaufe(). Die Gebühr geht von den USDT ab."""
         if menge <= 0:
             raise ValueError(f"menge muss grösser als 0 sein, erhalten: {menge}")
+        if abrunden(menge, BTCUSDT_SPOT.mengen_stellen) != menge:
+            raise ValueError(
+                f"Verkauf von {menge} BTC abgelehnt: "
+                f"mehr als {BTCUSDT_SPOT.mengen_stellen} Stellen"
+            )
         if menge > self._konto["BTC"]:
             raise ValueError(
                 f"Verkauf von {menge} BTC abgelehnt: "
