@@ -205,6 +205,21 @@ def test_verkauf_zum_selben_kurs_kostet_die_gebuehr():
     assert boerse.hole_kontostand("USDT") == pytest.approx(999.8001)
 
 
+def test_gebuehr_laesst_sich_einstellen():
+    # Ohne Gebühr bekommt man für 100 USDT zu 50 000 genau 100 / 50 000 = 0.002 BTC, und der
+    # Verkauf bringt 0.002 · 50 000 = 100 USDT zurück: wieder genau 1000 USDT.
+    boerse = AufgezeichneteBoerse(
+        kerzen=kerzen(50_000), intervall_dauer=MIN_15, gebuehr_prozent=0.0
+    )
+    boerse.jetzt = ZWOELF_UHR + MIN_15
+
+    assert boerse.kaufe("BTCUSDT", 100.0).menge == 0.002
+    boerse.verkaufe("BTCUSDT", 0.002)
+
+    assert boerse.hole_kontostand("USDT") == 1000.0
+    assert boerse.hole_kontostand("BTC") == 0.0
+
+
 def test_kauf_ueber_dem_freien_guthaben_wird_abgelehnt():
     # Bitget lehnt eine Order ab, die mehr kostet, als frei verfügbar ist. Genau auf der Grenze
     # (1000 USDT bei 1000 USDT Guthaben) ist der Kauf erlaubt, einen Rappen mehr nicht. Bei der
