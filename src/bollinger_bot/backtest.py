@@ -8,7 +8,7 @@ from pathlib import Path
 from bollinger_bot.port import Kerze, Order
 from bollinger_bot.risiko import BTCUSDT_SPOT, abrunden
 from bollinger_bot.speicher import Speicher
-from bollinger_bot.tick import Einstellungen
+from bollinger_bot.tick import Einstellungen, tick
 
 
 def lies_kerzen(pfad: str | Path) -> list[Kerze]:
@@ -117,6 +117,30 @@ def backtest(
     einstellungen: Einstellungen,
     startguthaben: float = 1000.0,
 ) -> Ergebnis:
+    """Lässt den echten tick() Kerze für Kerze über die aufgezeichneten Kurse laufen.
+
+    Ausgewertet wird ab der n-ten Kerze, vorher reichen die Kurse nicht für die Bänder. Die Zeit
+    springt jeweils ans Ende der Kerze: In diesem Moment ist sie laut polling.py abgeschlossen.
+    """
+    boerse = AufgezeichneteBoerse(
+        kerzen=kerzen, intervall_dauer=einstellungen.intervall_dauer, startguthaben=startguthaben
+    )
+    ausgewertet = 0
+    for kerze in kerzen[einstellungen.n - 1 :]:
+        boerse.jetzt = kerze.startzeit + einstellungen.intervall_dauer
+        signal = tick(
+            boerse=boerse, speicher=speicher, einstellungen=einstellungen, jetzt=boerse.jetzt
+        )
+        if signal is not None:  # None: tick() hat nichts ausgewertet
+            ausgewertet += 1
+
+    seiten = [trade.seite for trade in speicher.hole_trades()]
+    endwert = boerse.hole_kontostand("USDT") + boerse.hole_kontostand("BTC") * kerzen[-1].schluss
     return Ergebnis(
-        kerzen_ausgewertet=0, kaeufe=0, verkaeufe=0, startwert=0.0, endwert=0.0, rendite_prozent=0.0
+        kerzen_ausgewertet=ausgewertet,
+        kaeufe=seiten.count("kauf"),
+        verkaeufe=seiten.count("verkauf"),
+        startwert=startguthaben,
+        endwert=endwert,
+        rendite_prozent=(endwert - startguthaben) / startguthaben * 100,
     )
