@@ -2,6 +2,7 @@
 
 import argparse
 import csv
+import logging
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -153,6 +154,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("kerzen", help="CSV mit Kerzen, z.B. tests/daten/btcusdt_15min.csv")
     parser.add_argument("--db", default="data/backtest.db", help="neue SQLite-Datei")
     argumente = parser.parse_args(argv)
+    # WARNING statt INFO: Die Zusammenfassung soll nicht zwischen den Käufen untergehen.
+    logging.basicConfig(
+        level=logging.WARNING, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
 
     kerzen = lies_kerzen(argumente.kerzen)
     with Speicher(argumente.db) as speicher:
