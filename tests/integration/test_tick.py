@@ -443,6 +443,38 @@ def test_tick_nutzt_alle_einstellungen(boerse, speicher):
     assert speicher.hole_kontostaende() == [Kontostand(zeit=JETZT, waehrung="USDC", betrag=800.0)]
 
 
+def test_ein_kauf_steht_im_log_auch_wenn_das_speichern_scheitert(
+    boerse, speicher, mocker, caplog
+):
+    # Bitget hat gekauft, die Datei lässt sich aber nicht schreiben. Die Order-ID muss trotzdem
+    # im Log stehen, sonst lässt sich die Position nicht von Hand nachtragen.
+    caplog.set_level(logging.INFO)
+    boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
+    bitget_fuehrt_kauf_aus(boerse, guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0))
+    mocker.patch.object(speicher, "speichere_trade", side_effect=OSError("disk I/O error"))
+
+    with pytest.raises(OSError):
+        tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert "kauf-1" in caplog.text
+
+
+def test_ein_verkauf_steht_im_log_auch_wenn_das_speichern_scheitert(
+    boerse, speicher, mocker, caplog
+):
+    caplog.set_level(logging.INFO)
+    position_in_der_datenbank(speicher, preis=97.0, menge=0.999)
+    boerse.hole_kerzen.return_value = kerzen(*UEBER_DEM_MITTELBAND)
+    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.999)
+    boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.999, preis=102.0)
+    mocker.patch.object(speicher, "speichere_trade", side_effect=OSError("disk I/O error"))
+
+    with pytest.raises(OSError):
+        tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert "verkauf-1" in caplog.text
+
+
 class AbsturzBeimErstenSignal(Speicher):
     """Speicher, der beim ersten `speichere_signal()` abstürzt, wie bei einem Stromausfall."""
 
