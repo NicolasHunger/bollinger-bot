@@ -182,6 +182,29 @@ class Ergebnis:
     rendite_prozent: float
 
 
+def pruefe_kerzen(kerzen: list[Kerze], *, einstellungen: Einstellungen) -> None:
+    """ValueError, wenn die Kerzen nicht für einen Backtest mit diesen Einstellungen taugen.
+
+    Es braucht mindestens n Kerzen, und jede muss genau ein Intervall nach der vorherigen
+    beginnen. Sonst stimmen die Bänder nicht (Lücke), tick() überspringt eine Kerze (doppelt),
+    oder die simulierte Börse hält eine Kerze für abgeschlossen, die noch läuft (falsches
+    Intervall).
+    """
+    if len(kerzen) < einstellungen.n:
+        raise ValueError(
+            f"Zu wenig Kerzen: {len(kerzen)}, für die Bänder braucht es mindestens "
+            f"{einstellungen.n}"
+        )
+    for vorher, kerze in zip(kerzen, kerzen[1:]):
+        abstand = kerze.startzeit - vorher.startzeit
+        if abstand != einstellungen.intervall_dauer:
+            raise ValueError(
+                f"Kerze ab {kerze.startzeit:%d.%m.%Y %H:%M} UTC: Abstand {abstand} zur "
+                f"vorherigen statt {einstellungen.intervall_dauer}. Lücke, doppelte Kerze "
+                "oder falsches Intervall?"
+            )
+
+
 def backtest(
     *,
     kerzen: list[Kerze],
@@ -197,6 +220,7 @@ def backtest(
     `speicher` muss leer sein: tick() überspringt Kerzen, die schon ausgewertet sind, und die
     Käufe und Verkäufe zählt backtest() aus den Trades im Speicher.
     """
+    pruefe_kerzen(kerzen, einstellungen=einstellungen)
     boerse = AufgezeichneteBoerse(
         kerzen=kerzen, intervall_dauer=einstellungen.intervall_dauer, startguthaben=startguthaben
     )
