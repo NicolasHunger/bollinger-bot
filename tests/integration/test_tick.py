@@ -185,3 +185,31 @@ def test_kaufen_ohne_order_wenn_der_betrag_unter_dem_mindestbetrag_liegt(boerse,
     assert [r.levelname for r in caplog.records] == ["WARNING"]
     # Das Signal wird trotzdem gespeichert, sonst würde dieselbe Kerze jede Minute neu ausgewertet.
     assert [e.signal for e in speicher.hole_signale()] == ["kaufen"]
+
+
+def test_kein_kauf_wenn_bei_bitget_schon_btc_liegen(boerse, speicher, caplog):
+    # Die Datenbank kennt keine Position, bei Bitget liegen aber 0.01 BTC. Wert beim Schlusskurs:
+    # 0.01 · 100 = 1.00 USDT, genau der Mindestbetrag: Das ist eine echte Position, die nicht in
+    # der Datenbank steht (z.B. Absturz zwischen Kauf und Speichern). Nicht nochmals kaufen.
+    boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
+    guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.01)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.KAUFEN
+    boerse.kaufe.assert_not_called()
+    assert speicher.hole_trades() == []
+    assert [r.levelname for r in caplog.records] == ["ERROR"]
+    assert [e.signal for e in speicher.hole_signale()] == ["kaufen"]
+
+
+def test_ein_rest_unter_dem_mindestbetrag_blockiert_den_kauf_nicht(boerse, speicher):
+    # 0.0099 BTC · 100 = 0.99 USDT, knapp unter dem Mindestbetrag: Staub, wie er nach einem
+    # Verkauf liegen bleiben kann. Er lässt sich nicht verkaufen und blockiert den Kauf nicht.
+    boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
+    guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0099)
+    boerse.kaufe.return_value = Order(order_id="kauf-1", menge=0.999, preis=100.0)
+
+    tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    boerse.kaufe.assert_called_once_with("BTCUSDT", 100.0)
