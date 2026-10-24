@@ -1,6 +1,7 @@
 """Einstiegspunkt: liest die Konfiguration aus der Umgebung und startet den Bot."""
 
 import logging
+import os
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -107,13 +108,16 @@ def starte(
 
 
 def main(umgebung: Mapping[str, str] | None = None, *, starte=starte) -> int:
-    """Startet den Bot. Gibt den Exit-Code zurück: 2 bei falscher Konfiguration, sonst 0."""
+    """Startet den Bot. Gibt den Exit-Code zurück: 2 bei falscher Konfiguration, sonst 0.
+
+    `umgebung=None` heisst: die echten Umgebungsvariablen (`os.environ`).
+    """
     # Die einzige Stelle, die das Logging einrichtet. Die Module holen nur ihren Logger.
     logging.basicConfig(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
     try:
-        konfiguration = lies_konfiguration(umgebung)
+        konfiguration = lies_konfiguration(os.environ if umgebung is None else umgebung)
     except ValueError as fehler:
         # Nur die Meldung, kein Traceback: Sie sagt schon, welche Variable falsch ist.
         log.error("%s", fehler)
