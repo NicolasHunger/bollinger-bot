@@ -1,7 +1,7 @@
 """Einstiegspunkt: liest die Konfiguration aus der Umgebung und startet den Bot."""
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from bollinger_bot.bitget_client import INTERVALLE
@@ -12,11 +12,14 @@ PFLICHT = ("BITGET_API_KEY", "BITGET_API_SECRET", "BITGET_PASSPHRASE")
 
 @dataclass(frozen=True)
 class Konfiguration:
-    """Alles, was der Bot aus den Umgebungsvariablen braucht."""
+    """Alles, was der Bot aus den Umgebungsvariablen braucht.
 
-    api_key: str
-    api_secret: str
-    passphrase: str
+    Die Keys stehen nicht in `repr()`, damit sie in keinem Log und keinem Traceback erscheinen.
+    """
+
+    api_key: str = field(repr=False)
+    api_secret: str = field(repr=False)
+    passphrase: str = field(repr=False)
     db_pfad: Path
     einstellungen: Einstellungen
 
