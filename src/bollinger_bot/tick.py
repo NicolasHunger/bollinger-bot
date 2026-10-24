@@ -76,6 +76,9 @@ def _kaufe(
         anteil_prozent=einstellungen.anteil_prozent,
         regeln=einstellungen.regeln,
     )
+    if betrag == 0.0:
+        log.warning("Kaufsignal, aber zu wenig %s für eine Order", einstellungen.quotewaehrung)
+        return
     order = boerse.kaufe(einstellungen.symbol, betrag)
     speicher.speichere_trade(
         Trade(zeit=jetzt, seite="kauf", menge=order.menge, preis=order.preis, order_id=order.order_id)
