@@ -80,4 +80,10 @@ class AufgezeichneteBoerse:
         return Order(order_id=f"sim-{self._orders}", menge=gekauft - gebuehr, preis=kurs)
 
     def verkaufe(self, symbol: str, menge: float) -> Order:
-        return Order(order_id="", menge=0.0, preis=0.0)
+        """Verkauft `menge` BTC zum selben Kurs wie kaufe(). Die Gebühr geht von den USDT ab."""
+        kurs = self.hole_kerzen(symbol, "", 1)[-1].schluss
+        erloes = menge * kurs
+        self._konto["BTC"] -= menge
+        self._konto["USDT"] += erloes - erloes * self._gebuehr_prozent / 100
+        self._orders += 1
+        return Order(order_id=f"sim-{self._orders}", menge=menge, preis=kurs)
