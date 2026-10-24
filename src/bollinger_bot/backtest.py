@@ -42,7 +42,9 @@ class AufgezeichneteBoerse:
     ):
         self._kerzen = kerzen
         self._intervall_dauer = intervall_dauer
+        self._gebuehr_prozent = gebuehr_prozent
         self._konto = {"USDT": startguthaben, "BTC": 0.0}
+        self._orders = 0
         # Anfangs steht die Uhr vor allen Kerzen: Noch ist keine abgeschlossen.
         self.jetzt = datetime.min.replace(tzinfo=UTC)
 
@@ -62,4 +64,15 @@ class AufgezeichneteBoerse:
         return self._konto.get(waehrung, 0.0)
 
     def kaufe(self, symbol: str, betrag: float) -> Order:
-        return Order(order_id="", menge=0.0, preis=0.0)
+        """Kauft für `betrag` USDT zum Schlusskurs der zuletzt abgeschlossenen Kerze.
+
+        Wie bei Bitget geht die Gebühr von den gekauften BTC ab, `Order.menge` ist schon ohne
+        Gebühr.
+        """
+        kurs = self.hole_kerzen(symbol, "", 1)[-1].schluss
+        gekauft = betrag / kurs
+        gebuehr = gekauft * self._gebuehr_prozent / 100
+        self._konto["USDT"] -= betrag
+        self._konto["BTC"] += gekauft - gebuehr
+        self._orders += 1
+        return Order(order_id=f"sim-{self._orders}", menge=gekauft - gebuehr, preis=kurs)
