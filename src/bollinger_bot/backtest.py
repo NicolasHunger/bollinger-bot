@@ -3,6 +3,7 @@
 import argparse
 import csv
 import logging
+import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -159,6 +160,13 @@ def main(argv: list[str] | None = None) -> int:
         level=logging.WARNING, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
 
+    if Path(argumente.db).exists():
+        print(
+            f"{argumente.db} existiert schon. Bitte eine neue Datei angeben, sonst mischen sich "
+            "die Läufe.",
+            file=sys.stderr,
+        )
+        return 2
     kerzen = lies_kerzen(argumente.kerzen)
     with Speicher(argumente.db) as speicher:
         ergebnis = backtest(kerzen=kerzen, speicher=speicher, einstellungen=Einstellungen())
