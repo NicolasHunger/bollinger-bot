@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from bollinger_bot.start import lies_konfiguration
+from bollinger_bot.start import PFLICHT, lies_konfiguration
 from bollinger_bot.tick import Einstellungen
 
 KEYS = {
@@ -69,6 +69,8 @@ def test_leerer_key_gilt_als_fehlend():
         lies_konfiguration(KEYS | {"BITGET_API_SECRET": ""})
 
 
+# Jede Prüfung für jeden der drei Keys: So fällt auf, wenn die Schleife einen auslässt.
+@pytest.mark.parametrize("name", PFLICHT)
 @pytest.mark.parametrize(
     "wert",
     [
@@ -78,22 +80,23 @@ def test_leerer_key_gilt_als_fehlend():
         "geheim ",
     ],
 )
-def test_key_mit_leerzeichen_am_rand_wird_abgelehnt_ohne_den_wert_zu_zeigen(wert):
+def test_key_mit_leerzeichen_am_rand_wird_abgelehnt_ohne_den_wert_zu_zeigen(name, wert):
     # Bitget würde den Key ablehnen, und httpx zeigte ihn in der Fehlermeldung im Log.
     with pytest.raises(ValueError) as fehler:
-        lies_konfiguration(KEYS | {"BITGET_PASSPHRASE": wert})
+        lies_konfiguration(KEYS | {name: wert})
 
-    assert "BITGET_PASSPHRASE" in str(fehler.value)
+    assert name in str(fehler.value)
     assert "geheim" not in str(fehler.value)
 
 
+@pytest.mark.parametrize("name", PFLICHT)
 @pytest.mark.parametrize("wert", ["ge\theim", "ge\x00heim", "ge\x1bheim"])
-def test_key_mit_steuerzeichen_wird_abgelehnt_ohne_den_wert_zu_zeigen(wert):
+def test_key_mit_steuerzeichen_wird_abgelehnt_ohne_den_wert_zu_zeigen(name, wert):
     # Tabulator, Nullzeichen, Escape: in einem echten Key nie, wohl ein Fehler beim Kopieren
     with pytest.raises(ValueError) as fehler:
-        lies_konfiguration(KEYS | {"BITGET_API_KEY": wert})
+        lies_konfiguration(KEYS | {name: wert})
 
-    assert "BITGET_API_KEY" in str(fehler.value)
+    assert name in str(fehler.value)
     assert wert not in str(fehler.value)
 
 
