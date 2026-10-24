@@ -183,3 +183,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Endwert: {ergebnis.endwert:.2f} USDT")
     print(f"Rendite: {ergebnis.rendite_prozent:.2f} %")
     return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
