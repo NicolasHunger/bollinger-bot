@@ -260,3 +260,39 @@ def test_verkaufen_hoechstens_was_bei_bitget_liegt(boerse, speicher):
     tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
 
     boerse.verkaufe.assert_called_once_with("BTCUSDT", 0.998)
+
+
+# Schlusskurse, bei denen nur der Stop-Loss verkauft:
+#   Mittelband = (102 + 98 + 102 + 98) / 4 = 100, σ = 2, k = 1: unteres Band 98
+# Schlusskurs 98 liegt nicht über dem Mittelband, ein Verkauf kommt also nur vom Stop-Loss.
+UNTER_DEM_MITTELBAND = (102, 98, 102, 98)
+
+
+def test_stop_loss_verkauft(boerse, speicher):
+    # Gekauft zu 105 USDT. Stop-Loss 3 %: 105 · 97 / 100 = 101.85, Schlusskurs 98 liegt darunter.
+    position_in_der_datenbank(speicher, preis=105.0, menge=0.999)
+    boerse.hole_kerzen.return_value = kerzen(*UNTER_DEM_MITTELBAND)
+    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.999)
+    boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.999, preis=98.0)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.VERKAUFEN
+    # Wert 0.999 · 98 = 97.90 USDT, über dem Mindestbetrag.
+    boerse.verkaufe.assert_called_once_with("BTCUSDT", 0.999)
+    assert speicher.offene_position() is None
+
+
+def test_stop_loss_aus_den_einstellungen(boerse, speicher):
+    # Gekauft zu 101 USDT, Schlusskurs 98 ist 2.97 % tiefer.
+    #   Mit dem Standard 3 %: 101 · 97 / 100 = 97.97, 98 liegt darüber: halten.
+    #   Mit 2 % aus den Einstellungen: 101 · 98 / 100 = 98.98, 98 liegt darunter: verkaufen.
+    position_in_der_datenbank(speicher, preis=101.0, menge=0.999)
+    boerse.hole_kerzen.return_value = kerzen(*UNTER_DEM_MITTELBAND)
+    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.999)
+    boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.999, preis=98.0)
+    einstellungen = Einstellungen(n=4, k=1.0, stop_loss_prozent=2.0)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=einstellungen, jetzt=JETZT)
+
+    assert ergebnis is Signal.VERKAUFEN
