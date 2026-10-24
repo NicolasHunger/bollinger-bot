@@ -1,4 +1,15 @@
-"""tick(): ein Durchgang des Bots."""
+"""tick(): ein Durchgang des Bots. Die Polling-Schleife ruft ihn jede Minute auf.
+
+Meistens ist seit der letzten Auswertung noch keine neue Kerze fertig, dann endet tick() sofort,
+ohne Bitget zu fragen. Sonst holt er die letzten n Kerzen und wertet die neueste aus. Liefert
+Bitget die neue Kerze noch nicht, versucht er es eine Minute später nochmals. Aus den
+Schlusskursen berechnet er die Bollinger-Bänder, und `entscheide()` sagt mit Blick auf die offene
+Position, ob gekauft, verkauft oder gehalten wird. Wie viel gekauft oder verkauft wird, rechnet
+der Risiko-Check, und jede ausgeführte Order wird sofort als Trade gespeichert. Erst danach kommen
+das Signal und der Kontostand in die Datenbank: Stürzt tick() nach einer Order ab, wird dieselbe
+Kerze eine Minute später nochmals ausgewertet, und weil der Trade schon gespeichert ist, kauft
+der Bot nicht doppelt. Fehler der Börse fängt tick() nicht ab, das macht die Polling-Schleife.
+"""
 
 import logging
 from dataclasses import dataclass
@@ -6,7 +17,7 @@ from datetime import datetime, timedelta
 
 from bollinger_bot.bollinger import Baender, berechne_baender
 from bollinger_bot.polling import letzte_abgeschlossene_kerze, neue_kerze_fertig
-from bollinger_bot.port import Boerse, Kerze
+from bollinger_bot.port import Boerse, Kerze, Order
 from bollinger_bot.regeln import Signal, entscheide
 from bollinger_bot.risiko import BTCUSDT_SPOT, Handelsregeln, kaufbetrag, verkaufsmenge
 from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher, Trade
@@ -33,21 +44,20 @@ class Einstellungen:
 def tick(
     *, boerse: Boerse, speicher: Speicher, einstellungen: Einstellungen, jetzt: datetime
 ) -> Signal | None:
+    """Wertet die neueste abgeschlossene Kerze aus und handelt danach.
+
+    Gibt das Signal zurück, oder None, wenn es nichts auszuwerten gab. `jetzt` ist die aktuelle
+    Zeit in UTC, als Argument übergeben, damit die Tests eine feste Zeit nutzen können.
+    """
     if not neue_kerze_fertig(
         jetzt, einstellungen.intervall_dauer, speicher.letzte_signal_startzeit()
     ):
         return None
-
-    erwartet = letzte_abgeschlossene_kerze(jetzt, einstellungen.intervall_dauer)
-    kerzen = boerse.hole_kerzen(einstellungen.symbol, einstellungen.intervall, einstellungen.n)
-    kerze = kerzen[-1]
-    if kerze.startzeit < erwartet:
-        log.info(
-            "Bitget liefert die Kerze ab %s noch nicht, neuer Versuch im nächsten Durchgang",
-            erwartet,
-        )
+    kerzen = _hole_kerzen(boerse=boerse, einstellungen=einstellungen, jetzt=jetzt)
+    if kerzen is None:
         return None
 
+    kerze = kerzen[-1]
     baender = berechne_baender([k.schluss for k in kerzen], n=einstellungen.n, k=einstellungen.k)
     position = speicher.offene_position()
     signal = entscheide(
@@ -57,6 +67,7 @@ def tick(
         kaufpreis=position.preis if position else None,
         stop_loss_prozent=einstellungen.stop_loss_prozent,
     )
+
     if signal is Signal.KAUFEN:
         _kaufe(
             boerse=boerse,
@@ -66,6 +77,7 @@ def tick(
             jetzt=jetzt,
         )
     elif signal is Signal.VERKAUFEN:
+        # entscheide() verkauft nur mit offener Position, `position` ist hier nie None.
         _verkaufe(
             boerse=boerse,
             speicher=speicher,
@@ -74,15 +86,30 @@ def tick(
             kurs=kerze.schluss,
             jetzt=jetzt,
         )
+
+    # Das Signal zuletzt: Erst damit gilt die Kerze als ausgewertet (siehe Modul-Docstring).
     speicher.speichere_signal(_signal_eintrag(kerze, baender, signal))
+    betrag = boerse.hole_kontostand(einstellungen.quotewaehrung)
     speicher.speichere_kontostand(
-        Kontostand(
-            zeit=jetzt,
-            waehrung=einstellungen.quotewaehrung,
-            betrag=boerse.hole_kontostand(einstellungen.quotewaehrung),
-        )
+        Kontostand(zeit=jetzt, waehrung=einstellungen.quotewaehrung, betrag=betrag)
     )
     return signal
+
+
+def _hole_kerzen(
+    *, boerse: Boerse, einstellungen: Einstellungen, jetzt: datetime
+) -> list[Kerze] | None:
+    """Die letzten n Kerzen, oder None, wenn Bitget die neueste noch nicht liefert."""
+    erwartet = letzte_abgeschlossene_kerze(jetzt, einstellungen.intervall_dauer)
+    kerzen = boerse.hole_kerzen(einstellungen.symbol, einstellungen.intervall, einstellungen.n)
+    if kerzen[-1].startzeit < erwartet:
+        # Bitget legt eine neue Kerze erst 1–2 s nach dem Schluss an.
+        log.info(
+            "Bitget liefert die Kerze ab %s noch nicht, neuer Versuch im nächsten Durchgang",
+            erwartet,
+        )
+        return None
+    return kerzen
 
 
 def _kaufe(
@@ -105,6 +132,7 @@ def _kaufe(
             einstellungen.basiswaehrung,
         )
         return
+
     betrag = kaufbetrag(
         guthaben=boerse.hole_kontostand(einstellungen.quotewaehrung),
         anteil_prozent=einstellungen.anteil_prozent,
@@ -113,10 +141,9 @@ def _kaufe(
     if betrag == 0.0:
         log.warning("Kaufsignal, aber zu wenig %s für eine Order", einstellungen.quotewaehrung)
         return
+
     order = boerse.kaufe(einstellungen.symbol, betrag)
-    speicher.speichere_trade(
-        Trade(zeit=jetzt, seite="kauf", menge=order.menge, preis=order.preis, order_id=order.order_id)
-    )
+    speicher.speichere_trade(_trade(order, seite="kauf", zeit=jetzt))
 
 
 def _verkaufe(
@@ -139,11 +166,14 @@ def _verkaufe(
             einstellungen.basiswaehrung,
         )
         return
+
     order = boerse.verkaufe(einstellungen.symbol, menge)
-    speicher.speichere_trade(
-        Trade(
-            zeit=jetzt, seite="verkauf", menge=order.menge, preis=order.preis, order_id=order.order_id
-        )
+    speicher.speichere_trade(_trade(order, seite="verkauf", zeit=jetzt))
+
+
+def _trade(order: Order, *, seite: str, zeit: datetime) -> Trade:
+    return Trade(
+        zeit=zeit, seite=seite, menge=order.menge, preis=order.preis, order_id=order.order_id
     )
 
 
