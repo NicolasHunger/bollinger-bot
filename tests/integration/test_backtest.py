@@ -269,13 +269,21 @@ def test_main_gibt_eine_zusammenfassung_aus(tmp_path, capsys):
     assert code == 0
     ausgabe = capsys.readouterr().out
     # Zahlen wie im Charakterisierungstest oben: Rendite (993.07 − 1000) / 1000 = −0.69 %.
-    assert "03.10.2026 18:45 bis 24.10.2026 14:30 UTC" in ausgabe
-    assert "Ausgewertete Kerzen: 1981" in ausgabe
+    # Der Zeitraum endet mit dem Ende der letzten Kerze: Sie beginnt um 14:30 und endet um 14:45.
+    assert "Zeitraum: 03.10.2026 18:45 bis 24.10.2026 14:45 UTC (2000 Kerzen à 15min)" in ausgabe
+    # Die ersten n − 1 = 19 Kerzen braucht es nur für die Bänder der 20.
+    assert "Ausgewertete Kerzen: 1981 (die ersten 19 nur für die Bänder)" in ausgabe
     assert "Käufe: 40" in ausgabe
     assert "Verkäufe: 39" in ausgabe
+    # Ein Kauf mehr als Verkäufe: Am Ende ist eine Position offen (0.001235704 BTC, aufgezeichnet).
+    assert "BTC am Ende: 0.001236 (im Endwert zum letzten Schlusskurs)" in ausgabe
+    assert "Gebühren: 7.87 USDT" in ausgabe
     assert "Startwert: 1000.00 USDT" in ausgabe
     assert "Endwert: 993.07 USDT" in ausgabe
     assert "Rendite: -0.69 %" in ausgabe
+    # Eröffnung der ersten Kerze 84 940.34, Schluss der letzten 80 257.5:
+    # 80 257.5 / 84 940.34 − 1 = −5.51 %.
+    assert "BTC-Kurs im selben Zeitraum: -5.51 %" in ausgabe
     # Die Datei bleibt für das Dashboard liegen.
     with Speicher(db) as speicher:
         assert len(speicher.hole_signale()) == 1981
