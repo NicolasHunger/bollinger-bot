@@ -4,12 +4,13 @@ Den ganzen Backtest mit echter SQLite-Datei testen die Integrationstests in
 `tests/integration/test_backtest.py`.
 """
 
+import inspect
 from datetime import UTC, datetime, timedelta
 
 import pytest
 
 from bollinger_bot.backtest import AufgezeichneteBoerse, lies_kerzen
-from bollinger_bot.port import Kerze, Order
+from bollinger_bot.port import Boerse, Kerze, Order
 
 CSV_KOPF = "startzeit,eroeffnung,hoch,tief,schluss,volumen\n"
 MIN_15 = timedelta(minutes=15)
@@ -185,3 +186,12 @@ def test_verkauf_ueber_dem_bestand_wird_abgelehnt():
         boerse.verkaufe("BTCUSDT", 0.001999)
     assert boerse.hole_kontostand("BTC") == 0.001998
     assert boerse.hole_kontostand("USDT") == 900.0
+
+
+@pytest.mark.parametrize("methode", ["hole_kerzen", "hole_kontostand", "kaufe", "verkaufe"])
+def test_simulierte_boerse_hat_dieselben_methoden_wie_der_port(methode):
+    # tick() ruft die Börse mit Positionsargumenten auf. Stimmen Namen oder Reihenfolge der
+    # Parameter nicht mit dem Port überein, verhält sich der Backtest anders als der Bot.
+    erwartet = inspect.signature(getattr(Boerse, methode))
+    tatsaechlich = inspect.signature(getattr(AufgezeichneteBoerse, methode))
+    assert list(tatsaechlich.parameters) == list(erwartet.parameters)
