@@ -144,3 +144,7 @@ def backtest(
         endwert=endwert,
         rendite_prozent=(endwert - startguthaben) / startguthaben * 100,
     )
+
+
+def main(argv: list[str] | None = None) -> int:
+    return 1

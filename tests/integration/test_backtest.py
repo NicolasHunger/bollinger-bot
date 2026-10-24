@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from bollinger_bot.backtest import Ergebnis, backtest, lies_kerzen
+from bollinger_bot.backtest import Ergebnis, backtest, lies_kerzen, main
 from bollinger_bot.port import Kerze
 from bollinger_bot.speicher import Speicher, Trade
 from bollinger_bot.tick import Einstellungen
@@ -164,3 +164,26 @@ def test_echte_kurse_charakterisierung(echter_lauf):
     _, _, ergebnis = echter_lauf
     assert (ergebnis.kaeufe, ergebnis.verkaeufe) == (40, 39)
     assert ergebnis.endwert == pytest.approx(993.0731804118101, abs=1e-6)
+
+
+# --- Aufruf über die Kommandozeile ---
+
+
+def test_main_gibt_eine_zusammenfassung_aus(tmp_path, capsys):
+    db = tmp_path / "backtest.db"
+
+    code = main([str(ECHTE_KERZEN), "--db", str(db)])
+
+    assert code == 0
+    ausgabe = capsys.readouterr().out
+    # Zahlen wie im Charakterisierungstest oben: Rendite (993.07 − 1000) / 1000 = −0.69 %.
+    assert "03.10.2026 18:45 bis 24.10.2026 14:30 UTC" in ausgabe
+    assert "Ausgewertete Kerzen: 1981" in ausgabe
+    assert "Käufe: 40" in ausgabe
+    assert "Verkäufe: 39" in ausgabe
+    assert "Startwert: 1000.00 USDT" in ausgabe
+    assert "Endwert: 993.07 USDT" in ausgabe
+    assert "Rendite: -0.69 %" in ausgabe
+    # Die Datei bleibt für das Dashboard liegen.
+    with Speicher(db) as speicher:
+        assert len(speicher.hole_signale()) == 1981
