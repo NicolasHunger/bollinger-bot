@@ -236,6 +236,22 @@ def test_verkauf_ueber_dem_bestand_wird_abgelehnt():
     assert boerse.hole_kontostand("USDT") == 900.0
 
 
+@pytest.mark.parametrize(
+    ("methode", "wert"),
+    [("kaufe", 0.0), ("kaufe", -100.0), ("verkaufe", 0.0), ("verkaufe", -0.001)],
+)
+def test_order_ohne_positiven_betrag_wird_abgelehnt(methode, wert):
+    # Wie der Bitget-Client. Ohne Prüfung schrieb kaufe(-100) 100 USDT gut, und der BTC-Bestand
+    # wurde negativ. Das Konto bleibt unverändert.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(50_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + MIN_15
+
+    with pytest.raises(ValueError, match="grösser als 0"):
+        getattr(boerse, methode)("BTCUSDT", wert)
+    assert boerse.hole_kontostand("USDT") == 1000.0
+    assert boerse.hole_kontostand("BTC") == 0.0
+
+
 @pytest.mark.parametrize("methode", ["hole_kerzen", "hole_kontostand", "kaufe", "verkaufe"])
 def test_simulierte_boerse_hat_dieselben_methoden_wie_der_port(methode):
     # tick() ruft die Börse mit Positionsargumenten auf. Stimmen Namen oder Reihenfolge der
