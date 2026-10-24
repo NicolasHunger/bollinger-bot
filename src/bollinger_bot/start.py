@@ -91,12 +91,13 @@ def starte(
     sind Argumente, damit die Tests einen Mock und eine Fake-Uhr übergeben können.
     """
     einstellungen = konfiguration.einstellungen
-    # Nie die Keys loggen, nur womit der Bot handelt.
+    # Nie die Keys loggen, nur womit der Bot handelt. Den Pfad absolut, damit man sieht,
+    # welche Datei ein relativer Pfad wie data/bot.db im aktuellen Ordner meint.
     log.info(
         "Bot startet: %s, %s-Kerzen, Datenbank %s",
         einstellungen.symbol,
         einstellungen.intervall,
-        konfiguration.db_pfad,
+        konfiguration.db_pfad.absolute(),
     )
     # Die Keys gehen an den Konstruktor, nur hier sind sie bekannt (Abmachung).
     client = client_fabrik(
