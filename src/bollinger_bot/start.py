@@ -1,5 +1,6 @@
 """Einstiegspunkt: liest die Konfiguration aus der Umgebung und startet den Bot."""
 
+import logging
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
@@ -10,6 +11,8 @@ from bollinger_bot.bitget_client import INTERVALLE, BitgetClient
 from bollinger_bot.polling import polling_schleife
 from bollinger_bot.speicher import Speicher
 from bollinger_bot.tick import Einstellungen, tick
+
+log = logging.getLogger(__name__)
 
 PFLICHT = ("BITGET_API_KEY", "BITGET_API_SECRET", "BITGET_PASSPHRASE")
 
@@ -72,6 +75,14 @@ def starte(
     `durchlaeufe=None` heisst: endlos, bis Ctrl+C oder `docker stop`. Client, Uhr und Warten
     sind Argumente, damit die Tests einen Mock und eine Fake-Uhr übergeben können.
     """
+    einstellungen = konfiguration.einstellungen
+    # Nie die Keys loggen, nur womit der Bot handelt.
+    log.info(
+        "Bot startet: %s, %s-Kerzen, Datenbank %s",
+        einstellungen.symbol,
+        einstellungen.intervall,
+        konfiguration.db_pfad,
+    )
     # Die Keys gehen an den Konstruktor, nur hier sind sie bekannt (Abmachung).
     client = client_fabrik(
         api_key=konfiguration.api_key,
@@ -84,7 +95,7 @@ def starte(
                 lambda: tick(
                     boerse=client,
                     speicher=speicher,
-                    einstellungen=konfiguration.einstellungen,
+                    einstellungen=einstellungen,
                     jetzt=uhr(),
                 ),
                 schlafen=schlafen,
