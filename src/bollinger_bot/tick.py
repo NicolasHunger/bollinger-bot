@@ -5,10 +5,18 @@ ohne Bitget zu fragen. Sonst holt er die letzten n Kerzen und wertet die neueste
 Bitget die neue Kerze noch nicht, versucht er es eine Minute später nochmals. Aus den
 Schlusskursen berechnet er die Bollinger-Bänder, und `entscheide()` sagt mit Blick auf die offene
 Position, ob gekauft, verkauft oder gehalten wird. Wie viel gekauft oder verkauft wird, rechnet
-der Risiko-Check, und jede ausgeführte Order wird sofort als Trade gespeichert. Erst danach kommen
-das Signal und der Kontostand in die Datenbank: Stürzt tick() nach einer Order ab, wird dieselbe
-Kerze eine Minute später nochmals ausgewertet, und weil der Trade schon gespeichert ist, kauft
-der Bot nicht doppelt. Fehler der Börse fängt tick() nicht ab, das macht die Polling-Schleife.
+der Risiko-Check, und jede ausgeführte Order wird sofort geloggt und als Trade gespeichert. Erst
+danach kommen das Signal und der Kontostand in die Datenbank: Stürzt tick() nach dem Speichern
+des Trades ab, wird dieselbe Kerze eine Minute später nochmals ausgewertet, und weil der Trade
+schon gespeichert ist, kauft der Bot nicht doppelt. Fehler der Börse fängt tick() nicht ab, das
+macht die Polling-Schleife.
+
+Nicht automatisch behoben wird ein Abbruch genau zwischen der Order und dem Speichern des Trades
+(Fehler, Absturz oder `KeyboardInterrupt`): Nach einem Kauf sieht das Sicherheitsnetz die BTC bei
+Bitget und kauft nicht nochmals, nach einem Verkauf meldet tick(), dass Bitget die Position nicht
+mehr hat. Beides als ERROR, die Order-ID steht im Log, den Trade trägt man von Hand nach. Dasselbe
+gilt für den Rest eines nur teilweise ausgeführten Verkaufs. `KeyboardInterrupt` fängt tick()
+bewusst nicht ab: So beendet `docker stop` (SIGINT) den Bot sofort.
 """
 
 import logging
@@ -27,7 +35,11 @@ log = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Einstellungen:
-    """Womit und wie der Bot handelt. Die Standardwerte gelten für BTCUSDT mit 15-Minuten-Kerzen."""
+    """Womit und wie der Bot handelt. Die Standardwerte gelten für BTCUSDT mit 15-Minuten-Kerzen.
+
+    Der Einstiegspunkt setzt `intervall` und `intervall_dauer` beide aus `bitget_client.INTERVALLE`,
+    damit sie zusammenpassen.
+    """
 
     symbol: str = "BTCUSDT"  # Handelspaar bei Bitget
     basiswaehrung: str = "BTC"  # was gekauft und verkauft wird
