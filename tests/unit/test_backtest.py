@@ -154,3 +154,21 @@ def test_verkauf_zum_selben_kurs_kostet_die_gebuehr():
     assert boerse.hole_kontostand("BTC") == 0.0
     # approx: In float ergibt 900 + 99.8001 genau 999.8000999999999.
     assert boerse.hole_kontostand("USDT") == pytest.approx(999.8001)
+
+
+def test_kauf_ueber_dem_freien_guthaben_wird_abgelehnt():
+    # Bitget lehnt eine Order ab, die mehr kostet, als frei verfügbar ist. Genau auf der Grenze
+    # (1000 USDT bei 1000 USDT Guthaben) ist der Kauf erlaubt, einen Rappen mehr nicht. Bei der
+    # Ablehnung bleibt das Konto unverändert.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(50_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + MIN_15
+
+    with pytest.raises(ValueError, match="USDT"):
+        boerse.kaufe("BTCUSDT", 1000.01)
+    assert boerse.hole_kontostand("USDT") == 1000.0
+    assert boerse.hole_kontostand("BTC") == 0.0
+
+    # 1000 / 50 000 = 0.02 BTC, ausgegeben 0.02 · 50 000 = 1000 USDT: alles weg.
+    boerse.kaufe("BTCUSDT", 1000.0)
+    assert boerse.hole_kontostand("USDT") == 0.0
+
