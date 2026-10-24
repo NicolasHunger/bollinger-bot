@@ -153,28 +153,49 @@ _Entwurf, wird im Projekt verfeinert._
 Der Backtest spielt den echten `tick()` auf aufgezeichneten Kursen durch, ohne Bitget: Eine
 simulierte Börse (`AufgezeichneteBoerse` in `backtest.py`) erfüllt denselben Port wie der
 Bitget-Client, liefert die Kerzen aus einer CSV und führt Orders zum Schlusskurs aus, mit
-Abrunden auf 6 Stellen und 0.1 % Gebühr wie Bitget. So läuft der ganze Ablauf von der Kerze bis
-zur Datenbank über drei Wochen echter Kurse, in unter einer Sekunde.
+Abrunden auf 6 Stellen und 0.1 % Gebühr wie Bitget. Orders, die Bitget ablehnen würde (unter
+1 USDT, zu viele Stellen, mehr als auf dem Konto), lehnt auch sie ab. So läuft der ganze Ablauf
+von der Kerze bis zur Datenbank über drei Wochen echter Kurse, in unter einer Sekunde.
 
 - **Daten:** `tests/daten/btcusdt_15min.csv`, 2000 abgeschlossene BTCUSDT-Kerzen à 15 Minuten
-  vom 03.10.2026 18:45 bis 24.10.2026 14:30 UTC, vom öffentlichen Bitget-Endpunkt
-  `history-candles` (kein API-Key nötig). Geholt mit `scripts/kerzen_holen.py`.
+  vom 03.10.2026 18:45 bis 24.10.2026 14:45 UTC (die letzte beginnt um 14:30), vom öffentlichen
+  Bitget-Endpunkt `history-candles` (kein API-Key nötig). Am 24.10.2026 geholt mit
+  `scripts/kerzen_holen.py`. Der Backtest prüft, dass die Kerzen lückenlos im Abstand des
+  Intervalls liegen.
 - **Aufruf:** `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db`.
   Die Datei darf noch nicht existieren, sonst mischen sich zwei Läufe.
 - **Ergebnis mit den Standard-Einstellungen** (n = 20, k = 2, 10 % pro Kauf): 1981 ausgewertete
-  Kerzen, 40 Käufe, 39 Verkäufe, aus 1000 USDT werden 993.07 USDT (−0.69 %). BTC fiel im selben
-  Zeitraum um rund 5.5 %.
+  Kerzen, 40 Käufe, 39 Verkäufe (die letzte Position ist am Ende noch offen und zum letzten
+  Kurs eingerechnet), aus 1000 USDT werden 993.07 USDT (−0.69 %).
+- **Den Verlust machen die Gebühren:** 7.87 USDT Gebühren bei 79 Orders, mehr als der ganze
+  Verlust von 6.93 USDT. Ohne Gebühren wäre der Lauf leicht im Plus. Kein Verkauf lag mehr als
+  3 % unter dem Kaufpreis, der Stop-Loss hat nie ausgelöst. 24 der 39 abgeschlossenen Runden
+  enden nach Gebühren im Minus.
+- **Nicht «besser als der Markt»:** BTC fiel im selben Zeitraum um 5.51 %. Der Bot setzt aber
+  pro Kauf nur 10 % ein und war rund ein Viertel der Zeit investiert. Hätte er dieselben 100 USDT
+  einfach gehalten, wären es −5.51 USDT gewesen, also −0.55 % des Kontos: etwas besser als der
+  Bot.
 - **Fürs Dashboard:** Die Datei hat dasselbe Schema wie die des Bots. Zeigt `BOT_DB_PFAD` auf
   sie, liest das Dashboard (AP 7) sie wie die des Bots: auch als Notfall-Demo, falls der Bot
-  nicht auf der VM läuft.
+  nicht auf der VM läuft. Am einfachsten startet man das Dashboard dafür lokal mit
+  `BOT_DB_PFAD=data/backtest.db`. Die Warnung «letzte Kerze älter als zwei Intervalle» ist bei
+  dieser Datei zu erwarten, denn die letzte Kerze ist vom 24.10.2026. Die Order-IDs beginnen mit
+  `sim-`.
 - **Tests:** `tests/unit/test_backtest.py` prüft die simulierte Börse mit von Hand gerechneten
   Käufen und Verkäufen, `tests/integration/test_backtest.py` einen kleinen Lauf mit einem Kauf
   und einem Verkauf und den Lauf auf den echten Daten (Invarianten und aufgezeichnete Zahlen als
   Charakterisierungstest).
+- **KI-Nutzung:** `backtest.py`, die Tests und `scripts/kerzen_holen.py` hat Claude Code
+  geschrieben, in TDD-Zyklen (je ein Commit «TDD rot», «TDD grün», «TDD refactor»). Die Zyklen
+  sind in einem Durchgang entstanden, darum liegen zwischen rot und grün oft nur Sekunden. Jeder
+  Commit wurde danach maschinell nachgeprüft: rot genau am neuen Test, grün mit allen Tests.
+  Drei Reviews mit Claude Code (TDD-Historie, Fachlogik und Darstellung) haben Lücken gefunden,
+  die in eigenen Zyklen behoben sind.
 
 Ein Backtest sagt nichts über künftige Gewinne: Er zeigt nur, was der Bot auf genau diesen Kursen
 getan hätte, und führt jede Order ohne Verzögerung zum Schlusskurs aus. Warum die Strategie kaum
 Geld verdient, steht unter [Warum der Bot kaum Geld verdient](#warum-der-bot-kaum-geld-verdient).
+Auf diesen Kursen waren es die Gebühren, nicht der Stop-Loss.
 
 ### Grundsätze
 
