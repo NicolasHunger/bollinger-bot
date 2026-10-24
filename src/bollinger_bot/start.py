@@ -26,6 +26,13 @@ def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
     fehlend = [name for name in PFLICHT if not umgebung.get(name)]
     if fehlend:
         raise ValueError(f"Umgebungsvariablen fehlen oder sind leer: {', '.join(fehlend)}")
+    for name in PFLICHT:
+        if umgebung[name] != umgebung[name].strip():
+            # Nur den Namen nennen, nie den Wert: Die Meldung landet im Log.
+            raise ValueError(
+                f"{name} hat Leerzeichen oder einen Zeilenumbruch am Rand. "
+                "Bitte den Wert in der .env prüfen."
+            )
     intervall = umgebung.get("BOT_INTERVALL", "15min")
     return Konfiguration(
         api_key=umgebung["BITGET_API_KEY"],
