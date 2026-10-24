@@ -1,4 +1,16 @@
-"""Einstiegspunkt: liest die Konfiguration aus der Umgebung und startet den Bot."""
+"""Einstiegspunkt: liest die Konfiguration aus der Umgebung und startet den Bot.
+
+Aufruf mit `python -m bollinger_bot` (siehe `__main__.py`). Ablauf:
+
+1. `main()` richtet das Logging ein und liest mit `lies_konfiguration()` die Umgebungsvariablen.
+   Ist etwas falsch, endet der Bot sofort mit Exit-Code 2 und einer Meldung im Log.
+2. `starte()` erstellt den `BitgetClient`, öffnet die SQLite-Datei und lässt die
+   Polling-Schleife jede Minute `tick()` aufrufen, bis Ctrl+C oder `docker stop` kommt.
+
+Umgebungsvariablen (Vorlage: `.env.example`): `BITGET_API_KEY`, `BITGET_API_SECRET` und
+`BITGET_PASSPHRASE` sind Pflicht, `BOT_DB_PFAD` (Standard `data/bot.db`) und `BOT_INTERVALL`
+(Standard `15min`) freiwillig. Die Keys liest nur dieses Modul, und es loggt sie nie.
+"""
 
 import logging
 import os
@@ -15,7 +27,7 @@ from bollinger_bot.tick import Einstellungen, tick
 
 log = logging.getLogger(__name__)
 
-PFLICHT = ("BITGET_API_KEY", "BITGET_API_SECRET", "BITGET_PASSPHRASE")
+PFLICHT = ("BITGET_API_KEY", "BITGET_API_SECRET", "BITGET_PASSPHRASE")  # die Demo-Keys
 
 
 @dataclass(frozen=True)
@@ -92,25 +104,25 @@ def starte(
     )
     try:
         with Speicher(konfiguration.db_pfad) as speicher:
-            polling_schleife(
-                lambda: tick(
-                    boerse=client,
-                    speicher=speicher,
-                    einstellungen=einstellungen,
-                    jetzt=uhr(),
-                ),
-                schlafen=schlafen,
-                durchlaeufe=durchlaeufe,
-            )
+
+            def durchgang() -> None:
+                tick(boerse=client, speicher=speicher, einstellungen=einstellungen, jetzt=uhr())
+
+            polling_schleife(durchgang, schlafen=schlafen, durchlaeufe=durchlaeufe)
     finally:
         # Auch bei Ctrl+C oder einem Fehler: offene Verbindungen zu Bitget schliessen.
         client.schliessen()
 
 
-def main(umgebung: Mapping[str, str] | None = None, *, starte=starte) -> int:
+def main(
+    umgebung: Mapping[str, str] | None = None,
+    *,
+    starte: Callable[[Konfiguration], None] = starte,
+) -> int:
     """Startet den Bot. Gibt den Exit-Code zurück: 2 bei falscher Konfiguration, sonst 0.
 
-    `umgebung=None` heisst: die echten Umgebungsvariablen (`os.environ`).
+    `umgebung=None` heisst: die echten Umgebungsvariablen (`os.environ`). Die Tests übergeben
+    ein Dictionary und für `starte` einen Mock.
     """
     # Die einzige Stelle, die das Logging einrichtet. Die Module holen nur ihren Logger.
     logging.basicConfig(

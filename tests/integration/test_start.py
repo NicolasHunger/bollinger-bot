@@ -17,6 +17,11 @@ from bollinger_bot.tick import Einstellungen
 
 # Um 12:16 UTC ist die Kerze ab 12:00 die letzte abgeschlossene (15-Minuten-Kerzen).
 JETZT = datetime(2026, 10, 24, 12, 16, tzinfo=UTC)
+KEYS = {
+    "BITGET_API_KEY": "fake-key",
+    "BITGET_API_SECRET": "fake-secret",
+    "BITGET_PASSPHRASE": "fake-passphrase",
+}
 
 
 class FakeUhr:
@@ -155,12 +160,7 @@ def test_main_ohne_keys_meldet_den_fehler_und_gibt_2_zurueck(starte_mock, caplog
 
 
 def test_main_startet_den_bot_mit_der_konfiguration_aus_der_umgebung(starte_mock):
-    umgebung = {
-        "BITGET_API_KEY": "fake-key",
-        "BITGET_API_SECRET": "fake-secret",
-        "BITGET_PASSPHRASE": "fake-passphrase",
-        "BOT_INTERVALL": "5min",
-    }
+    umgebung = KEYS | {"BOT_INTERVALL": "5min"}
 
     assert main(umgebung, starte=starte_mock) == 0
 
@@ -171,13 +171,8 @@ def test_main_nach_ctrl_c_meldet_das_ende_und_gibt_0_zurueck(starte_mock, caplog
     # Ctrl+C oder `docker stop` ist ein gewolltes Ende, kein Fehler: Exit-Code 0, kein Traceback.
     caplog.set_level(logging.INFO)
     starte_mock.side_effect = KeyboardInterrupt
-    umgebung = {
-        "BITGET_API_KEY": "fake-key",
-        "BITGET_API_SECRET": "fake-secret",
-        "BITGET_PASSPHRASE": "fake-passphrase",
-    }
 
-    assert main(umgebung, starte=starte_mock) == 0
+    assert main(KEYS, starte=starte_mock) == 0
 
     assert "Bot beendet" in caplog.text
 
