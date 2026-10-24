@@ -499,3 +499,17 @@ def test_fehler_der_boerse_kommt_heraus_und_nichts_wird_gespeichert(boerse, spei
     assert speicher.hole_signale() == []
     assert speicher.hole_trades() == []
     assert speicher.hole_kontostaende() == []
+
+
+def test_scheitert_der_kontostand_wird_die_kerze_neu_ausgewertet(boerse, speicher):
+    # Signal «halten» (wie im Test dafür), aber Bitget antwortet beim Kontostand nicht. Würde
+    # das Signal trotzdem gespeichert, gälte die Kerze als ausgewertet, und ihre Kontostand-Zeile
+    # fehlte für immer. Darum darf in dem Fall gar nichts gespeichert sein.
+    boerse.hole_kerzen.return_value = kerzen(98, 102, 98, 102)
+    boerse.hole_kontostand.side_effect = ConnectionError("Bitget nicht erreichbar")
+
+    with pytest.raises(ConnectionError, match="Bitget nicht erreichbar"):
+        tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert speicher.hole_signale() == []
+    assert speicher.hole_kontostaende() == []
