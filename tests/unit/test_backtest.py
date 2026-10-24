@@ -282,6 +282,24 @@ def test_verkauf_unter_dem_mindestbetrag_wird_abgelehnt():
     assert boerse.hole_kontostand("BTC") == pytest.approx(0.001978)
 
 
+def test_order_mit_zu_vielen_nachkommastellen_wird_abgelehnt():
+    # BTCUSDT_SPOT: Mengen mit höchstens 6, Beträge mit höchstens 2 Stellen. Mehr Stellen heisst,
+    # der Risiko-Check hat nicht abgerundet. Beide Orders liegen über dem Mindestbetrag
+    # (0.0000201 · 50 000 = 1.005 USDT), abgelehnt werden sie nur wegen der Stellen.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(50_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + MIN_15
+
+    with pytest.raises(ValueError, match="Stellen"):
+        boerse.kaufe("BTCUSDT", 100.001)
+    boerse.kaufe("BTCUSDT", 100.0)
+    with pytest.raises(ValueError, match="Stellen"):
+        boerse.verkaufe("BTCUSDT", 0.0000201)
+
+    # Nur der eine Kauf für 100 USDT ist ausgeführt (siehe oben).
+    assert boerse.hole_kontostand("USDT") == 900.0
+    assert boerse.hole_kontostand("BTC") == 0.001998
+
+
 @pytest.mark.parametrize("methode", ["hole_kerzen", "hole_kontostand", "kaufe", "verkaufe"])
 def test_simulierte_boerse_hat_dieselben_methoden_wie_der_port(methode):
     # tick() ruft die Börse mit Positionsargumenten auf. Stimmen Namen oder Reihenfolge der
