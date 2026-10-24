@@ -229,7 +229,22 @@ _Folgt, klein gehalten nach der
 
 ## Reflexion
 
-_Folgt am Projektende (gemäss Eckdaten: Code Reviews und TDD)._
+Reflexion über Code Reviews und TDD, jede Person für ihren Teil (gemäss Eckdaten und
+[Auswertung im Projekt](https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/projekt/auswertungen.md)).
+Leitfragen: Wie haben wir Code Reviews und TDD im Projekt erlebt? Was hat gut funktioniert und
+taugt für den Berufsalltag? Was lief weniger gut, was würden wir anders machen? Was nehmen wir mit?
+
+### Lucas
+
+_Folgt._
+
+### Valentin
+
+_Folgt._
+
+### Nicolas
+
+_Folgt._
 
 ## KI-Nutzung
 

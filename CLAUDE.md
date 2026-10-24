@@ -170,7 +170,49 @@ Deploy je als eigenen PR.
 
 - [ ] Handelspaar und Kerzen-Intervall festlegen (Vorschlag: BTCUSDT, 15min; README, «Offene
       Entscheide»)
-- [ ] Präsentation (10 Minuten): Endprodukt, Testing, Reports, Reflexion, Fazit
+- [ ] **Reflexion** (Pflicht in der Doku): im README unter «## Reflexion», jede Person in ihrem
+      Unterabschnitt («### Lucas», «### Valentin», «### Nicolas»). Über Code Reviews und TDD,
+      rund eine halbe Seite, in eigenen Worten, die Leitfragen stehen im Abschnitt. Claude hilft
+      mit Gliederung und Beispielen aus den PRs, den Text schreibt jede Person selbst.
+- [ ] **Präsentation** (siehe unten)
+
+**Präsentation** (Mi 28.10., 10 Minuten, ohne Folien)
+
+- Jede Person zeigt, was sie gemacht hat, rund 3 Minuten, live statt PowerPoint: GitHub (PRs,
+  Reviews, Pipeline), Terminal (Tests, Backtest), Dashboard. Die Rubrik verlangt Endprodukt,
+  Testing, Reports, Reflexion und Fazit. Vorschlag zur Aufteilung:
+  - **Lucas:** die Strategie in zwei Sätzen, `tick()` test-first (rote und grüne Commits in der
+    Git-Historie zeigen), den Backtest live laufen lassen (Endprodukt bzw. Notfall-Demo), eigene
+    Reflexion kurz.
+  - **Valentin:** Bitget-Client und Risiko-Check, Testing mit Mocks und respx, Rauchtest,
+    Testkonzept, eigene Reflexion kurz.
+  - **Nicolas:** Pipeline mit den Testreports auf GitHub Pages und der Coverage in SonarQube,
+    Dashboard, Deploy (Bot auf der VM), eigene Reflexion kurz.
+  - **Fazit** gemeinsam, eine halbe Minute.
+- Am Di 27.10. einmal zusammen durchspielen und die Tabs vorbereiten (PR-Liste, Pages-Report,
+  Terminal mit Backtest, Dashboard).
+
+**Vertretung, wenn Lucas nicht erreichbar ist**
+
+Betrifft Lucas' offene PRs #6 und #7 und seine Branches `tick`, `einstiegspunkt` und `backtest`.
+Antwortet Lucas im Gruppenchat nicht innerhalb von etwa drei Stunden und hängt etwas daran, dürfen
+Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
+
+1. **PR #6 und #7 mergen**, sobald sie approved sind (Merge-Commit).
+2. **PRs für die Branches öffnen**, sobald ihre Abhängigkeiten auf `main` sind: `tick` nach PR #6,
+   #7 und #8, `backtest` nach `tick`, `einstiegspunkt` nach `tick` und PR #9 und #10. Basis immer
+   `main` (nie einen anderen Branch, siehe «Mergen»). Inhalt der Beschreibung: was der Branch
+   bringt (siehe «Stand der PRs und Schnittstellen»), dass er test-first entstanden ist, wie man
+   testet (`pytest`), Fragen ans Review. Reviewer ist die jeweils andere Person.
+3. **Konflikte lösen:** `main` in den Branch mergen, nie rebasen, nie force-pushen. So lösen, dass
+   beide Seiten erhalten bleiben: `pyproject.toml` mit den Versionsgrenzen, `pytest-html` und
+   `tzdata`; im README beide Abschnitte, danach die Code-Übersicht nachführen; die `CLAUDE.md` mit
+   dem Stand von `main`. Bei einem Konflikt im Python-Code nicht raten, sondern Lucas fragen oder im
+   PR kommentieren. Danach `pytest` lokal, erst wenn alles grün ist pushen.
+4. **Code von Lucas nur ändern, wenn es nötig ist**, damit es mit einem gemergten PR zusammenpasst
+   (z.B. geänderte Signatur in PR #8 oder #10). Als eigener Commit mit Begründung und passendem
+   Test. Die TDD-Historie (rote und grüne Commits) nicht umschreiben.
+5. **Lucas informieren:** im PR mit @LostMyNutsLastXMas kurz schreiben, was übernommen wurde.
 
 **Mergen: so und in dieser Reihenfolge**
 
