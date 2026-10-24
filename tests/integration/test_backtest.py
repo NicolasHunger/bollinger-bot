@@ -6,6 +6,7 @@ Kerzen und k = 1, damit sich alles im Kopf nachrechnen lässt.
 
 import logging
 import runpy
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -256,6 +257,34 @@ def test_echte_kurse_charakterisierung(echter_lauf):
     _, _, ergebnis = echter_lauf
     assert (ergebnis.kaeufe, ergebnis.verkaeufe) == (40, 39)
     assert ergebnis.endwert == pytest.approx(993.0731804118101, abs=1e-6)
+    # Gebühren und BTC am Ende kamen nach dem Review dazu, ebenso aufgezeichnet.
+    assert ergebnis.gebuehren == pytest.approx(7.868692712440001, abs=1e-6)
+    assert ergebnis.btc_am_ende == pytest.approx(0.001235704, abs=1e-12)
+
+
+def test_echte_kurse_gebuehren_passen_zu_den_trades(echter_lauf):
+    # Aus den Trades in der Datenbank nachgerechnet: Beim Kauf ist `menge` schon ohne Gebühr,
+    # gekauft wurde also menge / 0.999, die Gebühr ist 0.1 % davon, zum Preis in USDT. Beim
+    # Verkauf ist sie 0.1 % von menge · preis.
+    _, speicher, ergebnis = echter_lauf
+    gebuehren = sum(
+        t.menge / 0.999 * 0.001 * t.preis if t.seite == "kauf" else t.menge * t.preis * 0.001
+        for t in speicher.hole_trades()
+    )
+    assert ergebnis.gebuehren == pytest.approx(gebuehren)
+    # Die Gebühren sind grösser als der ganze Verlust: Ohne sie wäre der Lauf leicht im Plus.
+    assert ergebnis.gebuehren > ergebnis.startwert - ergebnis.endwert
+
+
+def test_echte_kurse_laufen_in_wenigen_sekunden(tmp_path):
+    # Gemessen rund 0.5 s. Die Grenze von 10 s lässt viel Reserve für eine langsame Pipeline und
+    # fällt trotzdem auf, wenn der Backtest z.B. durch eine Schleife in einer Schleife viel
+    # langsamer wird.
+    kerzen = lies_kerzen(ECHTE_KERZEN)
+    start = time.perf_counter()
+    with Speicher(tmp_path / "backtest.db") as speicher:
+        backtest(kerzen=kerzen, speicher=speicher, einstellungen=Einstellungen())
+    assert time.perf_counter() - start < 10
 
 
 # --- Aufruf über die Kommandozeile ---
