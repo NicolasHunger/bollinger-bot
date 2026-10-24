@@ -7,6 +7,8 @@ Umgebung. Die Keys sind erfunden.
 from datetime import timedelta
 from pathlib import Path
 
+import pytest
+
 from bollinger_bot.start import lies_konfiguration
 from bollinger_bot.tick import Einstellungen
 
@@ -39,3 +41,14 @@ def test_ohne_pfad_und_intervall_gelten_die_standardwerte():
     assert konfiguration.db_pfad == Path("data/bot.db")
     assert konfiguration.einstellungen == Einstellungen()  # BTCUSDT, 15min
     assert konfiguration.einstellungen.intervall_dauer == timedelta(minutes=15)
+
+
+def test_alle_fehlenden_keys_stehen_in_einer_meldung():
+    with pytest.raises(ValueError) as fehler:
+        lies_konfiguration({"BITGET_API_KEY": "fake-key"})
+
+    meldung = str(fehler.value)
+    assert "BITGET_API_SECRET" in meldung
+    assert "BITGET_PASSPHRASE" in meldung
+    assert "BITGET_API_KEY" not in meldung  # ist ja gesetzt
+    assert "fake-key" not in meldung
