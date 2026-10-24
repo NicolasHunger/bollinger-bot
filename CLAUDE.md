@@ -76,37 +76,81 @@ Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neue
 - [x] Valentins PRs reviewt (21.10.): #8 approved, #9 kommentiert, #10 Änderungen verlangt
       (Order kann nach einem Netzfehler verloren gehen), #11 kommentiert (Approve nach 4 Punkten)
 - [ ] PR #6 und #7 mergen, sobald Nicolas (oder ersatzweise Valentin) approved hat
-- [ ] AP 6, Teil 3: `tick()` und Einstiegspunkt (mit `logging.basicConfig`), sobald PR #6, #7
-      und #8 gemergt sind. Den echten Client braucht erst der Einstiegspunkt, nicht die Tests.
+- [x] Die unsachlichen Kommentare in PR #6 sind gelöscht.
+- [ ] **`tick()` (AP 6, Teil 3):** wird auf dem lokalen Branch `tick` vorbereitet, der auf PR #6,
+      #7 und #8 aufbaut. Der PR kommt, sobald diese drei gemergt sind.
+- [ ] **Einstiegspunkt** (`python -m bollinger_bot`, mit `logging.basicConfig`): als eigener
+      kleiner PR nach PR #9 und #10, weil er den echten Client braucht.
 - [ ] KI-Nutzung im README nachführen: «Zum Reviewen» (Reviews zu #8 bis #11 mit Claude Code
       vorbereitet)
 - [ ] Eigene Reflexion (TDD, Code Reviews, KI-Nutzung)
 
-**Valentin** (Börse)
+**Valentin** (Börse). Hat 4 PRs, die Rubrik ist erfüllt.
 
-- [x] PR #2 bis #5 reviewt, PR #5 approved
-- [x] Spot entschieden (README in PR #9)
-- [ ] PR #8 mergen (von Lucas approved, die drei Vorschläge aus dem Review vorher oder danach)
-- [ ] PR #9: Vorschläge aus dem Review umsetzen, aus dem Draft holen, mergen
-- [ ] PR #10: Bedingung aus dem Review umsetzen (orderInfo-Fehler abfangen, Order-ID mitgeben),
-      dann Basis auf `main` stellen (siehe Merge-Hinweis unten), aus dem Draft holen
-- [ ] PR #11: die vier Punkte aus dem Review umsetzen
-- [ ] Ersatz-Reviewer für PR #6 und #7, falls Nicolas bis So 25.10. nicht reviewt
-- [ ] Eigene Reflexion
+*Bis So 25.10.*
 
-**Nicolas** (Infra und Dashboard)
+- [ ] **PR #8 (Risiko-Check) mergen**, von Lucas approved. Die drei Vorschläge aus dem Review
+      kommen vorher oder in einem kleinen Folge-PR: ein Puffer über dem Mindestbetrag beim Kauf,
+      der Test `test_mindestbetrag_gilt_fuer_den_abgerundeten_betrag`, `kaufbetrag` in `Decimal`
+      rechnen.
+- [ ] **PR #10: die Bedingung aus Lucas' Review umsetzen.** Fällt eine einzelne
+      `orderInfo`-Abfrage aus, den Fehler abfangen und weiter abfragen. Scheitert es am Ende doch,
+      einen Fehler mit `order_id` als Attribut werfen. Bei unplausibler Gebühr 0.1 % abziehen
+      statt 0. Zwei Tests: `partially_filled` → `filled` und ein teilweise ausgeführter Verkauf.
+- [ ] **PR #9: die Vorschläge aus Lucas' Review umsetzen**, dann aus dem Draft holen.
+      Testlücken (Slice, Reihenfolge der Query-Parameter, Prüfung des Fehlercodes, alle
+      Intervalle), Timeout nicht abschaltbar machen, Key und Passphrase im Konstruktor prüfen.
+- [ ] **Ersatz-Reviewer:** Hat Nicolas PR #6 und #7 bis So 25.10. abends nicht erneut reviewt,
+      reviewt Valentin sie.
 
-- [x] PR #6 und #7 reviewt (erste Runde)
-- [ ] **Dringend:** PR #6 und #7 erneut reviewen, dann approven
-- [ ] **Dringend:** Konflikt in PR #12 mit `main` lösen (`main` in den Branch mergen), dann
-      mergen. GitHub Pages auf «GitHub Actions» stellen (nur Admin).
-- [ ] SonarQube Cloud anbinden (eigener PR), beide `coverage.xml` angeben
-- [ ] Streamlit als Pflicht-Abhängigkeit oder Extra `dashboard` entscheiden
-- [ ] AP 7 Dashboard
-- [ ] Anbieter der Cloud-VM wählen, AP 8b Deploy auf die VM (`stop_signal: SIGINT`)
-- [ ] PR #11 (Testkonzept) reviewen
-- [ ] Planung und Architektur im README nachführen
-- [ ] Eigene Reflexion
+*Bis Mo 26.10.*
+
+- [ ] **PR #9 mergen**, mit Merge-Commit. Danach PR #10 auf `main` umstellen
+      (`gh pr edit 10 --base main`). Erst dann den Branch `bitget-kerzen` löschen. PR #10 aus dem
+      Draft holen und nach Lucas' Approve mergen.
+- [ ] **PR #11 (Testkonzept): die vier Punkte aus Lucas' Review.** Ergebnis des Rauchtests
+      eintragen, «Zu testende Funktionen» nachführen, «Bestanden» so formulieren, wie es heute
+      gilt, die fehlenden Teile der Vorlage ergänzen (Einleitung, ein Satz zu TDD, Werkzeuge, drei
+      Fehlerklassen).
+- [ ] **KI-Nutzung im README** für seine PRs nachtragen.
+
+*Bis Di 27.10.*
+
+- [ ] **Demo-Keys** auf der VM in die `.env` eintragen, zusammen mit Nicolas. Nie per Chat
+      verschicken.
+- [ ] **Den `tick()`-PR von Lucas mitlesen**, er nutzt Client und Risiko-Check.
+- [ ] **Eigene Reflexion** und sein Teil der Präsentation.
+
+**Nicolas** (Infra und Dashboard). Hat erst 1 PR, die Rubrik verlangt 3: SonarQube, Dashboard und
+Deploy je als eigenen PR.
+
+*Sofort, spätestens So 25.10.*
+
+- [ ] **PR #6 und #7 erneut reviewen**, die Forderungen sind seit dem 21.10. umgesetzt. Dann
+      approven oder Änderungen verlangen.
+- [ ] **PR #12 mergen:** zuerst `main` in den Branch holen und den Konflikt in der `CLAUDE.md`
+      lösen. Unter Settings → Pages die Quelle «GitHub Actions» setzen, das kann nur er als Admin.
+
+*Bis Mo 26.10.*
+
+- [ ] **SonarQube Cloud** als eigener PR: beide `coverage.xml` angeben
+      (`reports/*/coverage.xml`), Quality Gate einrichten.
+- [ ] **Dashboard (AP 7)** als eigener PR: liest über `Speicher` (pro Durchlauf ein eigenes
+      `with Speicher(pfad)`), zeigt Kerzen mit Eröffnung, Hoch und Tief, die Bänder, Käufe und
+      Verkäufe und den Gesamtwert (freie USDT + offene Menge × Schlusskurs), warnt, wenn die
+      letzte Kerze länger als zwei Intervalle her ist. Getestet mit Streamlit `AppTest` und
+      Testdaten.
+- [ ] **Entscheid:** Streamlit als Pflicht-Abhängigkeit oder als eigenes Extra `dashboard`.
+
+*Bis Di 27.10.*
+
+- [ ] **Deploy (AP 8b)** als eigener PR: VM wählen, Dockerfile mit Python 3.12, Image in GHCR,
+      `docker-compose.yml` mit Bot und Dashboard (gemeinsames Volume für `BOT_DB_PFAD`,
+      `stop_signal: SIGINT`), `.env` nur auf der VM, einmal von Hand prüfen, ob der Container
+      läuft.
+- [ ] **Den `tick()`-PR von Lucas reviewen.**
+- [ ] **README nachführen:** Planung, Architektur und der Link zu GitHub Pages.
+- [ ] **Eigene Reflexion** und sein Teil der Präsentation.
 
 **Alle zusammen**
 
