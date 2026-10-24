@@ -8,18 +8,22 @@ version = "0.1.0"
 description = "Trading-Bot mit der Bollinger-Strategie auf dem Bitget-Demo-Konto (Schulprojekt M450)"
 readme = "README.md"
 requires-python = ">=3.12"
+# Untergrenze: die Version, mit der wir entwickeln. Obergrenze: das nächste Release, das
+# Bestehendes brechen darf, also das nächste Major-Release, bei Paketen unter 1.0 die nächste
+# Minor-Version (httpx 0.28 hat z.B. «proxies» entfernt). So kommen Fehlerkorrekturen rein,
+# aber kein Umbau kurz vor der Abgabe.
 dependencies = [
-    "httpx",
-    "streamlit",
+    "httpx>=0.28,<0.29",
+    "streamlit>=1.64,<2",
 ]
 
 # Nur für Entwicklung und Tests, landet nicht im Docker-Image.
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-cov",
-    "pytest-mock",
-    "respx",
+    "pytest>=9.1,<10",
+    "pytest-cov>=7.1,<8",
+    "pytest-mock>=3.16,<4",
+    "respx>=0.23,<0.24",
 ]
 
 [tool.setuptools.packages.find]
@@ -28,4 +32,7 @@ where = ["src"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 # importlib: Testdateien in verschiedenen Ordnern dürfen gleich heissen.
+# Unit- und Integrationstests trennen wir über die Ordner, nicht über Marker:
+#   pytest tests/unit  bzw.  pytest tests/integration
+# --strict-markers bleibt trotzdem an, damit ein vertippter Marker auffällt.
 addopts = "--import-mode=importlib --strict-markers"
