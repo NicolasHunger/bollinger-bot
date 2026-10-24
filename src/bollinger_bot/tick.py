@@ -56,7 +56,13 @@ def tick(
         kaufpreis=None,
     )
     if signal is Signal.KAUFEN:
-        _kaufe(boerse=boerse, speicher=speicher, einstellungen=einstellungen, jetzt=jetzt)
+        _kaufe(
+            boerse=boerse,
+            speicher=speicher,
+            einstellungen=einstellungen,
+            kurs=kerze.schluss,
+            jetzt=jetzt,
+        )
     speicher.speichere_signal(_signal_eintrag(kerze, baender, signal))
     speicher.speichere_kontostand(
         Kontostand(
@@ -69,8 +75,25 @@ def tick(
 
 
 def _kaufe(
-    *, boerse: Boerse, speicher: Speicher, einstellungen: Einstellungen, jetzt: datetime
+    *,
+    boerse: Boerse,
+    speicher: Speicher,
+    einstellungen: Einstellungen,
+    kurs: float,
+    jetzt: datetime,
 ) -> None:
+    # Sicherheitsnetz: Liegen bei Bitget schon BTC im Wert des Mindestbetrags, gibt es eine
+    # Position, die nicht in der Datenbank steht (z.B. Absturz zwischen kaufe() und dem
+    # Speichern). Ein kleinerer Rest ist Staub, der sich nicht verkaufen lässt.
+    bestand = boerse.hole_kontostand(einstellungen.basiswaehrung)
+    if bestand * kurs >= einstellungen.regeln.mindestbetrag:
+        log.error(
+            "Kaufsignal, aber bei Bitget liegen schon %s %s, die nicht in der Datenbank stehen. "
+            "Kein Kauf. Bitte von Hand prüfen.",
+            bestand,
+            einstellungen.basiswaehrung,
+        )
+        return
     betrag = kaufbetrag(
         guthaben=boerse.hole_kontostand(einstellungen.quotewaehrung),
         anteil_prozent=einstellungen.anteil_prozent,
