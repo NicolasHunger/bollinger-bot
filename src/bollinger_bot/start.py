@@ -23,9 +23,9 @@ class Konfiguration:
 
 def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
     """Liest die Konfiguration aus den Umgebungsvariablen (`os.environ` oder ein Dictionary)."""
-    fehlend = [name for name in PFLICHT if name not in umgebung]
+    fehlend = [name for name in PFLICHT if not umgebung.get(name)]
     if fehlend:
-        raise ValueError(f"Umgebungsvariablen fehlen: {', '.join(fehlend)}")
+        raise ValueError(f"Umgebungsvariablen fehlen oder sind leer: {', '.join(fehlend)}")
     intervall = umgebung.get("BOT_INTERVALL", "15min")
     return Konfiguration(
         api_key=umgebung["BITGET_API_KEY"],
