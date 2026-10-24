@@ -271,11 +271,10 @@ UEBER_DEM_MITTELBAND = (98, 102, 98, 102)
 
 
 def test_verkaufen_verkauft_die_position_und_speichert_den_trade(boerse, speicher):
-    # Gekauft zu 97 USDT. Bei Bitget liegen 0.0005 BTC mehr als gekauft (Staub von früher):
-    # Verkauft wird nur die Menge der Position, 0.999 BTC.
+    # Gekauft zu 97 USDT, bei Bitget liegen genau die gekauften 0.999 BTC.
     kauf = position_in_der_datenbank(speicher, preis=97.0, menge=0.999)
     boerse.hole_kerzen.return_value = kerzen(*UEBER_DEM_MITTELBAND)
-    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.9995)
+    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.999)
     boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.999, preis=102.0)
 
     ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
@@ -289,6 +288,23 @@ def test_verkaufen_verkauft_die_position_und_speichert_den_trade(boerse, speiche
     ]
     assert speicher.offene_position() is None
     assert [e.signal for e in speicher.hole_signale()] == ["verkaufen"]
+
+
+def test_verkaufen_verkauft_auch_reste_aus_frueheren_abrundungen(boerse, speicher):
+    # Bitget meldet die gekaufte Menge ohne Gebühr mit mehr als 6 Stellen (0.9985678 BTC), Bitget
+    # nimmt beim Verkauf aber nur 6 an. Ein früherer Verkauf hat 0.0000009 BTC liegen lassen:
+    #   bei Bitget 0.9985678 + 0.0000009 = 0.9985687 BTC
+    # Verkauft wird alles, was bei Bitget liegt, abgerundet: 0.998568 BTC. Liegen bleiben nur
+    # 0.0000007 BTC, also nie mehr als eine Stelle. Mit nur der Position (0.998567) sammelten
+    # sich die Reste an, bis das Sicherheitsnetz beim Kaufen sie für eine Position hält.
+    position_in_der_datenbank(speicher, preis=97.0, menge=0.9985678)
+    boerse.hole_kerzen.return_value = kerzen(*UEBER_DEM_MITTELBAND)
+    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.9985687)
+    boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.998568, preis=102.0)
+
+    tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    boerse.verkaufe.assert_called_once_with("BTCUSDT", 0.998568)
 
 
 def test_verkaufen_hoechstens_was_bei_bitget_liegt(boerse, speicher):
