@@ -11,7 +11,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from bollinger_bot.bitget_client import BitgetClient, BitgetFehler
-from bollinger_bot.start import Konfiguration, main, starte
+from bollinger_bot.start import Konfiguration, lies_konfiguration, main, starte
 from bollinger_bot.tick import Einstellungen
 
 # Um 12:16 UTC ist die Kerze ab 12:00 die letzte abgeschlossene (15-Minuten-Kerzen).
@@ -151,3 +151,16 @@ def test_main_ohne_keys_meldet_den_fehler_und_gibt_2_zurueck(starte_mock, caplog
     assert "BITGET_API_SECRET" in fehler[0].getMessage()
     assert fehler[0].exc_info is None  # nur die Meldung, kein Traceback
     assert "fake-key" not in caplog.text
+
+
+def test_main_startet_den_bot_mit_der_konfiguration_aus_der_umgebung(starte_mock):
+    umgebung = {
+        "BITGET_API_KEY": "fake-key",
+        "BITGET_API_SECRET": "fake-secret",
+        "BITGET_PASSPHRASE": "fake-passphrase",
+        "BOT_INTERVALL": "5min",
+    }
+
+    assert main(umgebung, starte=starte_mock) == 0
+
+    starte_mock.assert_called_once_with(lies_konfiguration(umgebung))
