@@ -85,6 +85,10 @@ class AufgezeichneteBoerse:
 
     def verkaufe(self, symbol: str, menge: float) -> Order:
         """Verkauft `menge` BTC zum selben Kurs wie kaufe(). Die Gebühr geht von den USDT ab."""
+        if menge > self._konto["BTC"]:
+            raise ValueError(
+                f"Verkauf von {menge} BTC abgelehnt: auf dem Konto sind nur {self._konto['BTC']} BTC"
+            )
         kurs = self.hole_kerzen(symbol, "", 1)[-1].schluss
         erloes = menge * kurs
         self._konto["BTC"] -= menge
