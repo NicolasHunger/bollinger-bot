@@ -44,3 +44,19 @@ def test_lies_kerzen_liest_zeit_mit_utc_und_zahlen_als_float(tmp_path):
     ]
     assert all(isinstance(k.tief, float) for k in kerzen)
     assert kerzen[0].startzeit.utcoffset().total_seconds() == 0
+
+
+def test_lies_kerzen_liefert_die_aelteste_zuerst(tmp_path):
+    # Bitget liefert history-candles neueste zuerst. Steht die CSV so, muss lies_kerzen() sie
+    # trotzdem älteste zuerst liefern, wie hole_kerzen() im Port: tick() wertet kerzen[-1] aus.
+    pfad = tmp_path / "kerzen.csv"
+    pfad.write_text(
+        CSV_KOPF
+        + "2026-10-03T19:00:00+00:00,2,2,2,2,1\n"
+        + "2026-10-03T18:45:00+00:00,1,1,1,1,1\n"
+    )
+
+    kerzen = lies_kerzen(pfad)
+
+    # Die Kerze ab 18:45 (Schlusskurs 1) kommt vor der ab 19:00 (Schlusskurs 2).
+    assert [k.schluss for k in kerzen] == [1.0, 2.0]
