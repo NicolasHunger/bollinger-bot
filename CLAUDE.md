@@ -256,6 +256,27 @@ Danach wie oben aktivieren und `pip install -e ".[dev]"` ausführen.
   kommentieren und antworten, dann mergen.
 - **`.venv/` und `.env` nie committen** (beide stehen in der `.gitignore`).
 
+### README «Code-Übersicht» automatisch aktuell halten (Aufgabe jeder Claude-Sitzung)
+
+Alle im Team arbeiten mit Claude. Darum hält Claude die Tabelle «Code-Übersicht» im README
+fortlaufend aktuell, ohne dass jemand daran erinnern muss. Sie zeigt pro Datei, was sie macht, wo
+die Tests liegen und wo sie steht («`main`», «PR #n» oder «Branch `…`»).
+
+- **Zu Beginn jeder Sitzung prüfen:** `git fetch`, dann die Tabelle mit dem Stand vergleichen:
+  `git ls-tree -r --name-only origin/main src/bollinger_bot scripts` (was auf `main` liegt),
+  `gh pr list --state all --limit 50` (welche PRs offen oder gemergt sind) und die Branches. Weicht
+  etwas ab, die Tabelle in derselben Sitzung nachführen, ohne erst zu fragen.
+- **Bei jeder Code-Änderung im eigenen PR oder Branch:** Wird eine Datei in `src/bollinger_bot/`
+  oder `scripts/` neu angelegt, umbenannt, gelöscht oder bekommt sie eine andere Aufgabe, im
+  selben PR bzw. Branch die Zeile in der Tabelle anlegen oder anpassen (Datei, was sie macht,
+  Tests, Stand).
+- **Nach jedem Merge auf `main`:** In der Spalte «Stand» die Dateien des gemergten PRs auf `main`
+  setzen und das Datum in der Einleitung der Code-Übersicht nachführen. Das ist ein kleiner
+  Doku-Commit direkt auf `main` («README: Code-Übersicht nach Merge von PR #n»), committen und
+  pushen, wie bei dieser Datei. Merged Claude selbst, gehört das zum Merge dazu.
+- Nur die Code-Übersicht anfassen, keine anderen README-Abschnitte, damit es keine
+  Merge-Konflikte mit offenen PRs gibt. Kurz in der Antwort erwähnen, was nachgeführt wurde.
+
 ### Entscheide vor den Paketen
 
 - **Spot statt USDT-M-Futures: entschieden** (Valentin, README in PR #9). Details unter
