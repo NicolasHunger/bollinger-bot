@@ -172,3 +172,16 @@ def test_kauf_ueber_dem_freien_guthaben_wird_abgelehnt():
     boerse.kaufe("BTCUSDT", 1000.0)
     assert boerse.hole_kontostand("USDT") == 0.0
 
+
+
+def test_verkauf_ueber_dem_bestand_wird_abgelehnt():
+    # Auf dem Konto liegen nach dem Kauf 0.001998 BTC (siehe oben). Mehr lässt sich nicht
+    # verkaufen, schon 0.000001 BTC mehr wird abgelehnt.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(50_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + MIN_15
+    boerse.kaufe("BTCUSDT", 100.0)
+
+    with pytest.raises(ValueError, match="BTC"):
+        boerse.verkaufe("BTCUSDT", 0.001999)
+    assert boerse.hole_kontostand("BTC") == 0.001998
+    assert boerse.hole_kontostand("USDT") == 900.0
