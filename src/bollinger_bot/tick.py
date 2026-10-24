@@ -1,9 +1,12 @@
 """tick(): ein Durchgang des Bots."""
 
 from dataclasses import dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 
+from bollinger_bot.port import Boerse
+from bollinger_bot.regeln import Signal
 from bollinger_bot.risiko import BTCUSDT_SPOT, Handelsregeln
+from bollinger_bot.speicher import Speicher
 
 
 @dataclass(frozen=True)
@@ -20,3 +23,9 @@ class Einstellungen:
     anteil_prozent: float = 10.0  # Anteil des freien Guthabens pro Kauf
     stop_loss_prozent: float = 3.0
     regeln: Handelsregeln = BTCUSDT_SPOT
+
+
+def tick(
+    *, boerse: Boerse, speicher: Speicher, einstellungen: Einstellungen, jetzt: datetime
+) -> Signal | None:
+    return None
