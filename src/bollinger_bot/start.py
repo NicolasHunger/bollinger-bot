@@ -7,6 +7,8 @@ from pathlib import Path
 from bollinger_bot.bitget_client import INTERVALLE
 from bollinger_bot.tick import Einstellungen
 
+PFLICHT = ("BITGET_API_KEY", "BITGET_API_SECRET", "BITGET_PASSPHRASE")
+
 
 @dataclass(frozen=True)
 class Konfiguration:
@@ -21,6 +23,9 @@ class Konfiguration:
 
 def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
     """Liest die Konfiguration aus den Umgebungsvariablen (`os.environ` oder ein Dictionary)."""
+    fehlend = [name for name in PFLICHT if name not in umgebung]
+    if fehlend:
+        raise ValueError(f"Umgebungsvariablen fehlen: {', '.join(fehlend)}")
     intervall = umgebung.get("BOT_INTERVALL", "15min")
     return Konfiguration(
         api_key=umgebung["BITGET_API_KEY"],
