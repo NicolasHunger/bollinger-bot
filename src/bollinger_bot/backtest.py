@@ -102,6 +102,8 @@ class AufgezeichneteBoerse:
         Wie bei Bitget geht die Gebühr von den gekauften BTC ab, `Order.menge` ist schon ohne
         Gebühr.
         """
+        if betrag <= 0:
+            raise ValueError(f"betrag muss grösser als 0 sein, erhalten: {betrag}")
         if betrag > self._konto["USDT"]:
             raise ValueError(
                 f"Kauf für {betrag} USDT abgelehnt: frei sind nur {self._konto['USDT']} USDT"
@@ -116,6 +118,8 @@ class AufgezeichneteBoerse:
 
     def verkaufe(self, symbol: str, menge: float) -> Order:
         """Verkauft `menge` BTC zum selben Kurs wie kaufe(). Die Gebühr geht von den USDT ab."""
+        if menge <= 0:
+            raise ValueError(f"menge muss grösser als 0 sein, erhalten: {menge}")
         if menge > self._konto["BTC"]:
             raise ValueError(
                 f"Verkauf von {menge} BTC abgelehnt: "
