@@ -1,4 +1,14 @@
-"""Backtest: der echte `tick()` auf aufgezeichneten Kursen statt auf Bitget."""
+"""Backtest: der echte `tick()` auf aufgezeichneten Kursen statt auf Bitget.
+
+Ein Backtest spielt die Strategie auf vergangenen Kursen durch: Was hätte der Bot in diesen drei
+Wochen gekauft und verkauft, und wie viel wäre am Ende auf dem Konto? Dafür ersetzt
+`AufgezeichneteBoerse` den Bitget-Client. Sie erfüllt denselben Port (`Boerse`), liefert die
+Kerzen aus einer CSV und führt Orders zum Schlusskurs aus, mit Abrunden und Gebühr wie Bitget.
+`backtest()` stellt die simulierte Uhr Kerze für Kerze vor und ruft jedes Mal den unveränderten
+`tick()` auf. Alles landet in einer SQLite-Datei, die das Dashboard wie die des Bots lesen kann.
+
+Aufruf: `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db`
+"""
 
 import argparse
 import csv
@@ -32,7 +42,11 @@ def lies_kerzen(pfad: str | Path) -> list[Kerze]:
 
 
 class AufgezeichneteBoerse:
-    """Simulierte Börse auf aufgezeichneten Kerzen, erfüllt den Port `Boerse`.
+    """Simulierte Börse auf aufgezeichneten Kerzen, erfüllt den Port `Boerse` für BTCUSDT.
+
+    Das Konto kennt nur USDT und BTC. Orders werden sofort und ganz zum Schlusskurs der zuletzt
+    abgeschlossenen Kerze ausgeführt. Die echte Börse hätte etwas andere Kurse (Slippage), darum
+    ist ein Backtest immer etwas zu optimistisch.
 
     Die simulierte Zeit ist das Attribut `jetzt`: Die Backtest-Schleife setzt es vor jedem
     tick() auf das Ende der Kerze, die gerade fertig wird. Ein Attribut statt einer Methode, weil
@@ -80,36 +94,47 @@ class AufgezeichneteBoerse:
             raise ValueError(
                 f"Kauf für {betrag} USDT abgelehnt: frei sind nur {self._konto['USDT']} USDT"
             )
-        kurs = self.hole_kerzen(symbol, "", 1)[-1].schluss
+        kurs = self._kurs()
         # Bitget rundet die gekaufte Menge ab und gibt nur aus, was diese Menge kostet.
         gekauft = abrunden(betrag / kurs, BTCUSDT_SPOT.mengen_stellen)
         gebuehr = gekauft * self._gebuehr_prozent / 100
         self._konto["USDT"] -= gekauft * kurs
         self._konto["BTC"] += gekauft - gebuehr
-        self._orders += 1
-        return Order(order_id=f"sim-{self._orders}", menge=gekauft - gebuehr, preis=kurs)
+        return Order(order_id=self._neue_order_id(), menge=gekauft - gebuehr, preis=kurs)
 
     def verkaufe(self, symbol: str, menge: float) -> Order:
         """Verkauft `menge` BTC zum selben Kurs wie kaufe(). Die Gebühr geht von den USDT ab."""
         if menge > self._konto["BTC"]:
             raise ValueError(
-                f"Verkauf von {menge} BTC abgelehnt: auf dem Konto sind nur {self._konto['BTC']} BTC"
+                f"Verkauf von {menge} BTC abgelehnt: "
+                f"auf dem Konto sind nur {self._konto['BTC']} BTC"
             )
-        kurs = self.hole_kerzen(symbol, "", 1)[-1].schluss
+        kurs = self._kurs()
         erloes = menge * kurs
+        gebuehr = erloes * self._gebuehr_prozent / 100
         self._konto["BTC"] -= menge
-        self._konto["USDT"] += erloes - erloes * self._gebuehr_prozent / 100
+        self._konto["USDT"] += erloes - gebuehr
+        return Order(order_id=self._neue_order_id(), menge=menge, preis=kurs)
+
+    def _kurs(self) -> float:
+        """Schlusskurs der zuletzt abgeschlossenen Kerze: dazu werden alle Orders ausgeführt."""
+        return self.hole_kerzen("", "", 1)[-1].schluss
+
+    def _neue_order_id(self) -> str:
+        """Fortlaufende Order-IDs, «sim-» zeigt in der Datenbank, dass sie simuliert sind."""
         self._orders += 1
-        return Order(order_id=f"sim-{self._orders}", menge=menge, preis=kurs)
+        return f"sim-{self._orders}"
 
 
 @dataclass(frozen=True)
 class Ergebnis:
+    """Zusammenfassung eines Backtests. Werte in USDT."""
+
     kerzen_ausgewertet: int
     kaeufe: int
     verkaeufe: int
-    startwert: float
-    endwert: float
+    startwert: float  # Startguthaben, am Anfang liegen keine BTC auf dem Konto
+    endwert: float  # freie USDT + BTC · letzter Schlusskurs, auch mit offener Position
     rendite_prozent: float
 
 
@@ -124,6 +149,9 @@ def backtest(
 
     Ausgewertet wird ab der n-ten Kerze, vorher reichen die Kurse nicht für die Bänder. Die Zeit
     springt jeweils ans Ende der Kerze: In diesem Moment ist sie laut polling.py abgeschlossen.
+
+    `speicher` muss leer sein: tick() überspringt Kerzen, die schon ausgewertet sind, und die
+    Käufe und Verkäufe zählt backtest() aus den Trades im Speicher.
     """
     boerse = AufgezeichneteBoerse(
         kerzen=kerzen, intervall_dauer=einstellungen.intervall_dauer, startguthaben=startguthaben
