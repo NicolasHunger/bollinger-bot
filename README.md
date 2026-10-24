@@ -68,6 +68,34 @@ flowchart LR
   Tests ersetzt ein Mock den echten `BitgetClient`.
 - **Strategie und Risiko-Check** sind reine Funktionen ohne I/O und darum einfach zu testen.
 
+### Datenbank
+
+`tick()` schreibt über `src/bollinger_bot/speicher.py` in eine SQLite-Datei, das Dashboard liest
+daraus. Alle Zeitpunkte stehen als Text im Format ISO 8601 in UTC in der Datenbank, auf
+Mikrosekunden genau (z.B. `2026-10-17T12:00:00.000000+00:00`).
+
+| Tabelle | Inhalt | Wofür |
+|---|---|---|
+| `signale` | pro abgeschlossener Kerze: Startzeit, Eröffnung, Hoch, Tief, Schlusskurs, drei Bänder, Signal (`kaufen`, `verkaufen`, `halten`) | Kurs als Kerzen mit Bändern im Dashboard, «Kerze schon ausgewertet?» |
+| `trades` | Zeit, Seite (`kauf`, `verkauf`), Menge, Preis, Order-ID | Käufe und Verkäufe im Dashboard, offene Position nach einem Neustart |
+| `kontostaende` | Zeit, Währung, Betrag (frei verfügbares Guthaben) | Verlauf des Kontostands im Dashboard |
+
+- **Eine Datei gilt für genau ein Handelspaar und ein Kerzen-Intervall.** Keine Tabelle hält
+  fest, zu welchem Paar und Intervall die Daten gehören. Wer wechselt (z.B. für die Präsentation
+  auf ein kürzeres Intervall), setzt einen neuen `BOT_DB_PFAD`. Sonst mischen sich alte und neue
+  Kerzen im Chart, und `offene_position()` liefert womöglich einen Kauf des alten Paars.
+- **`betrag`** ist das frei verfügbare Guthaben (z.B. USDT), so wie es `hole_kontostand` liefert.
+  `tick()` speichert nach jeder ausgewerteten Kerze eine Zeile mit den freien USDT. Bei einem Kauf
+  sinkt dieser Betrag, ohne dass Geld verloren geht. Den Gesamtwert (freie USDT + offene Menge ×
+  Schlusskurs) rechnet darum das Dashboard selbst aus.
+- **Die Datenbank prüft selbst** und wirft bei einem Verstoss `sqlite3.IntegrityError`: Kurse,
+  Mengen und Preise grösser als 0, Kontostand nicht negativ, Eröffnung und Schlusskurs zwischen
+  Tief und Hoch, unteres Band ≤ Mittelband ≤ oberes Band (die Bänder selbst dürfen negativ sein),
+  gültiges Signal und gültige Seite, jede Order-ID nur einmal. Eine schon gespeicherte Kerze ist
+  kein Fehler, `speichere_signal()` gibt dann `False` zurück.
+- **Python prüft vor dem Schreiben** und wirft einen `ValueError`: Zeit ohne Zeitzone, Kauf bei
+  offener Position, Verkauf ohne offene Position. Es ist also höchstens eine Position offen.
+
 ## Stack
 
 | Bereich | Werkzeug |
