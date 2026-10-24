@@ -25,19 +25,29 @@ from bollinger_bot.tick import Einstellungen, tick
 
 
 def lies_kerzen(pfad: str | Path) -> list[Kerze]:
-    """Liest Kerzen aus einer CSV im Format von `scripts/kerzen_holen.py`, älteste zuerst."""
+    """Liest Kerzen aus einer CSV im Format von `scripts/kerzen_holen.py`, älteste zuerst.
+
+    Zeiten werden in UTC umgerechnet. Eine Zeit ohne Zeitzone ergibt einen ValueError.
+    """
+    kerzen = []
     with open(pfad, newline="") as datei:
-        kerzen = [
-            Kerze(
-                startzeit=datetime.fromisoformat(zeile["startzeit"]).astimezone(UTC),
-                eroeffnung=float(zeile["eroeffnung"]),
-                hoch=float(zeile["hoch"]),
-                tief=float(zeile["tief"]),
-                schluss=float(zeile["schluss"]),
-                volumen=float(zeile["volumen"]),
+        leser = csv.DictReader(datei)
+        for zeile in leser:
+            startzeit = datetime.fromisoformat(zeile["startzeit"])
+            if startzeit.tzinfo is None:
+                raise ValueError(
+                    f"{pfad}, Zeile {leser.line_num}: Zeit ohne Zeitzone ({zeile['startzeit']})"
+                )
+            kerzen.append(
+                Kerze(
+                    startzeit=startzeit.astimezone(UTC),
+                    eroeffnung=float(zeile["eroeffnung"]),
+                    hoch=float(zeile["hoch"]),
+                    tief=float(zeile["tief"]),
+                    schluss=float(zeile["schluss"]),
+                    volumen=float(zeile["volumen"]),
+                )
             )
-            for zeile in csv.DictReader(datei)
-        ]
     return sorted(kerzen, key=lambda kerze: kerze.startzeit)
 
 
