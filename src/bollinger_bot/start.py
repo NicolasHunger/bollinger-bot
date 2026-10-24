@@ -108,6 +108,10 @@ def starte(
 
 def main(umgebung: Mapping[str, str] | None = None, *, starte=starte) -> int:
     """Startet den Bot. Gibt den Exit-Code zurück: 2 bei falscher Konfiguration, sonst 0."""
+    # Die einzige Stelle, die das Logging einrichtet. Die Module holen nur ihren Logger.
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
     try:
         konfiguration = lies_konfiguration(umgebung)
     except ValueError as fehler:
