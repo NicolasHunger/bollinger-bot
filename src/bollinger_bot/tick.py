@@ -55,6 +55,7 @@ def tick(
         unteres_band=baender.unten,
         mittelband=baender.mitte,
         kaufpreis=position.preis if position else None,
+        stop_loss_prozent=einstellungen.stop_loss_prozent,
     )
     if signal is Signal.KAUFEN:
         _kaufe(
