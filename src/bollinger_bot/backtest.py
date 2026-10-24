@@ -1,5 +1,6 @@
 """Backtest: der echte `tick()` auf aufgezeichneten Kursen statt auf Bitget."""
 
+import argparse
 import csv
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -147,4 +148,21 @@ def backtest(
 
 
 def main(argv: list[str] | None = None) -> int:
-    return 1
+    """Aufruf: `python -m bollinger_bot.backtest <kerzen.csv> [--db data/backtest.db]`."""
+    parser = argparse.ArgumentParser(description="Backtest der Bollinger-Strategie")
+    parser.add_argument("kerzen", help="CSV mit Kerzen, z.B. tests/daten/btcusdt_15min.csv")
+    parser.add_argument("--db", default="data/backtest.db", help="neue SQLite-Datei")
+    argumente = parser.parse_args(argv)
+
+    kerzen = lies_kerzen(argumente.kerzen)
+    with Speicher(argumente.db) as speicher:
+        ergebnis = backtest(kerzen=kerzen, speicher=speicher, einstellungen=Einstellungen())
+
+    von, bis = kerzen[0].startzeit, kerzen[-1].startzeit
+    print(f"Kerzen vom {von:%d.%m.%Y %H:%M} bis {bis:%d.%m.%Y %H:%M} UTC")
+    print(f"Ausgewertete Kerzen: {ergebnis.kerzen_ausgewertet}")
+    print(f"Käufe: {ergebnis.kaeufe}, Verkäufe: {ergebnis.verkaeufe}")
+    print(f"Startwert: {ergebnis.startwert:.2f} USDT")
+    print(f"Endwert: {ergebnis.endwert:.2f} USDT")
+    print(f"Rendite: {ergebnis.rendite_prozent:.2f} %")
+    return 0
