@@ -362,3 +362,16 @@ def test_nach_absturz_zwischen_kauf_und_signal_wird_nicht_doppelt_gekauft(boerse
         boerse.kaufe.assert_called_once()
         assert [t.order_id for t in speicher.hole_trades()] == ["kauf-1"]
         assert [e.signal for e in speicher.hole_signale()] == ["halten"]
+
+
+def test_fehler_der_boerse_kommt_heraus_und_nichts_wird_gespeichert(boerse, speicher):
+    # tick() fängt Fehler der Börse nicht ab: Die Polling-Schleife protokolliert sie und
+    # versucht es im nächsten Durchgang neu. Der echte Client wirft hier einen BitgetFehler.
+    boerse.hole_kerzen.side_effect = ConnectionError("Bitget nicht erreichbar")
+
+    with pytest.raises(ConnectionError, match="Bitget nicht erreichbar"):
+        tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert speicher.hole_signale() == []
+    assert speicher.hole_trades() == []
+    assert speicher.hole_kontostaende() == []
