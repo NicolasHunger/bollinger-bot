@@ -82,6 +82,18 @@ def test_lies_kerzen_liefert_die_aelteste_zuerst(tmp_path):
     assert [k.schluss for k in kerzen] == [1.0, 2.0]
 
 
+def test_lies_kerzen_rechnet_andere_zeitzonen_in_utc_um(tmp_path):
+    # 20:45 Schweizer Sommerzeit (+02:00) ist 18:45 UTC. Intern rechnen wir nur in UTC.
+    pfad = tmp_path / "kerzen.csv"
+    pfad.write_text(CSV_KOPF + "2026-10-03T20:45:00+02:00,1,1,1,1,1\n")
+
+    kerze = lies_kerzen(pfad)[0]
+
+    assert kerze.startzeit == datetime(2026, 10, 3, 18, 45, tzinfo=UTC)
+    # == vergleicht nur den Zeitpunkt, darum die Zeitzone extra prüfen.
+    assert kerze.startzeit.tzinfo == UTC
+
+
 def test_hole_kerzen_liefert_nur_kerzen_die_bis_jetzt_abgeschlossen_sind():
     # Kerzen ab 12:00, 12:15, 12:30 und 12:45. Um 12:45 ist die Kerze ab 12:30 gerade fertig
     # (Ende 12:30 + 15 min = 12:45), die ab 12:45 läuft noch.
