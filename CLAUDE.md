@@ -82,8 +82,10 @@ Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neue
       rot → grün → refactor, 177 Tests. Der PR folgt, sobald PR #6, #7 und #8 gemergt sind.
 - [x] **Einstiegspunkt** fertig auf dem Branch `einstiegspunkt` (baut auf `tick` und PR #10 auf):
       TDD, 46 Commits, 273 Tests. Der PR folgt nach PR #9 und #10.
-- [ ] **Backtest und Demo** (Branch `backtest`): `tick()` läuft gegen aufgezeichnete Kurse.
-      Notfall-Demo und Testdaten fürs Dashboard.
+- [x] **Backtest und Demo** fertig auf dem Branch `backtest` (baut auf `tick` auf): TDD, 66 Commits,
+      227 Tests. Das echte `tick()` läuft gegen 2000 echte BTCUSDT-Kerzen (03.10. bis 24.10.2026).
+      Ergebnis: 40 Käufe, 39 Verkäufe, aus 1000 USDT werden 993.07 USDT (−0.69 %), die Gebühren
+      (7.87 USDT) machen den Verlust, der Stop-Loss hat nie ausgelöst. Der PR folgt nach `tick()`.
 - [ ] KI-Nutzung im README nachführen: «Zum Reviewen» (Reviews zu #8 bis #11 mit Claude Code
       vorbereitet)
 - [ ] Eigene Reflexion (TDD, Code Reviews, KI-Nutzung)
@@ -147,7 +149,10 @@ Deploy je als eigenen PR.
       `with Speicher(pfad)`), zeigt Kerzen mit Eröffnung, Hoch und Tief, die Bänder, Käufe und
       Verkäufe und den Gesamtwert (freie USDT + offene Menge × Schlusskurs), warnt, wenn die
       letzte Kerze länger als zwei Intervalle her ist. Getestet mit Streamlit `AppTest` und
-      Testdaten.
+      Testdaten. **Echte Testdaten** liefert der Backtest (Branch `backtest`):
+      `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db`.
+      Bei diesen Daten ist die letzte Kerze vom 24.10., die Warnung «veraltet» darum zu erwarten.
+      Vorschlag: Hinweis «Demo-Daten» anzeigen, wenn die Order-IDs mit `sim-` beginnen.
 - [ ] **Entscheid:** Streamlit als Pflicht-Abhängigkeit oder als eigenes Extra `dashboard`.
 
 *Bis Di 27.10.*
@@ -176,7 +181,8 @@ Deploy je als eigenen PR.
   wiederhergestellt). Darum beim Merge von PR #9 den Branch `bitget-kerzen` **nicht** löschen.
   Zuerst PR #10 umstellen (`gh pr edit 10 --base main` oder auf GitHub «Edit» neben dem Titel),
   erst danach `bitget-kerzen` löschen.
-- Reihenfolge ab jetzt: #8, #6, #7, #12, #9, #10, #11, dann `tick()`. Konflikte möglich: PR #12
+- Reihenfolge ab jetzt: #8, #6, #7, #12, #9, #10, #11, dann `tick()`, danach Einstiegspunkt und
+  Backtest (beide bauen auf `tick` auf). Konflikte möglich: PR #12
   und #7 ändern die Liste `dev` in der `pyproject.toml` (pytest-html, tzdata; beides behalten,
   mit den Versionsgrenzen aus PR #2), mehrere PRs ändern das README.
 
@@ -190,8 +196,9 @@ Deploy je als eigenen PR.
 | Di 27.10. | `tick()` und Dashboard gemergt, Deploy oder Notfallplan, Reflexion und Präsentation fertig |
 | Mi 28.10. | Abgabe und Präsentation |
 
-**Notfallplan:** Läuft der Bot bis Mo 26.10. abends nicht auf der VM, zeigt die Präsentation
-`tick()` mit gemockter Börse und das Dashboard mit Testdaten. Die Rubrik bewertet vor allem Tests,
+**Notfallplan:** Läuft der Bot bis Mo 26.10. abends nicht auf der VM, zeigt die Präsentation den
+Backtest (`python -m bollinger_bot.backtest …`, Branch `backtest`): das echte `tick()` auf drei
+Wochen echter Kurse, dazu das Dashboard mit der Datei aus dem Backtest. Die Rubrik bewertet vor allem Tests,
 Reports, PRs und Doku, nicht ob der Bot echt handelt.
 
 ## Entwicklung: Einrichten und Regeln
@@ -326,6 +333,7 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | approved, Konflikt mit `main` |
 | – | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | fertig, PR nach #6, #7, #8 |
 | – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR nach #9, #10 |
+| – | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | fertig, PR nach `tick` |
 
 PR #10 baut auf PR #9 auf (Basis `bitget-kerzen`). Beim Merge von PR #9 den Branch nicht löschen,
 bevor PR #10 auf `main` umgestellt ist, sonst schliesst GitHub PR #10 (siehe «Mergen» oben).
@@ -411,6 +419,17 @@ class Konfiguration: api_key, api_secret, passphrase (alle repr=False); db_pfad:
 def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration   # ValueError, nennt nie einen Key-Wert
 def starte(konfiguration, *, client_fabrik=BitgetClient, uhr=…, schlafen=time.sleep, durchlaeufe=None) -> None
 def main(umgebung=None, *, starte=starte) -> int   # 0 nach Ctrl+C, 2 bei falscher Konfiguration
+
+# backtest.py (Branch backtest), Aufruf: python -m bollinger_bot.backtest <kerzen.csv> [--db data/backtest.db]
+def lies_kerzen(pfad: str | Path) -> list[Kerze]   # CSV, Zeiten in UTC, älteste zuerst
+class AufgezeichneteBoerse:   # erfüllt Boerse; Kurs = letzter Schlusskurs, 6 Stellen, 0.1 % Gebühr wie Bitget
+    def __init__(self, *, kerzen, intervall_dauer, startguthaben=1000.0, gebuehr_prozent=0.1)
+    jetzt: datetime           # simulierte Zeit, setzt backtest()
+@dataclass(frozen=True)
+class Ergebnis: kerzen_ausgewertet; kaeufe; verkaeufe; startwert; endwert; rendite_prozent; gebuehren; btc_am_ende
+def pruefe_kerzen(kerzen, *, einstellungen) -> None   # ValueError bei Lücken, doppelten Kerzen, falschem Intervall
+def backtest(*, kerzen, speicher, einstellungen, startguthaben=1000.0) -> Ergebnis   # ruft das echte tick() pro Kerze
+def main(argv=None) -> int   # 2, wenn die DB schon existiert oder die CSV fehlt/ungültig ist
 ```
 
 Tabellen der SQLite-Datei (Details im README unter «Datenbank», sobald PR #6 gemergt ist):
