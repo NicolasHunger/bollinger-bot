@@ -130,6 +130,25 @@ pytest                           # alle Tests ausführen
 - `-e` installiert das Projekt «editierbar»: Änderungen am Code wirken sofort, ohne neu zu
   installieren.
 
+### Bot starten
+
+Der Bot liest seine Konfiguration aus Umgebungsvariablen. Die Vorlage `.env.example` nennt alle
+und erklärt sie kurz.
+
+```bash
+cp .env.example .env                  # danach die Demo-Keys von Bitget eintragen
+set -a; source .env; set +a           # Variablen aus .env in die Shell übernehmen
+python -m bollinger_bot               # läuft, bis man ihn mit Ctrl+C stoppt
+```
+
+- Nur **Demo-Keys** aus dem Demo-Bereich von Bitget verwenden. Die `.env` steht in der
+  `.gitignore` und wird nie committet.
+- Fehlt ein Key oder ist ein Wert ungültig, endet der Bot sofort mit Exit-Code 2 und nennt im
+  Log den Namen der Variable, nie ihren Wert.
+- In Docker Compose liest `env_file: .env` die Datei ein, und `stop_signal: SIGINT` sorgt dafür,
+  dass `docker stop` den Bot wie Ctrl+C sofort beendet. Die Details folgen mit dem Deploy
+  (AP 8b).
+
 ## Teststrategie
 
 _Entwurf, wird im Projekt verfeinert._
