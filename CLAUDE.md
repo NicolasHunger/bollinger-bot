@@ -207,11 +207,14 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
 3. **Konflikte lösen:** `main` in den Branch mergen, nie rebasen, nie force-pushen. So lösen, dass
    beide Seiten erhalten bleiben: `pyproject.toml` mit den Versionsgrenzen, `pytest-html` und
    `tzdata`; im README beide Abschnitte, danach die Code-Übersicht nachführen; die `CLAUDE.md` mit
-   dem Stand von `main`. Bei einem Konflikt im Python-Code nicht raten, sondern Lucas fragen oder im
-   PR kommentieren. Danach `pytest` lokal, erst wenn alles grün ist pushen.
-4. **Code von Lucas nur ändern, wenn es nötig ist**, damit es mit einem gemergten PR zusammenpasst
-   (z.B. geänderte Signatur in PR #8 oder #10). Als eigener Commit mit Begründung und passendem
-   Test. Die TDD-Historie (rote und grüne Commits) nicht umschreiben.
+   dem Stand von `main`. Konflikte im Python-Code löst die eigene Claude-Sitzung: Sie liest beide
+   Seiten, den Ablauf von `tick()` und die Abmachungen in dieser Datei und entscheidet. Lucas
+   muss dafür nicht gefragt werden. Danach `pytest` lokal, erst wenn alles grün ist pushen.
+4. **Code in Lucas' Branches darf geändert werden, wenn es Konflikte gibt** oder er sonst nicht
+   mehr zu einem gemergten PR passt (z.B. geänderte Signatur in PR #8 oder #10). Als eigener
+   Commit mit kurzer Begründung in der Nachricht, und die Tests müssen danach grün sein (bei
+   geändertem Verhalten mit angepasstem oder neuem Test). Die bestehende TDD-Historie (rote und
+   grüne Commits) nicht umschreiben: kein rebase, kein amend, kein force-push.
 5. **Lucas informieren:** im PR mit @LostMyNutsLastXMas kurz schreiben, was übernommen wurde.
 
 **Mergen: so und in dieser Reihenfolge**
