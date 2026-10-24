@@ -65,6 +65,13 @@ def guthaben_bei_bitget(boerse, **guthaben):
     return guthaben
 
 
+def position_in_der_datenbank(speicher, *, preis, menge=0.999):
+    """Ein früherer Kauf ohne Verkauf danach: Die Position ist offen."""
+    kauf = Trade(zeit=JETZT - MIN_15 * 8, seite="kauf", menge=menge, preis=preis, order_id="kauf-1")
+    speicher.speichere_trade(kauf)
+    return kauf
+
+
 def signal_eintrag(startzeit, signal="halten"):
     return SignalEintrag(
         startzeit=startzeit,
@@ -213,3 +220,30 @@ def test_ein_rest_unter_dem_mindestbetrag_blockiert_den_kauf_nicht(boerse, speic
     tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
 
     boerse.kaufe.assert_called_once_with("BTCUSDT", 100.0)
+
+
+# Schlusskurse für ein Verkaufssignal über dem Mittelband, wie im Test für «halten»:
+#   Mittelband 100, σ = 2, k = 1: oberes Band 102, unteres Band 98
+# Mit offener Position: Schlusskurs 102 liegt über dem Mittelband 100, also verkaufen.
+UEBER_DEM_MITTELBAND = (98, 102, 98, 102)
+
+
+def test_verkaufen_verkauft_die_position_und_speichert_den_trade(boerse, speicher):
+    # Gekauft zu 97 USDT. Bei Bitget liegen 0.0005 BTC mehr als gekauft (Staub von früher):
+    # Verkauft wird nur die Menge der Position, 0.999 BTC.
+    kauf = position_in_der_datenbank(speicher, preis=97.0, menge=0.999)
+    boerse.hole_kerzen.return_value = kerzen(*UEBER_DEM_MITTELBAND)
+    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.9995)
+    boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.999, preis=102.0)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.VERKAUFEN
+    # Wert 0.999 · 102 = 101.90 USDT, über dem Mindestbetrag: verkaufsmenge() lässt 0.999 stehen.
+    boerse.verkaufe.assert_called_once_with("BTCUSDT", 0.999)
+    assert speicher.hole_trades() == [
+        kauf,
+        Trade(zeit=JETZT, seite="verkauf", menge=0.999, preis=102.0, order_id="verkauf-1"),
+    ]
+    assert speicher.offene_position() is None
+    assert [e.signal for e in speicher.hole_signale()] == ["verkaufen"]
