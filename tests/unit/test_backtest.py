@@ -252,6 +252,36 @@ def test_order_ohne_positiven_betrag_wird_abgelehnt(methode, wert):
     assert boerse.hole_kontostand("BTC") == 0.0
 
 
+def test_kauf_unter_dem_mindestbetrag_wird_abgelehnt():
+    # Bitget nimmt bei BTCUSDT erst Orders ab 1 USDT an (BTCUSDT_SPOT.mindestbetrag).
+    # Genau 1 USDT geht noch: 1 / 50 000 = 0.00002 BTC, ausgegeben 1.00 USDT. 0.99 nicht.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(50_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + MIN_15
+
+    with pytest.raises(ValueError, match="Mindestbetrag"):
+        boerse.kaufe("BTCUSDT", 0.99)
+    assert boerse.hole_kontostand("USDT") == 1000.0
+
+    boerse.kaufe("BTCUSDT", 1.0)
+    assert boerse.hole_kontostand("USDT") == 999.0
+
+
+def test_verkauf_unter_dem_mindestbetrag_wird_abgelehnt():
+    # Nach dem Kauf für 100 USDT liegen 0.001998 BTC auf dem Konto (siehe oben). Beim Kurs
+    # 50 000 sind 0.00002 BTC genau 1.00 USDT wert und gehen noch, 0.000019 BTC (0.95 USDT) nicht.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(50_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + MIN_15
+    boerse.kaufe("BTCUSDT", 100.0)
+
+    with pytest.raises(ValueError, match="Mindestbetrag"):
+        boerse.verkaufe("BTCUSDT", 0.000019)
+    assert boerse.hole_kontostand("BTC") == 0.001998
+
+    boerse.verkaufe("BTCUSDT", 0.00002)
+    # 0.001998 − 0.00002 = 0.001978, in float nicht ganz genau.
+    assert boerse.hole_kontostand("BTC") == pytest.approx(0.001978)
+
+
 @pytest.mark.parametrize("methode", ["hole_kerzen", "hole_kontostand", "kaufe", "verkaufe"])
 def test_simulierte_boerse_hat_dieselben_methoden_wie_der_port(methode):
     # tick() ruft die Börse mit Positionsargumenten auf. Stimmen Namen oder Reihenfolge der
