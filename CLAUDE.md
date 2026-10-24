@@ -58,50 +58,52 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
 - **Nur im eigenen Paket arbeiten.** Fällt in einem fremden Paket etwas auf, im PR kommentieren
   statt selbst ändern.
 
-### Offene Aufgaben pro Person (Stand 21.10.2026, nach den ersten Reviews)
+### Offene Aufgaben pro Person (Stand Sa 24.10.2026)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
-Abgabe und Präsentation: Mi 28.10.2026, also noch 7 Tage.
+Abgabe und Präsentation: Mi 28.10.2026, also noch 4 Tage.
 
-Stand auf GitHub: PR #1 gemergt. PR #2 bis #7 (Lucas) sind reviewt, die Forderungen aus den
-Reviews sind umgesetzt (PR #2 bis #4 approved, PR #5 bis #7 warten auf das erneute Review).
-Valentin hat PR #8 (Risiko-Check), #9 (Client: Signatur und Kerzen, Draft, baut auf PR #5 auf),
-#10 (Client: Orders und Kontostand, Draft, baut auf #9 auf) und #11 (Testkonzept) offen.
-Nicolas hat PR #12 (Pipeline: Tests und Reports) offen, von Valentin approved.
+Stand auf GitHub: PR #1 bis #5 gemergt (Grundgerüst, Versionsgrenzen, Bollinger, Regeln, Port),
+auf `main` laufen 42 Tests. Offen: PR #6 und #7 (Lucas, warten auf das erneute Review von
+Nicolas), #8 (Valentin, approved), #9 (Draft, Basis jetzt `main`), #10 (Draft, Basis
+`bitget-kerzen`, Änderungen verlangt), #11 (Review mit vier Punkten), #12 (Nicolas, approved, aber
+Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neuen Commits.
 
 **Lucas** (Strategie und Ablauf)
 
-- [x] AP 8a.1 Grundgerüst (PR #1, gemergt)
-- [x] Review-Forderungen in PR #2 bis #7 umgesetzt und beantwortet
-- [x] KI-Nutzung im README nachgeführt (in PR #3)
-- [ ] PR #2 bis #4 mergen (approved), PR #5 bis #7 nach dem erneuten Review
-- [ ] **PRs von Valentin reviewen:** PR #8, #9, #10, #11 (Lucas ist überall als Reviewer
-      eingetragen). PR #9 und #10 erst nach PR #5, weil sie darauf aufbauen.
-- [ ] AP 6, Teil 3: `tick()` und Einstiegspunkt (mit `logging.basicConfig`), sobald PR #3 bis
-      #10 gemergt sind
+- [x] AP 8a.1 Grundgerüst (PR #1)
+- [x] PR #2 bis #5 gemergt (24.10.)
+- [x] Valentins PRs reviewt (21.10.): #8 approved, #9 kommentiert, #10 Änderungen verlangt
+      (Order kann nach einem Netzfehler verloren gehen), #11 kommentiert (Approve nach 4 Punkten)
+- [ ] PR #6 und #7 mergen, sobald Nicolas (oder ersatzweise Valentin) approved hat
+- [ ] AP 6, Teil 3: `tick()` und Einstiegspunkt (mit `logging.basicConfig`), sobald PR #6, #7
+      und #8 gemergt sind. Den echten Client braucht erst der Einstiegspunkt, nicht die Tests.
+- [ ] KI-Nutzung im README nachführen: «Zum Reviewen» (Reviews zu #8 bis #11 mit Claude Code
+      vorbereitet)
 - [ ] Eigene Reflexion (TDD, Code Reviews, KI-Nutzung)
 
 **Valentin** (Börse)
 
-- [x] PR #2 bis #5 reviewt
+- [x] PR #2 bis #5 reviewt, PR #5 approved
 - [x] Spot entschieden (README in PR #9)
-- [ ] PR #5 erneut reviewen (`kaufe` nimmt jetzt `betrag`), dann approven
-- [ ] AP 3 und AP 4: PR #9 und #10 aus dem Draft holen, sobald PR #5 gemergt ist
-- [ ] AP 5 Risiko-Check: PR #8 durch das Review bringen
-- [ ] Testkonzept: PR #11 durch das Review bringen
+- [ ] PR #8 mergen (von Lucas approved, die drei Vorschläge aus dem Review vorher oder danach)
+- [ ] PR #9: Vorschläge aus dem Review umsetzen, aus dem Draft holen, mergen
+- [ ] PR #10: Bedingung aus dem Review umsetzen (orderInfo-Fehler abfangen, Order-ID mitgeben),
+      dann Basis auf `main` stellen (siehe Merge-Hinweis unten), aus dem Draft holen
+- [ ] PR #11: die vier Punkte aus dem Review umsetzen
+- [ ] Ersatz-Reviewer für PR #6 und #7, falls Nicolas bis So 25.10. nicht reviewt
 - [ ] Eigene Reflexion
 
 **Nicolas** (Infra und Dashboard)
 
-- [x] PR #6 und #7 reviewt
-- [ ] PR #6 und #7 erneut reviewen, dann approven
-- [ ] **Zuerst:** AP 8a.2 Pipeline mergen (PR #12, approved), danach laufen alle PRs durch die
-      Pipeline. SonarQube Cloud anbinden, falls noch nicht in PR #12.
-- [ ] Offene Punkte aus Valentins Review zu PR #1 entscheiden: `coverage.xml` in `addopts` oder
-      nur in der Pipeline, Streamlit als Pflicht-Abhängigkeit oder Extra `dashboard`
-- [ ] Anbieter der Cloud-VM wählen, AP 8b Deploy auf die VM (`stop_signal: SIGINT`, siehe
-      Abmachungen)
+- [x] PR #6 und #7 reviewt (erste Runde)
+- [ ] **Dringend:** PR #6 und #7 erneut reviewen, dann approven
+- [ ] **Dringend:** Konflikt in PR #12 mit `main` lösen (`main` in den Branch mergen), dann
+      mergen. GitHub Pages auf «GitHub Actions» stellen (nur Admin).
+- [ ] SonarQube Cloud anbinden (eigener PR), beide `coverage.xml` angeben
+- [ ] Streamlit als Pflicht-Abhängigkeit oder Extra `dashboard` entscheiden
 - [ ] AP 7 Dashboard
+- [ ] Anbieter der Cloud-VM wählen, AP 8b Deploy auf die VM (`stop_signal: SIGINT`)
 - [ ] PR #11 (Testkonzept) reviewen
 - [ ] Planung und Architektur im README nachführen
 - [ ] Eigene Reflexion
@@ -110,29 +112,34 @@ Nicolas hat PR #12 (Pipeline: Tests und Reports) offen, von Valentin approved.
 
 - [ ] Handelspaar und Kerzen-Intervall festlegen (Vorschlag: BTCUSDT, 15min; README, «Offene
       Entscheide»)
-- [ ] Merge-Reihenfolge: PR #12 (Pipeline), dann #2, #3, #4, #5, dann #9 und #10 (bauen auf #5
-      auf), #6, #7, #8, #11. Konflikte beim Mergen sind möglich: PR #12, #2 und #7 ändern alle die
-      Liste `dev` in der `pyproject.toml` (pytest-html, Versionsgrenzen, tzdata; alles behalten),
-      und mehrere PRs ändern das README.
 - [ ] Präsentation (10 Minuten): Endprodukt, Testing, Reports, Reflexion, Fazit
 
-**Zeitplan bis zur Abgabe** (Vorschlag)
+**Mergen: so und in dieser Reihenfolge**
+
+- **Immer «Create a merge commit»**, nie «Squash» oder «Rebase». PR #10 enthält die Commits von
+  PR #9, ein Squash würde Konflikte erzeugen.
+- **Nie den Basis-Branch eines offenen PR löschen.** GitHub stellt den Folge-PR dabei nicht
+  automatisch um, sondern **schliesst** ihn (so passiert am 24.10. mit PR #9 beim Merge von PR #5;
+  wiederhergestellt). Darum beim Merge von PR #9 den Branch `bitget-kerzen` **nicht** löschen.
+  Zuerst PR #10 umstellen (`gh pr edit 10 --base main` oder auf GitHub «Edit» neben dem Titel),
+  erst danach `bitget-kerzen` löschen.
+- Reihenfolge ab jetzt: #8, #6, #7, #12, #9, #10, #11, dann `tick()`. Konflikte möglich: PR #12
+  und #7 ändern die Liste `dev` in der `pyproject.toml` (pytest-html, tzdata; beides behalten,
+  mit den Versionsgrenzen aus PR #2), mehrere PRs ändern das README.
+
+**Zeitplan bis zur Abgabe** (Stand 24.10., der alte Plan ist um rund zwei Tage verrutscht)
 
 | Bis | Was |
 |---|---|
-| Do 22.10. | PR #2 bis #8 gemergt, Pipeline angefangen |
-| Fr 23.10. | Pipeline läuft (AP 8a.2), PR #9 bis #11 gemergt, `tick()` als PR offen |
-| So 25.10. | `tick()` und Dashboard gemergt, VM eingerichtet |
-| Di 27.10. | Deploy (AP 8b), Bot läuft auf der VM, Doku, Reflexion und Präsentation fertig |
+| Sa 24.10. | PR #2 bis #5 gemergt ✅ |
+| So 25.10. | PR #6, #7, #8 und #12 gemergt, PR #9 und #10 aus dem Draft |
+| Mo 26.10. | PR #9 bis #11 gemergt, `tick()` und Dashboard als PR offen |
+| Di 27.10. | `tick()` und Dashboard gemergt, Deploy oder Notfallplan, Reflexion und Präsentation fertig |
 | Mi 28.10. | Abgabe und Präsentation |
 
-**Notfallplan:** Läuft der Bot bis So 25.10. nicht auf der VM, zeigt die Präsentation `tick()`
-mit gemockter Börse und das Dashboard mit Testdaten. Die Rubrik bewertet vor allem Tests,
+**Notfallplan:** Läuft der Bot bis Mo 26.10. abends nicht auf der VM, zeigt die Präsentation
+`tick()` mit gemockter Börse und das Dashboard mit Testdaten. Die Rubrik bewertet vor allem Tests,
 Reports, PRs und Doku, nicht ob der Bot echt handelt.
-
-Der Abschnitt «Noch offen, vor dem jeweiligen Paket klären» weiter unten wird erst mit PR #2 und
-PR #4 aktualisiert. Bis dahin gilt: Verkaufsregel und Testtrennung sind in diesen PRs
-entschieden, Spot ist entschieden (PR #9), Port und Schema stehen in PR #5 und #6.
 
 ## Entwicklung: Einrichten und Regeln
 
@@ -189,15 +196,17 @@ Danach wie oben aktivieren und `pip install -e ".[dev]"` ausführen.
   kommentieren und antworten, dann mergen.
 - **`.venv/` und `.env` nie committen** (beide stehen in der `.gitignore`).
 
-### Noch offen, vor dem jeweiligen Paket klären
+### Entscheide vor den Paketen
 
-- **Spot oder USDT-M-Futures:** bestimmt die Endpunkte in #3 und #4. Vor #3 entscheiden.
+- **Spot statt USDT-M-Futures: entschieden** (Valentin, README in PR #9). Details unter
+  «Abmachungen».
 - **Verkaufsregel und Stop-Loss: entschieden (17.10.2026, Vorschlag Lucas, Bestätigung durch
   Valentin in PR #4):** Verkauf, wenn eine Kerze über dem Mittelband schliesst, oder mehr als
   3 % unter dem Kaufpreis (Stop-Loss). Höchstens eine offene Position, kein Nachkaufen.
-- **Port-Schnittstelle** (welche Funktionen `tick()` vom Client erwartet): Lucas und Valentin
-  legen sie gemeinsam fest, bevor #3 und #6 starten.
-- **SQLite-Schema:** Lucas und Nicolas legen es gemeinsam fest, bevor #6 und #7 starten.
+- **Port-Schnittstelle: entschieden** (PR #5, gemergt am 24.10.2026). Siehe «Öffentliche
+  Schnittstellen».
+- **SQLite-Schema:** Vorschlag in PR #6, von Nicolas reviewt, Forderungen umgesetzt, wartet auf
+  sein erneutes Review.
 
 Aus dem Review von Valentin zu PR #1
 (https://github.com/NicolasHunger/bollinger-bot/pull/1#issuecomment-5912599081):
@@ -239,7 +248,7 @@ Getroffene Entscheide hier und im README unter «Offene Entscheide» nachführen
   erklären können: Code erklären statt nur liefern und die KI-Nutzung im README nachführen.
 - Alle drei sind Trading-Neulinge: Fachbegriffe (Kerze, Band, σ, Spot/Futures) kurz erklären.
 
-## Stand der PRs und Schnittstellen (21.10.2026, nach den ersten Reviews)
+## Stand der PRs und Schnittstellen (Sa 24.10.2026)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README. Die Nummern
 stimmen nicht überein. In den älteren Abschnitten weiter oben steht «#n» allein immer für das
@@ -251,21 +260,21 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | PR | Branch | Wer | Inhalt | Stand |
 |---|---|---|---|---|
 | #1 | `grundgeruest` | Lucas | AP 8a.1: Projektstruktur, `pyproject.toml`, pytest | ✅ gemergt |
-| #2 | `review-pr1-versionen` | Lucas | Versionsgrenzen, Testtrennung nur über Ordner | approved |
-| #3 | `bollinger-berechnung` | Lucas | AP 1: `bollinger.py`, KI-Nutzung im README | approved |
-| #4 | `kauf-verkaufsregeln` | Lucas | AP 2: `regeln.py`, Hinweis «Warum der Bot kaum Geld verdient» | approved |
-| #5 | `port-schnittstelle` | Lucas | Port: `port.py` | Review-Forderungen umgesetzt, wartet auf Valentin |
+| #2 | `review-pr1-versionen` | Lucas | Versionsgrenzen, Testtrennung nur über Ordner | ✅ gemergt |
+| #3 | `bollinger-berechnung` | Lucas | AP 1: `bollinger.py`, KI-Nutzung im README | ✅ gemergt |
+| #4 | `kauf-verkaufsregeln` | Lucas | AP 2: `regeln.py`, Hinweis «Warum der Bot kaum Geld verdient» | ✅ gemergt |
+| #5 | `port-schnittstelle` | Lucas | Port: `port.py` | ✅ gemergt |
 | #6 | `sqlite-speicher` | Lucas | AP 6, Teil 1: `speicher.py` | Review-Forderungen umgesetzt, wartet auf Nicolas |
 | #7 | `polling-schleife` | Lucas | AP 6, Teil 2: `polling.py` | Review-Wünsche umgesetzt, wartet auf Nicolas |
-| #8 | `risiko-check` | Valentin | AP 5: `risiko.py` | wartet auf Review (Lucas) |
-| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | Draft, Basis `port-schnittstelle` |
-| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Draft, Basis `bitget-kerzen` |
-| #11 | `testkonzept` | Valentin | Testkonzept im README | wartet auf Review (Lucas, Nicolas) |
-| #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | approved |
+| #8 | `risiko-check` | Valentin | AP 5: `risiko.py` | approved (Lucas), 3 Vorschläge |
+| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | Draft, Basis `main`, kommentiert (6 Vorschläge) |
+| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Draft, Basis `bitget-kerzen`, Änderungen verlangt |
+| #11 | `testkonzept` | Valentin | Testkonzept im README | kommentiert (Lucas), wartet auf Nicolas |
+| #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | approved, Konflikt mit `main` |
 | – | – | Lucas | AP 6, Teil 3: `tick()` und Einstiegspunkt | folgt nach den Merges |
 
-PR #9 und #10 bauen auf PR #5 auf: Beim Mergen von PR #5 den Branch `port-schnittstelle` löschen
-lassen, dann zeigt PR #9 automatisch auf `main` (und danach #10 auf `main`, sobald #9 gemergt ist).
+PR #10 baut auf PR #9 auf (Basis `bitget-kerzen`). Beim Merge von PR #9 den Branch nicht löschen,
+bevor PR #10 auf `main` umgestellt ist, sonst schliesst GitHub PR #10 (siehe «Mergen» oben).
 
 ### Öffentliche Schnittstellen
 
