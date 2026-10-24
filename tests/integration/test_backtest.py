@@ -276,6 +276,27 @@ def test_main_meldet_eine_fehlende_csv(tmp_path, capsys):
     assert not db.exists()
 
 
+@pytest.mark.parametrize(
+    ("inhalt", "meldung"),
+    [
+        ("", "Zu wenig Kerzen"),
+        ("2026-10-03T18:45:00,1,1,1,1,1\n", "Zeit ohne Zeitzone"),
+    ],
+    ids=["nur_kopfzeile", "ohne_zeitzone"],
+)
+def test_main_meldet_eine_ungueltige_csv(tmp_path, capsys, inhalt, meldung):
+    csv_datei = tmp_path / "kerzen.csv"
+    csv_datei.write_text("startzeit,eroeffnung,hoch,tief,schluss,volumen\n" + inhalt)
+    db = tmp_path / "backtest.db"
+
+    code = main([str(csv_datei), "--db", str(db)])
+
+    assert code == 2
+    assert meldung in capsys.readouterr().err
+    # Wie bei der fehlenden CSV: keine Datei anlegen, an der der nächste Versuch scheitert.
+    assert not db.exists()
+
+
 # runpy warnt, weil die Tests das Modul schon importiert haben. Auf der Kommandozeile mit
 # `python -m` kommt die Warnung nicht.
 @pytest.mark.filterwarnings("ignore:'bollinger_bot.backtest' found in sys.modules")
