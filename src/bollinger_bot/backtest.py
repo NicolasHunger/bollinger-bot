@@ -282,13 +282,24 @@ def main(argv: list[str] | None = None) -> int:
     with Speicher(argumente.db) as speicher:
         ergebnis = backtest(kerzen=kerzen, speicher=speicher, einstellungen=einstellungen)
 
-    von, bis = kerzen[0].startzeit, kerzen[-1].startzeit
-    print(f"Kerzen vom {von:%d.%m.%Y %H:%M} bis {bis:%d.%m.%Y %H:%M} UTC")
-    print(f"Ausgewertete Kerzen: {ergebnis.kerzen_ausgewertet}")
+    von = kerzen[0].startzeit
+    bis = kerzen[-1].startzeit + einstellungen.intervall_dauer
+    btc_kurs_prozent = (kerzen[-1].schluss / kerzen[0].eroeffnung - 1) * 100
+    print(
+        f"Zeitraum: {von:%d.%m.%Y %H:%M} bis {bis:%d.%m.%Y %H:%M} UTC "
+        f"({len(kerzen)} Kerzen à {einstellungen.intervall})"
+    )
+    print(
+        f"Ausgewertete Kerzen: {ergebnis.kerzen_ausgewertet} "
+        f"(die ersten {einstellungen.n - 1} nur für die Bänder)"
+    )
     print(f"Käufe: {ergebnis.kaeufe}, Verkäufe: {ergebnis.verkaeufe}")
+    print(f"BTC am Ende: {ergebnis.btc_am_ende:.6f} (im Endwert zum letzten Schlusskurs)")
+    print(f"Gebühren: {ergebnis.gebuehren:.2f} USDT")
     print(f"Startwert: {ergebnis.startwert:.2f} USDT")
     print(f"Endwert: {ergebnis.endwert:.2f} USDT")
     print(f"Rendite: {ergebnis.rendite_prozent:.2f} %")
+    print(f"BTC-Kurs im selben Zeitraum: {btc_kurs_prozent:.2f} %")
     return 0
 
 
