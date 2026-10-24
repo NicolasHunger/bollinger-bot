@@ -98,3 +98,15 @@ def test_ein_fehler_von_bitget_beendet_den_bot_nicht(client_fabrik, konfiguratio
     # Beide Durchläufe fragen Bitget, der Fehler im ersten beendet die Schleife nicht.
     assert client.hole_kerzen.call_count == 2
     assert uhr.pausen == [60, 60]
+
+
+def test_ctrl_c_beendet_den_bot_und_schliesst_den_client(client_fabrik, konfiguration, uhr):
+    # Ctrl+C oder `docker stop` (stop_signal: SIGINT) kommen als KeyboardInterrupt an, meist
+    # während der Bot wartet.
+    def schlafen(sekunden):
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        starte(konfiguration, client_fabrik=client_fabrik, uhr=uhr.jetzt, schlafen=schlafen)
+
+    client_fabrik.return_value.schliessen.assert_called_once_with()
