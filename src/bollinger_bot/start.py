@@ -1,11 +1,15 @@
 """Einstiegspunkt: liest die Konfiguration aus der Umgebung und startet den Bot."""
 
-from collections.abc import Mapping
+import time
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
-from bollinger_bot.bitget_client import INTERVALLE
-from bollinger_bot.tick import Einstellungen
+from bollinger_bot.bitget_client import INTERVALLE, BitgetClient
+from bollinger_bot.polling import polling_schleife
+from bollinger_bot.speicher import Speicher
+from bollinger_bot.tick import Einstellungen, tick
 
 PFLICHT = ("BITGET_API_KEY", "BITGET_API_SECRET", "BITGET_PASSPHRASE")
 
@@ -51,5 +55,38 @@ def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
     )
 
 
-def starte(konfiguration, *, client_fabrik=None, uhr=None, schlafen=None, durchlaeufe=None):
-    raise NotImplementedError
+def _jetzt() -> datetime:
+    return datetime.now(UTC)
+
+
+def starte(
+    konfiguration: Konfiguration,
+    *,
+    client_fabrik: Callable[..., BitgetClient] = BitgetClient,
+    uhr: Callable[[], datetime] = _jetzt,
+    schlafen: Callable[[float], None] = time.sleep,
+    durchlaeufe: int | None = None,
+) -> None:
+    """Erstellt den Bitget-Client, öffnet die Datenbank und ruft tick() jede Minute auf.
+
+    `durchlaeufe=None` heisst: endlos, bis Ctrl+C oder `docker stop`. Client, Uhr und Warten
+    sind Argumente, damit die Tests einen Mock und eine Fake-Uhr übergeben können.
+    """
+    # Die Keys gehen an den Konstruktor, nur hier sind sie bekannt (Abmachung).
+    client = client_fabrik(
+        api_key=konfiguration.api_key,
+        api_secret=konfiguration.api_secret,
+        passphrase=konfiguration.passphrase,
+    )
+    with Speicher(konfiguration.db_pfad) as speicher:
+        polling_schleife(
+            lambda: tick(
+                boerse=client,
+                speicher=speicher,
+                einstellungen=konfiguration.einstellungen,
+                jetzt=uhr(),
+            ),
+            schlafen=schlafen,
+            durchlaeufe=durchlaeufe,
+        )
+    client.schliessen()
