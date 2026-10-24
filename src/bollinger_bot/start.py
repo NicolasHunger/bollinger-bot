@@ -122,7 +122,10 @@ def main(
     *,
     starte: Callable[[Konfiguration], None] = starte,
 ) -> int:
-    """Startet den Bot. Gibt den Exit-Code zurück: 2 bei falscher Konfiguration, sonst 0.
+    """Startet den Bot. Gibt den Exit-Code zurück: 2 bei falscher Konfiguration, 0 nach Ctrl+C.
+
+    Andere Fehler (z.B. die Datenbank lässt sich nicht öffnen) lässt main() durch: Python zeigt
+    den Traceback und endet mit Exit-Code 1.
 
     `umgebung=None` heisst: die echten Umgebungsvariablen (`os.environ`). Die Tests übergeben
     ein Dictionary und für `starte` einen Mock.

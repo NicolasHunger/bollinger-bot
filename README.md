@@ -141,13 +141,22 @@ set -a; source .env; set +a           # Variablen aus .env in die Shell überneh
 python -m bollinger_bot               # läuft, bis man ihn mit Ctrl+C stoppt
 ```
 
-- Nur **Demo-Keys** aus dem Demo-Bereich von Bitget verwenden. Die `.env` steht in der
-  `.gitignore` und wird nie committet.
-- Fehlt ein Key oder ist ein Wert ungültig, endet der Bot sofort mit Exit-Code 2 und nennt im
-  Log den Namen der Variable, nie ihren Wert.
-- In Docker Compose liest `env_file: .env` die Datei ein, und `stop_signal: SIGINT` sorgt dafür,
-  dass `docker stop` den Bot wie Ctrl+C sofort beendet. Die Details folgen mit dem Deploy
-  (AP 8b).
+- Nur **Demo-Keys** aus dem Demo-Bereich von Bitget verwenden. `.env` und `.env.*` stehen in
+  der `.gitignore` und werden nie committet. Die Werte in einfachen Anführungszeichen lassen,
+  dann lesen Shell und Docker Compose Zeichen wie `$` oder `#` gleich.
+- Ist die Konfiguration falsch, endet der Bot sofort mit Exit-Code 2 und einer Zeile im Log. Bei
+  den Keys nennt sie nur den Namen der Variable, nie den Wert. Bei `BOT_INTERVALL` nennt sie den
+  falschen Wert und die erlaubten. Ein leerer Wert bei `BOT_DB_PFAD` oder `BOT_INTERVALL` gilt
+  als nicht gesetzt.
+- Exit-Codes: 0 nach Ctrl+C oder `docker stop`, 2 bei falscher Konfiguration, 1 bei einem
+  anderen Fehler beim Start (mit Traceback, z.B. wenn sich die Datenbank nicht öffnen lässt).
+  Fehler während des Betriebs (z.B. Bitget nicht erreichbar) beenden den Bot nicht, sie stehen
+  im Log, und eine Minute später versucht er es neu.
+- Für Docker Compose (Details folgen mit dem Deploy, AP 8b): `env_file: .env` liest die Datei
+  ein, `stop_signal: SIGINT` sorgt dafür, dass `docker stop` den Bot wie Ctrl+C sofort beendet.
+  Den Befehl in Exec-Form angeben (`["python", "-m", "bollinger_bot"]`), sonst kann das Signal
+  bei der Shell ankommen statt beim Bot. `BOT_DB_PFAD` absolut setzen (z.B. `/data/bot.db`), im
+  Volume, das Bot und Dashboard teilen. Die Startmeldung im Log zeigt den absoluten Pfad.
 
 ## Teststrategie
 
