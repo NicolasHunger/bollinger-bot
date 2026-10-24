@@ -27,6 +27,13 @@ und offene Entscheide stehen im `README.md`.
   GHCR, Deploy per Docker Compose auf eine Cloud-VM.
 - **Kein TDD:** bewusster Entscheid des Teams, obwohl die Eckdaten «TDD soll mal ausprobiert
   werden» verlangen und Doku und Präsentation eine Reflexion über TDD fordern.
+  **Ergänzt am 24.10.2026:** TDD wurde doch angewendet, und zwar für `tick()`, den Einstiegspunkt
+  und den Backtest (Branches `tick`, `einstiegspunkt`, `backtest`). Die Git-Historie belegt es mit
+  Commits «TDD rot» (Test zuerst, schlägt fehl), «TDD grün» (minimaler Code) und «TDD refactor».
+  Die Zyklen hat Claude Code ausgeführt, Lucas hat vorgegeben und geprüft. Damit ist die
+  Anforderung «TDD soll mal ausprobiert werden» erfüllt (laut Rubrik «muss aber nicht überall»).
+  Die übrigen Bausteine sind ohne TDD entstanden: Für die Reflexion und die Präsentation lässt
+  sich so Code ohne und mit TDD vergleichen.
 - COBOL als Projektbasis verworfen: COBOL Check ist seit Mai 2026 archiviert und meldet
   Testfehler mit Exit-Code 0, Sonar analysiert COBOL nur in Enterprise-Plänen.
 
