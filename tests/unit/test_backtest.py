@@ -124,6 +124,16 @@ def test_hole_kerzen_liefert_nur_kerzen_die_bis_jetzt_abgeschlossen_sind():
     assert [k.schluss for k in boerse.hole_kerzen("BTCUSDT", "15min", 20)] == [1.0, 2.0]
 
 
+@pytest.mark.parametrize("anzahl", [0, -1])
+def test_hole_kerzen_lehnt_eine_anzahl_unter_1_ab(anzahl):
+    # Wie der Bitget-Client. Ohne Prüfung gäbe `liste[-0:]` bei anzahl 0 alle Kerzen zurück.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(1, 2), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + 2 * MIN_15
+
+    with pytest.raises(ValueError, match="anzahl"):
+        boerse.hole_kerzen("BTCUSDT", "15min", anzahl)
+
+
 def test_kontostand_am_anfang():
     boerse = AufgezeichneteBoerse(kerzen=kerzen(1), intervall_dauer=MIN_15)
     assert boerse.hole_kontostand("USDT") == 1000.0
