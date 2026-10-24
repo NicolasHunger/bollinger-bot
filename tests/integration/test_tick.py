@@ -15,9 +15,12 @@ import pytest
 
 from bollinger_bot.port import Boerse, Kerze, Order
 from bollinger_bot.regeln import Signal
+from bollinger_bot.risiko import Handelsregeln
 from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher, Trade
 from bollinger_bot.tick import Einstellungen, tick
 
+MIN_1 = timedelta(minutes=1)
+MIN_5 = timedelta(minutes=5)
 MIN_15 = timedelta(minutes=15)
 # Um 12:16 UTC läuft die Kerze ab 12:15, die letzte abgeschlossene beginnt um 12:00.
 JETZT = datetime(2026, 10, 24, 12, 16, tzinfo=UTC)
@@ -36,8 +39,8 @@ def speicher(tmp_path):
         yield speicher
 
 
-def kerzen(*schlusskurse, letzte=LETZTE_KERZE):
-    """Kerzen im Abstand von 15 Minuten mit diesen Schlusskursen, die letzte beginnt um `letzte`.
+def kerzen(*schlusskurse, letzte=LETZTE_KERZE, abstand=MIN_15):
+    """Kerzen im Abstand `abstand` mit diesen Schlusskursen, die letzte beginnt um `letzte`.
 
     Eröffnung, Hoch und Tief liegen um den Schlusskurs herum und sind alle verschieden, damit
     auffällt, wenn tick() zwei davon vertauscht.
@@ -45,7 +48,7 @@ def kerzen(*schlusskurse, letzte=LETZTE_KERZE):
     anzahl = len(schlusskurse)
     return [
         Kerze(
-            startzeit=letzte - (anzahl - 1 - i) * MIN_15,
+            startzeit=letzte - (anzahl - 1 - i) * abstand,
             eroeffnung=schluss - 1,
             hoch=schluss + 2,
             tief=schluss - 3,
@@ -124,6 +127,20 @@ def test_neue_kerze_noch_nicht_bei_bitget(boerse, speicher, caplog):
     assert speicher.letzte_signal_startzeit() == LETZTE_KERZE - MIN_15
     assert speicher.hole_kontostaende() == []
     assert "noch nicht" in caplog.text
+
+
+def test_liefert_bitget_schon_eine_neuere_kerze_wird_sie_ausgewertet(boerse, speicher):
+    # Die Uhr der VM geht nach: Um 12:29:59 erwartet tick() die Kerze ab 12:00. Bitget hat nach
+    # seiner Uhr die Kerze ab 12:15 schon abgeschlossen und liefert sie als neueste. Ausgewertet
+    # wird die neueste (Bänder wie im Test für «halten»: 98 / 100 / 102, Schlusskurs 102).
+    boerse.hole_kerzen.return_value = kerzen(98, 102, 98, 102, letzte=LETZTE_KERZE + MIN_15)
+    guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)
+    jetzt = datetime(2026, 10, 24, 12, 29, 59, tzinfo=UTC)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=jetzt)
+
+    assert ergebnis is Signal.HALTEN
+    assert speicher.letzte_signal_startzeit() == LETZTE_KERZE + MIN_15
 
 
 def test_halten_speichert_signal_und_kontostand(boerse, speicher):
@@ -307,6 +324,41 @@ def test_stop_loss_aus_den_einstellungen(boerse, speicher):
     assert ergebnis is Signal.VERKAUFEN
 
 
+def test_schlusskurs_genau_auf_dem_unteren_band_kauft_nicht(boerse, speicher):
+    # Keine Position. Bänder 98 / 100 / 102 (siehe UNTER_DEM_MITTELBAND), Schlusskurs 98 liegt
+    # genau auf dem unteren Band: 98 < 98 ist falsch, also halten. Hält auch fest, dass tick()
+    # das untere Band und nicht das Mittelband als `unteres_band` übergibt (98 < 100 wäre wahr).
+    boerse.hole_kerzen.return_value = kerzen(*UNTER_DEM_MITTELBAND)
+    guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)
+    boerse.kaufe.return_value = Order(order_id="kauf-1", menge=0.999, preis=98.0)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.HALTEN
+    boerse.kaufe.assert_not_called()
+
+
+def test_mit_position_zwischen_unterem_band_und_mittelband_wird_gehalten(boerse, speicher):
+    # Schlusskurse 105, 99, 97, 99:
+    #   Mittelband = 400 / 4 = 100, Abweichungen +5, −1, −3, −1
+    #   Quadrate 25 + 1 + 9 + 1 = 36: Varianz = 36 / 4 = 9, σ = 3
+    #   k = 1: unteres Band 97, oberes Band 103
+    # Gekauft zu 100, Stop-Loss 100 · 97 / 100 = 97. Schlusskurs 99 liegt nicht über dem
+    # Mittelband 100 und nicht unter 97: halten. Würde tick() das untere Band als `mittelband`
+    # übergeben, wäre 99 > 97 und der Bot würde verkaufen.
+    position_in_der_datenbank(speicher, preis=100.0, menge=0.999)
+    boerse.hole_kerzen.return_value = kerzen(105, 99, 97, 99)
+    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.999)
+    boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.999, preis=99.0)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.HALTEN
+    boerse.verkaufe.assert_not_called()
+    [eintrag] = speicher.hole_signale()
+    assert (eintrag.unteres_band, eintrag.mittelband, eintrag.oberes_band) == (97.0, 100.0, 103.0)
+
+
 def test_verkaufen_ohne_order_wenn_der_wert_unter_dem_mindestbetrag_liegt(
     boerse, speicher, caplog
 ):
@@ -324,6 +376,55 @@ def test_verkaufen_ohne_order_wenn_der_wert_unter_dem_mindestbetrag_liegt(
     assert speicher.offene_position() == kauf
     assert [r.levelname for r in caplog.records] == ["WARNING"]
     assert [e.signal for e in speicher.hole_signale()] == ["verkaufen"]
+
+
+def test_tick_nutzt_alle_einstellungen(boerse, speicher):
+    # Ein anderes Handelspaar mit 5-Minuten-Kerzen und anderen Regeln. Würde tick() irgendwo
+    # einen Standardwert fest einbauen (BTCUSDT, USDT, 15min, 10 %, 1 USDT), fiele es hier auf.
+    einstellungen = Einstellungen(
+        symbol="ETHUSDC",
+        basiswaehrung="ETH",
+        quotewaehrung="USDC",
+        intervall="5min",
+        intervall_dauer=MIN_5,
+        n=4,
+        k=1.0,
+        anteil_prozent=20.0,
+        regeln=Handelsregeln(mengen_stellen=4, betrag_stellen=2, mindestbetrag=5.0),
+    )
+    # Ausgewertet ist die Kerze ab 12:05. Um 12:16 ist die 5-Minuten-Kerze ab 12:10 fertig (mit
+    # 15 Minuten wäre die letzte fertige die ab 12:00, also nichts Neues).
+    speicher.speichere_signal(signal_eintrag(LETZTE_KERZE + 5 * MIN_1))
+    # Schlusskurse 2120, 2160, 2120, 2000 (KAUFSIGNAL mal 20):
+    #   Mittelband = 8400 / 4 = 2100, Abweichungen +20, +60, +20, −100
+    #   Quadrate 400 + 3600 + 400 + 10 000 = 14 400: Varianz = 3600, σ = 60
+    #   k = 1: unteres Band 2040. Schlusskurs 2000 liegt darunter: kaufen.
+    boerse.hole_kerzen.return_value = kerzen(
+        2120, 2160, 2120, 2000, letzte=LETZTE_KERZE + 10 * MIN_1, abstand=MIN_5
+    )
+    # 0.002 ETH · 2000 = 4.00 USDC, unter dem Mindestbetrag von 5 USDC: Staub, kein Hindernis
+    # (mit dem Mindestbetrag 1 von BTCUSDT_SPOT wäre es eine unbekannte Position).
+    konto = guthaben_bei_bitget(boerse, USDC=1000.0, ETH=0.002)
+
+    def kauf(symbol, betrag):
+        # 200 USDC zu 2000 ergeben 0.1 ETH, ohne 0.1 % Gebühr 0.0999 ETH.
+        konto["USDC"] -= betrag
+        konto["ETH"] += 0.0999
+        return Order(order_id="kauf-eth", menge=0.0999, preis=2000.0)
+
+    boerse.kaufe.side_effect = kauf
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=einstellungen, jetzt=JETZT)
+
+    assert ergebnis is Signal.KAUFEN
+    boerse.hole_kerzen.assert_called_once_with("ETHUSDC", "5min", 4)
+    # Kaufbetrag: 20 % von 1000 USDC = 200.00 USDC
+    boerse.kaufe.assert_called_once_with("ETHUSDC", 200.0)
+    assert speicher.hole_trades() == [
+        Trade(zeit=JETZT, seite="kauf", menge=0.0999, preis=2000.0, order_id="kauf-eth")
+    ]
+    assert speicher.letzte_signal_startzeit() == LETZTE_KERZE + 10 * MIN_1
+    assert speicher.hole_kontostaende() == [Kontostand(zeit=JETZT, waehrung="USDC", betrag=800.0)]
 
 
 class AbsturzBeimErstenSignal(Speicher):
@@ -365,6 +466,10 @@ def test_nach_absturz_zwischen_kauf_und_signal_wird_nicht_doppelt_gekauft(boerse
         boerse.kaufe.assert_called_once()
         assert [t.order_id for t in speicher.hole_trades()] == ["kauf-1"]
         assert [e.signal for e in speicher.hole_signale()] == ["halten"]
+        # Nur der zweite Durchgang hat eine Kontostand-Zeile: 1000 − 100 = 900 USDT.
+        assert speicher.hole_kontostaende() == [
+            Kontostand(zeit=JETZT + timedelta(minutes=1), waehrung="USDT", betrag=900.0)
+        ]
 
 
 def test_fehler_der_boerse_kommt_heraus_und_nichts_wird_gespeichert(boerse, speicher):
