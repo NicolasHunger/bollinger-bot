@@ -164,8 +164,10 @@ def _verkaufe(
     kurs: float,
     jetzt: datetime,
 ) -> None:
-    # Meldet Bitget weniger, als gekauft wurde, nur das verkaufen: Mehr lehnt Bitget ab.
-    bestand = min(position.menge, boerse.hole_kontostand(einstellungen.basiswaehrung))
+    # Verkauft wird, was bei Bitget liegt, nicht die Menge laut Datenbank: Mehr lehnt Bitget ab,
+    # und so verkauft der Bot auch die Reste, die beim Abrunden früherer Verkäufe liegen blieben.
+    # Auf dem Demo-Konto gehören alle BTC dem Bot.
+    bestand = boerse.hole_kontostand(einstellungen.basiswaehrung)
     menge = verkaufsmenge(bestand=bestand, kurs=kurs, regeln=einstellungen.regeln)
     if menge == 0.0:
         log.warning(
