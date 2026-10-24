@@ -94,6 +94,20 @@ def test_lies_kerzen_rechnet_andere_zeitzonen_in_utc_um(tmp_path):
     assert kerze.startzeit.tzinfo == UTC
 
 
+def test_lies_kerzen_lehnt_zeiten_ohne_zeitzone_ab(tmp_path):
+    # Ohne Zeitzone ist unklar, ob 18:45 UTC oder Schweizer Zeit gemeint ist. Die Meldung nennt
+    # die Zeile: Zeile 1 ist die Kopfzeile, die zweite Kerze steht in Zeile 3.
+    pfad = tmp_path / "kerzen.csv"
+    pfad.write_text(
+        CSV_KOPF
+        + "2026-10-03T18:45:00+00:00,1,1,1,1,1\n"
+        + "2026-10-03T19:00:00,2,2,2,2,1\n"
+    )
+
+    with pytest.raises(ValueError, match="Zeile 3"):
+        lies_kerzen(pfad)
+
+
 def test_hole_kerzen_liefert_nur_kerzen_die_bis_jetzt_abgeschlossen_sind():
     # Kerzen ab 12:00, 12:15, 12:30 und 12:45. Um 12:45 ist die Kerze ab 12:30 gerade fertig
     # (Ende 12:30 + 15 min = 12:45), die ab 12:45 läuft noch.
