@@ -55,3 +55,6 @@ class AufgezeichneteBoerse:
             k for k in self._kerzen if k.startzeit + self._intervall_dauer <= self.jetzt
         ]
         return abgeschlossen[-anzahl:]
+
+    def hole_kontostand(self, waehrung: str) -> float:
+        return 0.0

@@ -91,3 +91,14 @@ def test_hole_kerzen_liefert_nur_kerzen_die_bis_jetzt_abgeschlossen_sind():
     assert [k.schluss for k in boerse.hole_kerzen("BTCUSDT", "15min", 2)] == [1.0, 2.0]
     # Mehr verlangt als abgeschlossen: alle abgeschlossenen, wie Bitget kurz nach dem Start.
     assert [k.schluss for k in boerse.hole_kerzen("BTCUSDT", "15min", 20)] == [1.0, 2.0]
+
+
+def test_kontostand_am_anfang():
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(1), intervall_dauer=MIN_15)
+    assert boerse.hole_kontostand("USDT") == 1000.0
+    assert boerse.hole_kontostand("BTC") == 0.0
+    # Andere Währungen gibt es im simulierten Konto nicht.
+    assert boerse.hole_kontostand("ETH") == 0.0
+
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(1), intervall_dauer=MIN_15, startguthaben=250.0)
+    assert boerse.hole_kontostand("USDT") == 250.0
