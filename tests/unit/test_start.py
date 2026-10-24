@@ -76,3 +76,13 @@ def test_key_mit_leerzeichen_am_rand_wird_abgelehnt_ohne_den_wert_zu_zeigen(wert
 
     assert "BITGET_PASSPHRASE" in str(fehler.value)
     assert "geheim" not in str(fehler.value)
+
+
+@pytest.mark.parametrize("wert", ["ge\theim", "ge\x00heim", "ge\x1bheim"])
+def test_key_mit_steuerzeichen_wird_abgelehnt_ohne_den_wert_zu_zeigen(wert):
+    # Tabulator, Nullzeichen, Escape: in einem echten Key nie, wohl ein Fehler beim Kopieren
+    with pytest.raises(ValueError) as fehler:
+        lies_konfiguration(KEYS | {"BITGET_API_KEY": wert})
+
+    assert "BITGET_API_KEY" in str(fehler.value)
+    assert wert not in str(fehler.value)
