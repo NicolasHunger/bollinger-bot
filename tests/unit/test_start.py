@@ -52,3 +52,9 @@ def test_alle_fehlenden_keys_stehen_in_einer_meldung():
     assert "BITGET_PASSPHRASE" in meldung
     assert "BITGET_API_KEY" not in meldung  # ist ja gesetzt
     assert "fake-key" not in meldung
+
+
+def test_leerer_key_gilt_als_fehlend():
+    # z.B. «BITGET_API_SECRET=» in der .env, wenn man den Wert vergessen hat
+    with pytest.raises(ValueError, match="BITGET_API_SECRET"):
+        lies_konfiguration(KEYS | {"BITGET_API_SECRET": ""})
