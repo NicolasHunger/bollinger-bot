@@ -4,11 +4,12 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from bollinger_bot.bollinger import berechne_baender
 from bollinger_bot.polling import letzte_abgeschlossene_kerze, neue_kerze_fertig
 from bollinger_bot.port import Boerse
-from bollinger_bot.regeln import Signal
+from bollinger_bot.regeln import Signal, entscheide
 from bollinger_bot.risiko import BTCUSDT_SPOT, Handelsregeln
-from bollinger_bot.speicher import Speicher
+from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher
 
 log = logging.getLogger(__name__)
 
@@ -39,10 +40,41 @@ def tick(
 
     erwartet = letzte_abgeschlossene_kerze(jetzt, einstellungen.intervall_dauer)
     kerzen = boerse.hole_kerzen(einstellungen.symbol, einstellungen.intervall, einstellungen.n)
-    if kerzen[-1].startzeit < erwartet:
+    kerze = kerzen[-1]
+    if kerze.startzeit < erwartet:
         log.info(
             "Bitget liefert die Kerze ab %s noch nicht, neuer Versuch im nächsten Durchgang",
             erwartet,
         )
         return None
-    return None
+
+    baender = berechne_baender(
+        [k.schluss for k in kerzen], n=einstellungen.n, k=einstellungen.k
+    )
+    signal = entscheide(
+        schlusskurs=kerze.schluss,
+        unteres_band=baender.unten,
+        mittelband=baender.mitte,
+        kaufpreis=None,
+    )
+    speicher.speichere_signal(
+        SignalEintrag(
+            startzeit=kerze.startzeit,
+            eroeffnung=kerze.eroeffnung,
+            hoch=kerze.hoch,
+            tief=kerze.tief,
+            schlusskurs=kerze.schluss,
+            mittelband=baender.mitte,
+            oberes_band=baender.oben,
+            unteres_band=baender.unten,
+            signal=signal.value,
+        )
+    )
+    speicher.speichere_kontostand(
+        Kontostand(
+            zeit=jetzt,
+            waehrung=einstellungen.quotewaehrung,
+            betrag=boerse.hole_kontostand(einstellungen.quotewaehrung),
+        )
+    )
+    return signal
