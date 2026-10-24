@@ -10,7 +10,7 @@ import pytest
 
 from bollinger_bot.backtest import Ergebnis, backtest
 from bollinger_bot.port import Kerze
-from bollinger_bot.speicher import Speicher
+from bollinger_bot.speicher import Speicher, Trade
 from bollinger_bot.tick import Einstellungen
 
 MIN_15 = timedelta(minutes=15)
@@ -67,4 +67,32 @@ def test_backtest_mit_einem_kauf_und_einem_verkauf(speicher):
         startwert=1000.0,
         endwert=pytest.approx(1009.78011),
         rendite_prozent=pytest.approx(0.978011),
+    )
+
+
+def test_backtest_speichert_pro_ausgewerteter_kerze_ein_signal(speicher):
+    alle = kerzen(*EIN_KAUF_EIN_VERKAUF)
+
+    backtest(kerzen=alle, speicher=speicher, einstellungen=EINSTELLUNGEN)
+
+    signale = speicher.hole_signale()
+    assert [s.startzeit for s in signale] == [k.startzeit for k in alle[3:]]
+    assert [s.signal for s in signale] == ["kaufen", "halten", "verkaufen", "halten"]
+    # Gehandelt wird am Ende der Kerze: Die 4. Kerze beginnt um 12:45 und endet um 13:00, die
+    # 6. beginnt um 13:15 und endet um 13:30.
+    assert speicher.hole_trades() == [
+        Trade(
+            zeit=ZWOELF_UHR + 4 * MIN_15, seite="kauf", menge=0.999, preis=100.0, order_id="sim-1"
+        ),
+        Trade(
+            zeit=ZWOELF_UHR + 6 * MIN_15,
+            seite="verkauf",
+            menge=0.999,
+            preis=110.0,
+            order_id="sim-2",
+        ),
+    ]
+    # Pro ausgewerteter Kerze eine Zeile mit den freien USDT (Rechnung siehe oben).
+    assert [k.betrag for k in speicher.hole_kontostaende()] == pytest.approx(
+        [900.0, 900.0, 1009.78011, 1009.78011]
     )
