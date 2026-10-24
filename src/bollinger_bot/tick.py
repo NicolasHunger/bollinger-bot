@@ -1,12 +1,16 @@
 """tick(): ein Durchgang des Bots."""
 
+import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from bollinger_bot.polling import letzte_abgeschlossene_kerze, neue_kerze_fertig
 from bollinger_bot.port import Boerse
 from bollinger_bot.regeln import Signal
 from bollinger_bot.risiko import BTCUSDT_SPOT, Handelsregeln
 from bollinger_bot.speicher import Speicher
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -28,4 +32,17 @@ class Einstellungen:
 def tick(
     *, boerse: Boerse, speicher: Speicher, einstellungen: Einstellungen, jetzt: datetime
 ) -> Signal | None:
+    if not neue_kerze_fertig(
+        jetzt, einstellungen.intervall_dauer, speicher.letzte_signal_startzeit()
+    ):
+        return None
+
+    erwartet = letzte_abgeschlossene_kerze(jetzt, einstellungen.intervall_dauer)
+    kerzen = boerse.hole_kerzen(einstellungen.symbol, einstellungen.intervall, einstellungen.n)
+    if kerzen[-1].startzeit < erwartet:
+        log.info(
+            "Bitget liefert die Kerze ab %s noch nicht, neuer Versuch im nächsten Durchgang",
+            erwartet,
+        )
+        return None
     return None
