@@ -10,6 +10,7 @@ import runpy
 import sqlite3
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 
 import pytest
 
@@ -188,6 +189,27 @@ def test_start_steht_im_log_ohne_keys(client_fabrik, konfiguration, db_pfad, uhr
     assert "15min" in start_meldungen[0]
     assert str(db_pfad) in start_meldungen[0]
     assert "fake-" not in caplog.text  # kein Key, auch nicht in anderen Meldungen
+
+
+def test_start_nennt_den_absoluten_pfad_der_datenbank(
+    client_fabrik, konfiguration, uhr, caplog, monkeypatch, tmp_path
+):
+    # Ein relativer Pfad hängt vom Arbeitsordner ab. Im Log steht darum der absolute, so fällt
+    # auf, wenn Bot und Dashboard (oder ein falsch gemountetes Volume) verschiedene Dateien nutzen.
+    monkeypatch.chdir(tmp_path)
+    konfiguration = replace(konfiguration, db_pfad=Path("data/bot.db"))
+    caplog.set_level(logging.INFO)
+
+    starte(
+        konfiguration,
+        client_fabrik=client_fabrik,
+        uhr=uhr.jetzt,
+        schlafen=uhr.schlafe,
+        durchlaeufe=1,
+    )
+
+    start_meldung = next(r.getMessage() for r in caplog.records if r.name == "bollinger_bot.start")
+    assert str(tmp_path / "data" / "bot.db") in start_meldung
 
 
 # --- main(): was `python -m bollinger_bot` aufruft ---
