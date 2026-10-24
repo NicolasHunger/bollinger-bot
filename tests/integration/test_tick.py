@@ -189,6 +189,8 @@ def test_kaufen_ohne_order_wenn_der_betrag_unter_dem_mindestbetrag_liegt(boerse,
     # 10 % von 5 USDT = 0.50 USDT, unter dem Mindestbetrag von 1 USDT: kaufbetrag() ergibt 0.0.
     boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
     guthaben_bei_bitget(boerse, USDT=5.0, BTC=0.0)
+    # Eine gültige Order, damit ein fälschlicher Kauf an assert_not_called() scheitert.
+    boerse.kaufe.return_value = Order(order_id="kauf-1", menge=0.999, preis=100.0)
 
     ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
 
@@ -206,6 +208,7 @@ def test_kein_kauf_wenn_bei_bitget_schon_btc_liegen(boerse, speicher, caplog):
     # der Datenbank steht (z.B. Absturz zwischen Kauf und Speichern). Nicht nochmals kaufen.
     boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
     guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.01)
+    boerse.kaufe.return_value = Order(order_id="kauf-2", menge=0.999, preis=100.0)
 
     ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
 
@@ -312,6 +315,7 @@ def test_verkaufen_ohne_order_wenn_der_wert_unter_dem_mindestbetrag_liegt(
     kauf = position_in_der_datenbank(speicher, preis=97.0, menge=0.005)
     boerse.hole_kerzen.return_value = kerzen(*UEBER_DEM_MITTELBAND)
     guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.005)
+    boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.005, preis=102.0)
 
     ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
 
