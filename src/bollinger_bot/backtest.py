@@ -8,9 +8,9 @@ from bollinger_bot.port import Kerze
 
 
 def lies_kerzen(pfad: str | Path) -> list[Kerze]:
-    """Liest Kerzen aus einer CSV im Format von `scripts/kerzen_holen.py`."""
+    """Liest Kerzen aus einer CSV im Format von `scripts/kerzen_holen.py`, älteste zuerst."""
     with open(pfad, newline="") as datei:
-        return [
+        kerzen = [
             Kerze(
                 startzeit=datetime.fromisoformat(zeile["startzeit"]),
                 eroeffnung=float(zeile["eroeffnung"]),
@@ -21,3 +21,4 @@ def lies_kerzen(pfad: str | Path) -> list[Kerze]:
             )
             for zeile in csv.DictReader(datei)
         ]
+    return sorted(kerzen, key=lambda kerze: kerze.startzeit)
