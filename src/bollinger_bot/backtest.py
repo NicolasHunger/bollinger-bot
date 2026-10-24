@@ -59,6 +59,11 @@ class AufgezeichneteBoerse:
     abgeschlossenen Kerze ausgeführt. Die echte Börse hätte etwas andere Kurse (Slippage), darum
     ist ein Backtest immer etwas zu optimistisch.
 
+    Orders, die Bitget ablehnen würde, lehnt auch sie mit einem ValueError ab: Betrag oder Menge
+    nicht grösser als 0, unter dem Mindestbetrag, mit mehr Nachkommastellen als erlaubt
+    (`BTCUSDT_SPOT`) oder mehr, als auf dem Konto liegt. So fällt im Backtest auf, wenn tick()
+    den Risiko-Check umgeht.
+
     Die simulierte Zeit ist das Attribut `jetzt`: Die Backtest-Schleife setzt es vor jedem
     tick() auf das Ende der Kerze, die gerade fertig wird. Ein Attribut statt einer Methode, weil
     es nichts weiter zu tun gibt, als die Zeit zu merken.
@@ -89,10 +94,7 @@ class AufgezeichneteBoerse:
         """
         if anzahl < 1:
             raise ValueError(f"anzahl muss mindestens 1 sein, erhalten: {anzahl}")
-        abgeschlossen = [
-            k for k in self._kerzen if k.startzeit + self._intervall_dauer <= self.jetzt
-        ]
-        return abgeschlossen[-anzahl:]
+        return self._abgeschlossene_kerzen()[-anzahl:]
 
     def hole_kontostand(self, waehrung: str) -> float:
         """Guthaben im simulierten Konto. Es kennt nur USDT und BTC, alles andere ist 0.0."""
@@ -157,9 +159,13 @@ class AufgezeichneteBoerse:
         self.gebuehren += gebuehr
         return Order(order_id=self._neue_order_id(), menge=menge, preis=kurs)
 
+    def _abgeschlossene_kerzen(self) -> list[Kerze]:
+        """Alle Kerzen, deren Ende (Startzeit + Intervall) nicht nach `jetzt` liegt."""
+        return [k for k in self._kerzen if k.startzeit + self._intervall_dauer <= self.jetzt]
+
     def _kurs(self) -> float:
         """Schlusskurs der zuletzt abgeschlossenen Kerze: dazu werden alle Orders ausgeführt."""
-        kerzen = self.hole_kerzen("", "", 1)
+        kerzen = self._abgeschlossene_kerzen()
         if not kerzen:
             raise ValueError(f"Um {self.jetzt} ist noch keine Kerze abgeschlossen, kein Kurs")
         return kerzen[-1].schluss
@@ -172,7 +178,7 @@ class AufgezeichneteBoerse:
 
 @dataclass(frozen=True)
 class Ergebnis:
-    """Zusammenfassung eines Backtests. Werte in USDT."""
+    """Zusammenfassung eines Backtests. Beträge in USDT."""
 
     kerzen_ausgewertet: int
     kaeufe: int
@@ -181,7 +187,7 @@ class Ergebnis:
     endwert: float  # freie USDT + BTC · letzter Schlusskurs, auch mit offener Position
     rendite_prozent: float
     gebuehren: float  # alle bezahlten Gebühren
-    btc_am_ende: float  # offene Position, im Endwert zum letzten Schlusskurs eingerechnet
+    btc_am_ende: float  # in BTC: offene Position, im Endwert zum letzten Schlusskurs eingerechnet
 
 
 def pruefe_kerzen(kerzen: list[Kerze], *, einstellungen: Einstellungen) -> None:
@@ -216,29 +222,25 @@ def backtest(
 ) -> Ergebnis:
     """Lässt den echten tick() Kerze für Kerze über die aufgezeichneten Kurse laufen.
 
-    Ausgewertet wird ab der n-ten Kerze, vorher reichen die Kurse nicht für die Bänder. Die Zeit
-    springt jeweils ans Ende der Kerze: In diesem Moment ist sie laut polling.py abgeschlossen.
+    Die Kerzen prüft zuerst pruefe_kerzen(). Ausgewertet wird ab der n-ten Kerze, vorher reichen
+    die Kurse nicht für die Bänder. Die Zeit springt jeweils ans Ende der Kerze: In diesem Moment
+    ist sie laut polling.py abgeschlossen.
 
-    `speicher` muss leer sein: tick() überspringt Kerzen, die schon ausgewertet sind, und die
-    Käufe und Verkäufe zählt backtest() aus den Trades im Speicher.
+    `speicher` muss leer sein: tick() überspringt Kerzen, die schon ausgewertet sind, und
+    backtest() zählt Signale und Trades aus dem Speicher.
     """
     pruefe_kerzen(kerzen, einstellungen=einstellungen)
     boerse = AufgezeichneteBoerse(
         kerzen=kerzen, intervall_dauer=einstellungen.intervall_dauer, startguthaben=startguthaben
     )
-    ausgewertet = 0
     for kerze in kerzen[einstellungen.n - 1 :]:
         boerse.jetzt = kerze.startzeit + einstellungen.intervall_dauer
-        signal = tick(
-            boerse=boerse, speicher=speicher, einstellungen=einstellungen, jetzt=boerse.jetzt
-        )
-        if signal is not None:  # None: tick() hat nichts ausgewertet
-            ausgewertet += 1
+        tick(boerse=boerse, speicher=speicher, einstellungen=einstellungen, jetzt=boerse.jetzt)
 
     seiten = [trade.seite for trade in speicher.hole_trades()]
     endwert = boerse.hole_kontostand("USDT") + boerse.hole_kontostand("BTC") * kerzen[-1].schluss
     return Ergebnis(
-        kerzen_ausgewertet=ausgewertet,
+        kerzen_ausgewertet=len(speicher.hole_signale()),
         kaeufe=seiten.count("kauf"),
         verkaeufe=seiten.count("verkauf"),
         startwert=startguthaben,

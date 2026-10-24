@@ -251,7 +251,6 @@ def test_kauf_ueber_dem_freien_guthaben_wird_abgelehnt():
     assert boerse.hole_kontostand("USDT") == 0.0
 
 
-
 def test_verkauf_ueber_dem_bestand_wird_abgelehnt():
     # Auf dem Konto liegen nach dem Kauf 0.001998 BTC (siehe oben). Mehr lässt sich nicht
     # verkaufen, schon 0.000001 BTC mehr wird abgelehnt.
