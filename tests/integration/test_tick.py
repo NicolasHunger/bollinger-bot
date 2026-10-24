@@ -65,6 +65,20 @@ def guthaben_bei_bitget(boerse, **guthaben):
     return guthaben
 
 
+def bitget_fuehrt_kauf_aus(boerse, konto):
+    """`kaufe()` bucht das Konto um wie Bitget, für einen Kauf von 100 USDT.
+
+    100 USDT zu 100 USDT/BTC ergeben 1 BTC, Bitget zieht 0.1 % Gebühr ab: 0.999 BTC.
+    """
+
+    def kauf(symbol, betrag):
+        konto["USDT"] -= betrag
+        konto["BTC"] += 0.999
+        return Order(order_id="kauf-1", menge=0.999, preis=100.0)
+
+    boerse.kaufe.side_effect = kauf
+
+
 def position_in_der_datenbank(speicher, *, preis, menge=0.999):
     """Ein früherer Kauf ohne Verkauf danach: Die Position ist offen."""
     kauf = Trade(zeit=JETZT - MIN_15 * 8, seite="kauf", menge=menge, preis=preis, order_id="kauf-1")
@@ -154,15 +168,7 @@ KAUFSIGNAL = (106, 108, 106, 100)
 
 def test_kaufen_kauft_und_speichert_den_trade(boerse, speicher):
     boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
-    konto = guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)
-
-    def kauf_bei_bitget(symbol, betrag):
-        # 100 USDT zu 100 USDT/BTC ergeben 1 BTC, Bitget zieht 0.1 % Gebühr ab: 0.999 BTC.
-        konto["USDT"] -= betrag
-        konto["BTC"] += 0.999
-        return Order(order_id="kauf-1", menge=0.999, preis=100.0)
-
-    boerse.kaufe.side_effect = kauf_bei_bitget
+    bitget_fuehrt_kauf_aus(boerse, guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0))
 
     ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
 
@@ -332,14 +338,7 @@ class AbsturzBeimErstenSignal(Speicher):
 
 def test_nach_absturz_zwischen_kauf_und_signal_wird_nicht_doppelt_gekauft(boerse, tmp_path):
     boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
-    konto = guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)
-
-    def kauf_bei_bitget(symbol, betrag):
-        konto["USDT"] -= betrag
-        konto["BTC"] += 0.999
-        return Order(order_id="kauf-1", menge=0.999, preis=100.0)
-
-    boerse.kaufe.side_effect = kauf_bei_bitget
+    bitget_fuehrt_kauf_aus(boerse, guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0))
 
     with AbsturzBeimErstenSignal(tmp_path / "bot.db") as speicher:
         # Erster Durchgang: Kauf und Trade gespeichert, dann Absturz vor dem Signal.
