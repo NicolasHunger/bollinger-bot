@@ -77,10 +77,13 @@ Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neue
       (Order kann nach einem Netzfehler verloren gehen), #11 kommentiert (Approve nach 4 Punkten)
 - [ ] PR #6 und #7 mergen, sobald Nicolas (oder ersatzweise Valentin) approved hat
 - [x] Die unsachlichen Kommentare in PR #6 sind gelöscht.
-- [ ] **`tick()` (AP 6, Teil 3):** wird auf dem lokalen Branch `tick` vorbereitet, der auf PR #6,
-      #7 und #8 aufbaut. Der PR kommt, sobald diese drei gemergt sind.
-- [ ] **Einstiegspunkt** (`python -m bollinger_bot`, mit `logging.basicConfig`): als eigener
-      kleiner PR nach PR #9 und #10, weil er den echten Client braucht.
+- [x] PR #7: Konflikt mit `main` gelöst (24.10.)
+- [x] **`tick()` (AP 6, Teil 3)** fertig auf dem Branch `tick`: test-first (TDD) gebaut, 41 Commits
+      rot → grün → refactor, 177 Tests. Der PR folgt, sobald PR #6, #7 und #8 gemergt sind.
+- [x] **Einstiegspunkt** fertig auf dem Branch `einstiegspunkt` (baut auf `tick` und PR #10 auf):
+      TDD, 46 Commits, 273 Tests. Der PR folgt nach PR #9 und #10.
+- [ ] **Backtest und Demo** (Branch `backtest`): `tick()` läuft gegen aufgezeichnete Kurse.
+      Notfall-Demo und Testdaten fürs Dashboard.
 - [ ] KI-Nutzung im README nachführen: «Zum Reviewen» (Reviews zu #8 bis #11 mit Claude Code
       vorbereitet)
 - [ ] Eigene Reflexion (TDD, Code Reviews, KI-Nutzung)
@@ -105,6 +108,11 @@ Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neue
 
 *Bis Mo 26.10.*
 
+- [ ] **Bestätigen:** `tick()` verkauft den ganzen BTC-Bestand bei Bitget, nicht nur die Menge laut
+      Datenbank. Sonst sammeln sich Reste aus dem Abrunden an und blockieren irgendwann jeden
+      Kauf. Annahme: Auf dem Demo-Konto gehören alle BTC dem Bot.
+- [ ] **Bei Änderungen an PR #9 oder #10 Lucas Bescheid geben.** Der Branch `einstiegspunkt` baut
+      darauf auf, nutzt aber nur den Konstruktor, `schliessen()` und `INTERVALLE`.
 - [ ] **PR #9 mergen**, mit Merge-Commit. Danach PR #10 auf `main` umstellen
       (`gh pr edit 10 --base main`). Erst dann den Branch `bitget-kerzen` löschen. PR #10 aus dem
       Draft holen und nach Lucas' Approve mergen.
@@ -147,7 +155,8 @@ Deploy je als eigenen PR.
 - [ ] **Deploy (AP 8b)** als eigener PR: VM wählen, Dockerfile mit Python 3.12, Image in GHCR,
       `docker-compose.yml` mit Bot und Dashboard (gemeinsames Volume für `BOT_DB_PFAD`,
       `stop_signal: SIGINT`), `.env` nur auf der VM, einmal von Hand prüfen, ob der Container
-      läuft.
+      läuft. **Kann schon jetzt gegen den Branch `einstiegspunkt` gebaut werden.** Der Bot
+      startet mit `python -m bollinger_bot`, Details unter «Pipeline und Deploy».
 - [ ] **Den `tick()`-PR von Lucas reviewen.**
 - [ ] **README nachführen:** Planung, Architektur und der Link zu GitHub Pages.
 - [ ] **Eigene Reflexion** und sein Teil der Präsentation.
@@ -315,7 +324,8 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Draft, Basis `bitget-kerzen`, Änderungen verlangt |
 | #11 | `testkonzept` | Valentin | Testkonzept im README | kommentiert (Lucas), wartet auf Nicolas |
 | #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | approved, Konflikt mit `main` |
-| – | – | Lucas | AP 6, Teil 3: `tick()` und Einstiegspunkt | folgt nach den Merges |
+| – | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | fertig, PR nach #6, #7, #8 |
+| – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR nach #9, #10 |
 
 PR #10 baut auf PR #9 auf (Basis `bitget-kerzen`). Beim Merge von PR #9 den Branch nicht löschen,
 bevor PR #10 auf `main` umgestellt ist, sonst schliesst GitHub PR #10 (siehe «Mergen» oben).
@@ -387,6 +397,20 @@ class BitgetFehler(Exception): code: str | None
 class BitgetClient:
     def __init__(self, *, api_key: str, api_secret: str, passphrase: str, basis_url=…,
                  timeout_sekunden: float = 10, uhr=…, schlafen=…)
+
+# tick.py (Branch tick)
+@dataclass(frozen=True)
+class Einstellungen: symbol="BTCUSDT"; basiswaehrung="BTC"; quotewaehrung="USDT"; intervall="15min"
+                     intervall_dauer=timedelta(minutes=15); n=20; k=2.0; anteil_prozent=10.0
+                     stop_loss_prozent=3.0; regeln=BTCUSDT_SPOT
+def tick(*, boerse: Boerse, speicher: Speicher, einstellungen: Einstellungen, jetzt: datetime) -> Signal | None
+
+# start.py (Branch einstiegspunkt), Aufruf: python -m bollinger_bot
+@dataclass(frozen=True)
+class Konfiguration: api_key, api_secret, passphrase (alle repr=False); db_pfad: Path; einstellungen: Einstellungen
+def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration   # ValueError, nennt nie einen Key-Wert
+def starte(konfiguration, *, client_fabrik=BitgetClient, uhr=…, schlafen=time.sleep, durchlaeufe=None) -> None
+def main(umgebung=None, *, starte=starte) -> int   # 0 nach Ctrl+C, 2 bei falscher Konfiguration
 ```
 
 Tabellen der SQLite-Datei (Details im README unter «Datenbank», sobald PR #6 gemergt ist):
@@ -395,31 +419,35 @@ eindeutig), `kontostaende`. Die Datenbank prüft per `CHECK`: `signal` und `seit
 Texte, Kurse, Mengen und Preise grösser als 0, `betrag` mindestens 0, unteres Band ≤ Mittelband ≤
 oberes Band, Tief ≤ Eröffnung und Schluss ≤ Hoch.
 
-### Geplanter Ablauf von `tick()` (Lucas, nach den Merges)
+### Ablauf von `tick()` (Branch `tick`)
 
-So werden die Bausteine zusammengesetzt.
+1. Ist keine neue Kerze fertig, gibt `tick()` `None` zurück und fragt Bitget nicht.
+2. `hole_kerzen(symbol, intervall, n)`. Ist die Liste leer oder die neueste Kerze älter als
+   erwartet, folgt `None` mit einem INFO-Eintrag, und eine Minute später gibt es einen neuen
+   Versuch.
+3. `berechne_baender`, `offene_position()` und `entscheide(…)` mit dem Stop-Loss aus den
+   Einstellungen.
+4. **KAUFEN:**
+   - **Sicherheitsnetz:** Liegt bei Bitget BTC im Wert von mindestens dem Mindestbetrag, ohne
+     dass in der Datenbank eine Position steht, kauft `tick()` nicht und schreibt einen ERROR.
+   - Sonst `kaufbetrag(guthaben=USDT, anteil 10 %)`. Bei 0.0 gibt es eine WARNING und keine Order.
+   - Sonst `kaufe`, die Order-ID ins Log und sofort `speichere_trade`.
+5. **VERKAUFEN:**
+   - `verkaufsmenge(bestand=ganzer BTC-Bestand bei Bitget)`, also inklusive Reste aus früheren
+     Abrundungen.
+   - Bei 0.0 gibt es eine WARNING. Meldet die Datenbank eine echte Position, bei Bitget liegt aber
+     fast nichts, gibt es einen ERROR: Der Verkauf wurde wohl ausgeführt, aber nicht gespeichert.
+   - Sonst `verkaufe`, ins Log und `speichere_trade`.
+6. Erst `hole_kontostand(USDT)`, dann `speichere_signal`, dann `speichere_kontostand`. Mit dem
+   Signal gilt die Kerze als ausgewertet. Stürzt `tick()` vorher ab, wertet der nächste Durchgang
+   dieselbe Kerze nochmals aus, ohne doppelt zu kaufen.
 
-1. `neue_kerze_fertig(jetzt, intervall, speicher.letzte_signal_startzeit())`. Wenn nein: fertig.
-   `intervall = bitget_client.INTERVALLE[BOT_INTERVALL]`.
-2. `boerse.hole_kerzen(symbol, BOT_INTERVALL, n)`. Ist die neueste Kerze noch nicht die erwartete
-   (`letzte_abgeschlossene_kerze`), liefert Bitget sie noch nicht: abbrechen, nächste Minute
-   neu versuchen.
-3. `berechne_baender([k.schluss for k in kerzen], n, k)`
-4. `position = speicher.offene_position()`, dann `entscheide(schlusskurs=…, unteres_band=baender.unten,
-   mittelband=baender.mitte, kaufpreis=position.preis if position else None)`
-5. Bei `KAUFEN`: `betrag = kaufbetrag(guthaben=boerse.hole_kontostand("USDT"), anteil_prozent=…,
-   regeln=BTCUSDT_SPOT)`. Ist der Betrag 0.0, keine Order. Sonst `order = boerse.kaufe(symbol,
-   betrag)` und `speicher.speichere_trade(Trade(seite="kauf", menge=order.menge, preis=order.preis, …))`.
-   Bei `VERKAUFEN`: `menge = verkaufsmenge(bestand=position.menge, kurs=schlusskurs,
-   regeln=BTCUSDT_SPOT)`, bei 0.0 keine Order, sonst `boerse.verkaufe(symbol, menge)` und
-   `speichere_trade(Trade(seite="verkauf", …))`.
-6. `speicher.speichere_signal(SignalEintrag(…, signal=signal.value))` mit Eröffnung, Hoch, Tief der
-   Kerze, danach `speicher.speichere_kontostand(…)` mit den freien USDT (nach jeder ausgewerteten
-   Kerze eine Zeile).
+**Nicht automatisch behoben:**
 
-Offene Punkte für das `tick()`-Review (aus den Reviews von Nicolas): Absturz zwischen
-`boerse.kaufe()` und `speichere_trade()` (Bitget hat die Position, die Datei nicht), und ein
-`KeyboardInterrupt` mitten in `tick()`.
+- ein Abbruch genau zwischen Order und `speichere_trade`: ERROR mit der Order-ID im Log, den Trade
+  von Hand nachtragen
+- der Rest eines nur teilweise ausgeführten Verkaufs
+- `KeyboardInterrupt` fängt `tick()` bewusst nicht ab, damit `docker stop` sofort beendet
 
 Achtung bei den Namen: `Baender` heisst `mitte`/`oben`/`unten`, `SignalEintrag` und `entscheide`
 sagen `mittelband`/`oberes_band`/`unteres_band`, `Kerze` sagt `schluss`, `SignalEintrag` und
@@ -508,6 +536,15 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
 - Docker Compose: `stop_signal: SIGINT` für den Bot. Dann kommt im Bot ein `KeyboardInterrupt` an,
   und die Polling-Schleife endet sofort (sonst ignoriert der Prozess mit PID 1 das SIGTERM, und
   Docker beendet ihn nach 10 s hart).
+- **Start:** `python -m bollinger_bot` (Branch `einstiegspunkt`, README «Bot starten»). In Compose in
+  Exec-Form angeben: `["python", "-m", "bollinger_bot"]`, sonst kommt das Stopp-Signal bei der
+  Shell an statt beim Bot.
+- **`.env` nach der Vorlage `.env.example`**, die Werte in einfachen Anführungszeichen. In Compose
+  mit `env_file: .env` einlesen. `.env` und `.env.*` sind gitignored.
+- **`BOT_DB_PFAD` absolut im gemeinsamen Volume** von Bot und Dashboard, zum Beispiel
+  `/data/bot.db`. Ein relativer Pfad gilt ab dem Ordner, in dem der Bot startet.
+- **Exit-Codes:** 0 nach Ctrl+C oder `docker stop`, 2 bei falscher Konfiguration, 1 bei einem
+  anderen Fehler beim Start. Fehler im laufenden Betrieb beenden den Bot nicht.
 
 ## HR-Briefing für Lucas (bis auf Widerruf durch Nicolas)
 
