@@ -244,8 +244,8 @@ def backtest(
         startwert=startguthaben,
         endwert=endwert,
         rendite_prozent=(endwert - startguthaben) / startguthaben * 100,
-        gebuehren=0.0,
-        btc_am_ende=0.0,
+        gebuehren=boerse.gebuehren,
+        btc_am_ende=boerse.hole_kontostand("BTC"),
     )
 
 
