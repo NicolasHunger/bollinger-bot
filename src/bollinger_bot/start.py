@@ -106,5 +106,12 @@ def starte(
         client.schliessen()
 
 
-def main(umgebung=None, *, starte=starte):
-    raise NotImplementedError
+def main(umgebung: Mapping[str, str] | None = None, *, starte=starte) -> int:
+    """Startet den Bot. Gibt den Exit-Code zurück: 2 bei falscher Konfiguration, sonst 0."""
+    try:
+        konfiguration = lies_konfiguration(umgebung)
+    except ValueError as fehler:
+        # Nur die Meldung, kein Traceback: Sie sagt schon, welche Variable falsch ist.
+        log.error("%s", fehler)
+        return 2
+    return 0
