@@ -1,11 +1,14 @@
 """Backtest: der echte `tick()` auf aufgezeichneten Kursen statt auf Bitget."""
 
 import csv
+from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from bollinger_bot.port import Kerze, Order
 from bollinger_bot.risiko import BTCUSDT_SPOT, abrunden
+from bollinger_bot.speicher import Speicher
+from bollinger_bot.tick import Einstellungen
 
 
 def lies_kerzen(pfad: str | Path) -> list[Kerze]:
@@ -95,3 +98,25 @@ class AufgezeichneteBoerse:
         self._konto["USDT"] += erloes - erloes * self._gebuehr_prozent / 100
         self._orders += 1
         return Order(order_id=f"sim-{self._orders}", menge=menge, preis=kurs)
+
+
+@dataclass(frozen=True)
+class Ergebnis:
+    kerzen_ausgewertet: int
+    kaeufe: int
+    verkaeufe: int
+    startwert: float
+    endwert: float
+    rendite_prozent: float
+
+
+def backtest(
+    *,
+    kerzen: list[Kerze],
+    speicher: Speicher,
+    einstellungen: Einstellungen,
+    startguthaben: float = 1000.0,
+) -> Ergebnis:
+    return Ergebnis(
+        kerzen_ausgewertet=0, kaeufe=0, verkaeufe=0, startwert=0.0, endwert=0.0, rendite_prozent=0.0
+    )
