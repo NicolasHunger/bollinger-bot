@@ -17,8 +17,9 @@ Der Bot läuft rund um die Uhr in einem Container auf einer Cloud-VM:
 
 1. Einmal pro Minute fragt er über die REST-API von Bitget nach, ob eine neue Kerze abgeschlossen ist.
 2. Wenn ja, berechnet er die Bollinger-Bänder aus den letzten Schlusskursen.
-3. Schliesst eine Kerze unter dem unteren Band, kauft er. Wann er verkauft (oberes Band oder
-   Mittelband), legen wir noch fest.
+3. Schliesst eine Kerze unter dem unteren Band, kauft er. Er verkauft, sobald eine Kerze über dem
+   Mittelband schliesst (der Kurs ist zur Mitte zurückgekehrt) oder mehr als 3 % unter dem
+   Kaufpreis (Stop-Loss, begrenzt den Verlust). Es ist höchstens eine Position gleichzeitig offen.
 4. Ein Risiko-Check begrenzt die Positionsgrösse und rundet Menge und Preis auf die Stellen, die
    Bitget erlaubt.
 5. Signale, Trades und Kontostand speichert er in SQLite. Ein Streamlit-Dashboard zeigt den Kurs
@@ -34,6 +35,16 @@ Der Bot läuft rund um die Uhr in einem Container auf einer Cloud-VM:
 
 Beispiel mit n = 3, k = 2 und den Kursen 10, 12, 14: Mittelband 12, σ ≈ 1.633, Bänder bei 8.73
 und 15.27. Mit σ geteilt durch n − 1 kämen 8.00 und 16.00 heraus, ein typischer Fehler.
+
+### Warum der Bot kaum Geld verdient
+
+Gemessen von Valentin an rund 1000 15-Minuten-Kerzen BTCUSDT (Oktober 2026): Vom unteren Band
+bis zum Mittelband sind es im Median nur etwa 0.45 %. Bitget verlangt 0.1 % Gebühr pro Order
+(geprüft mit einer Demo-Order), für Kauf und Verkauf also 0.2 %. Ein normaler Trade bringt damit
+etwa 0.45 % − 0.2 % ≈ 0.25 %, und ein einziger Stop-Loss von 3 % frisst den Gewinn von über
+10 solchen Trades (3 % ÷ 0.25 % = 12). Dazu prüft der Bot den Stop-Loss nur beim Kerzenschluss:
+Fällt der Kurs während der Kerze stark, kann der Verlust grösser als 3 % werden. Das bleibt
+bewusst so, denn das Projekt soll das Testen zeigen, nicht Gewinn erzielen.
 
 ## Architektur
 
@@ -178,7 +189,6 @@ PRs pro Person.
 - Spot oder USDT-M-Futures? Im Demo-Modus von Bitget prüfen, ob Spot angeboten wird. Sonst
   Futures mit Hebel 1 und nur Long-Positionen.
 - Handelspaar (z.B. BTCUSDT) und Kerzen-Intervall (z.B. 15 Minuten)
-- Verkaufsregel (oberes Band oder Mittelband) und Stop-Loss
 - Anbieter der Cloud-VM (z.B. Hetzner oder Infomaniak)
 
 ## Testkonzept
