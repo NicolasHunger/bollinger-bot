@@ -104,3 +104,7 @@ def starte(
     finally:
         # Auch bei Ctrl+C oder einem Fehler: offene Verbindungen zu Bitget schliessen.
         client.schliessen()
+
+
+def main(umgebung=None, *, starte=starte):
+    raise NotImplementedError
