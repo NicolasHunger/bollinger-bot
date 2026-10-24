@@ -74,6 +74,26 @@ def test_backtest_mit_einem_kauf_und_einem_verkauf(speicher):
     )
 
 
+def test_backtest_mit_anderem_startguthaben(speicher):
+    # Wie oben, aber mit 500 USDT: 10 % sind 50 USDT, 50 / 100 = 0.5 BTC, Gebühr 0.0005 BTC,
+    # auf dem Konto 0.4995 BTC und 450 USDT. Verkauf zu 110: 0.4995 · 110 = 54.945 USDT,
+    # Gebühr 0.054945, gutgeschrieben 54.890055: 450 + 54.890055 = 504.890055 USDT.
+    # Rendite (504.890055 − 500) / 500 = 0.978011 %, gleich wie mit 1000 USDT.
+    ergebnis = backtest(
+        kerzen=kerzen(*EIN_KAUF_EIN_VERKAUF),
+        speicher=speicher,
+        einstellungen=EINSTELLUNGEN,
+        startguthaben=500.0,
+    )
+
+    assert ergebnis.startwert == 500.0
+    assert ergebnis.endwert == pytest.approx(504.890055)
+    assert ergebnis.rendite_prozent == pytest.approx(0.978011)
+    assert [k.betrag for k in speicher.hole_kontostaende()] == pytest.approx(
+        [450.0, 450.0, 504.890055, 504.890055]
+    )
+
+
 def test_backtest_speichert_pro_ausgewerteter_kerze_ein_signal(speicher):
     alle = kerzen(*EIN_KAUF_EIN_VERKAUF)
 
