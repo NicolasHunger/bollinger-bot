@@ -85,6 +85,8 @@ class AufgezeichneteBoerse:
         `symbol` und `intervall` werden nicht beachtet: Die aufgezeichneten Kerzen gelten für
         genau ein Handelspaar und ein Intervall.
         """
+        if anzahl < 1:
+            raise ValueError(f"anzahl muss mindestens 1 sein, erhalten: {anzahl}")
         abgeschlossen = [
             k for k in self._kerzen if k.startzeit + self._intervall_dauer <= self.jetzt
         ]
