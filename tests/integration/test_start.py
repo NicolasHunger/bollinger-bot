@@ -90,6 +90,43 @@ def test_ein_durchlauf_fragt_bitget_und_legt_die_datenbank_an(
     client.schliessen.assert_called_once_with()
 
 
+def test_starte_nutzt_die_einstellungen_und_die_uhr_aus_den_argumenten(
+    client_fabrik, db_pfad, uhr, caplog
+):
+    # Andere Werte als die Standardwerte: So fällt auf, wenn starte() sie nicht weitergibt.
+    einstellungen = Einstellungen(intervall="5min", intervall_dauer=timedelta(minutes=5), n=10)
+    konfiguration = Konfiguration(
+        api_key="fake-key",
+        api_secret="fake-secret",
+        passphrase="fake-passphrase",
+        db_pfad=db_pfad,
+        einstellungen=einstellungen,
+    )
+    caplog.set_level(logging.INFO)
+
+    starte(
+        konfiguration,
+        client_fabrik=client_fabrik,
+        uhr=uhr.jetzt,
+        schlafen=uhr.schlafe,
+        durchlaeufe=1,
+    )
+
+    client_fabrik.return_value.hole_kerzen.assert_called_once_with("BTCUSDT", "5min", 10)
+    # Um 12:16 (Fake-Uhr) ist die 5-Minuten-Kerze ab 12:10 die letzte abgeschlossene. tick()
+    # meldet sie, weil hole_kerzen() nichts liefert. Mit der echten Uhr stünde hier eine andere.
+    assert "Kerze ab 2026-10-24 12:10:00+00:00 noch nicht" in caplog.text
+
+
+def test_starte_ohne_uhr_nutzt_die_echte_zeit_in_utc(client_fabrik, konfiguration, uhr, caplog):
+    # Ohne Zeitzone bräche tick() vor hole_kerzen() mit einem ValueError ab, den die
+    # Polling-Schleife als ERROR loggt. Der Bot liefe weiter, aber handelte nie.
+    starte(konfiguration, client_fabrik=client_fabrik, schlafen=uhr.schlafe, durchlaeufe=1)
+
+    client_fabrik.return_value.hole_kerzen.assert_called_once()
+    assert not [r for r in caplog.records if r.levelno >= logging.ERROR]
+
+
 def test_ein_fehler_von_bitget_beendet_den_bot_nicht(client_fabrik, konfiguration, uhr):
     client = client_fabrik.return_value
     client.hole_kerzen.side_effect = BitgetFehler("Bitget nicht erreichbar")
