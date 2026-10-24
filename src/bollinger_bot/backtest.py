@@ -77,6 +77,7 @@ class AufgezeichneteBoerse:
         self._gebuehr_prozent = gebuehr_prozent
         self._konto = {"USDT": startguthaben, "BTC": 0.0}
         self._orders = 0
+        self.gebuehren = 0.0  # alle bezahlten Gebühren in USDT
         # Anfangs steht die Uhr vor allen Kerzen: Noch ist keine abgeschlossen.
         self.jetzt = datetime.min.replace(tzinfo=UTC)
 

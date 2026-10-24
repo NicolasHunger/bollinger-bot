@@ -205,6 +205,20 @@ def test_verkauf_zum_selben_kurs_kostet_die_gebuehr():
     assert boerse.hole_kontostand("USDT") == pytest.approx(999.8001)
 
 
+def test_gebuehren_werden_in_usdt_zusammengezaehlt():
+    # Kauf und Verkauf wie oben. Die Kaufgebühr sind BTC, umgerechnet zum Kurs der Order:
+    #   Kauf:    0.000002 BTC · 50 000 = 0.1 USDT
+    #   Verkauf: 0.0999 USDT, zusammen 0.1999 USDT. Genau das fehlt am Ende an den 1000 USDT.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(50_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + MIN_15
+    assert boerse.gebuehren == 0.0
+
+    boerse.kaufe("BTCUSDT", 100.0)
+    assert boerse.gebuehren == pytest.approx(0.1)
+    boerse.verkaufe("BTCUSDT", 0.001998)
+    assert boerse.gebuehren == pytest.approx(0.1999)
+
+
 def test_gebuehr_laesst_sich_einstellen():
     # Ohne Gebühr bekommt man für 100 USDT zu 50 000 genau 100 / 50 000 = 0.002 BTC, und der
     # Verkauf bringt 0.002 · 50 000 = 100 USDT zurück: wieder genau 1000 USDT.
