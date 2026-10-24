@@ -6,6 +6,8 @@ Den ganzen Backtest mit echter SQLite-Datei testen die Integrationstests in
 
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from bollinger_bot.backtest import AufgezeichneteBoerse, lies_kerzen
 from bollinger_bot.port import Kerze, Order
 
@@ -134,3 +136,21 @@ def test_kauf_rundet_die_menge_auf_6_stellen_ab_wie_bitget():
     assert order.menge == 0.003329667
     assert boerse.hole_kontostand("BTC") == 0.003329667
     assert boerse.hole_kontostand("USDT") == 900.01
+
+
+def test_verkauf_zum_selben_kurs_kostet_die_gebuehr():
+    # Kauf wie oben: 100 USDT zu 50 000, auf dem Konto 0.001998 BTC und 900 USDT.
+    # Verkauf der ganzen Menge zum selben Kurs:
+    #   0.001998 · 50 000 = 99.90 USDT, Gebühr 0.1 % von den USDT: 0.0999
+    #   gutgeschrieben 99.90 − 0.0999 = 99.8001, USDT 900 + 99.8001 = 999.8001
+    # Hin und zurück kostet also rund 0.2 % (1000 − 999.8001 = 0.1999 USDT).
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(40_000, 50_000, 60_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + 2 * MIN_15
+    boerse.kaufe("BTCUSDT", 100.0)
+
+    order = boerse.verkaufe("BTCUSDT", 0.001998)
+
+    assert order == Order(order_id="sim-2", menge=0.001998, preis=50_000.0)
+    assert boerse.hole_kontostand("BTC") == 0.0
+    # approx: In float ergibt 900 + 99.8001 genau 999.8000999999999.
+    assert boerse.hole_kontostand("USDT") == pytest.approx(999.8001)

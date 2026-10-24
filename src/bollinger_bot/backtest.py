@@ -78,3 +78,6 @@ class AufgezeichneteBoerse:
         self._konto["BTC"] += gekauft - gebuehr
         self._orders += 1
         return Order(order_id=f"sim-{self._orders}", menge=gekauft - gebuehr, preis=kurs)
+
+    def verkaufe(self, symbol: str, menge: float) -> Order:
+        return Order(order_id="", menge=0.0, preis=0.0)
