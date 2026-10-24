@@ -113,6 +113,8 @@ def test_hole_kerzen_liefert_nur_kerzen_die_bis_jetzt_abgeschlossen_sind():
     # (Ende 12:30 + 15 min = 12:45), die ab 12:45 läuft noch.
     boerse = AufgezeichneteBoerse(kerzen=kerzen(1, 2, 3, 4), intervall_dauer=MIN_15)
 
+    # Bevor die Backtest-Schleife die Zeit setzt, ist noch keine Kerze abgeschlossen.
+    assert boerse.hole_kerzen("BTCUSDT", "15min", 2) == []
     boerse.jetzt = ZWOELF_UHR + 3 * MIN_15
     assert [k.schluss for k in boerse.hole_kerzen("BTCUSDT", "15min", 2)] == [2.0, 3.0]
     # Eine Sekunde früher läuft die Kerze ab 12:30 noch.
