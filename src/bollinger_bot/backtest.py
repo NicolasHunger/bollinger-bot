@@ -1,7 +1,7 @@
 """Backtest: der echte `tick()` auf aufgezeichneten Kursen statt auf Bitget."""
 
 import csv
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 from bollinger_bot.port import Kerze
@@ -25,6 +25,13 @@ def lies_kerzen(pfad: str | Path) -> list[Kerze]:
 
 
 class AufgezeichneteBoerse:
+    """Simulierte Börse auf aufgezeichneten Kerzen, erfüllt den Port `Boerse`.
+
+    Die simulierte Zeit ist das Attribut `jetzt`: Die Backtest-Schleife setzt es vor jedem
+    tick() auf das Ende der Kerze, die gerade fertig wird. Ein Attribut statt einer Methode, weil
+    es nichts weiter zu tun gibt, als die Zeit zu merken.
+    """
+
     def __init__(
         self,
         *,
@@ -33,7 +40,18 @@ class AufgezeichneteBoerse:
         startguthaben: float = 1000.0,
         gebuehr_prozent: float = 0.1,
     ):
-        pass
+        self._kerzen = kerzen
+        self._intervall_dauer = intervall_dauer
+        # Anfangs steht die Uhr vor allen Kerzen: Noch ist keine abgeschlossen.
+        self.jetzt = datetime.min.replace(tzinfo=UTC)
 
     def hole_kerzen(self, symbol: str, intervall: str, anzahl: int) -> list[Kerze]:
-        return []
+        """Die letzten `anzahl` Kerzen, die um `jetzt` abgeschlossen sind, älteste zuerst.
+
+        `symbol` und `intervall` werden nicht beachtet: Die aufgezeichneten Kerzen gelten für
+        genau ein Handelspaar und ein Intervall.
+        """
+        abgeschlossen = [
+            k for k in self._kerzen if k.startzeit + self._intervall_dauer <= self.jetzt
+        ]
+        return abgeschlossen[-anzahl:]
