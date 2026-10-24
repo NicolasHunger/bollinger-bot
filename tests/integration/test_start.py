@@ -6,6 +6,7 @@ in `tmp_path`. Die Fake-Uhr stellt die Zeit beim Warten nur vorwärts, kein Test
 """
 
 import logging
+import runpy
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -190,3 +191,13 @@ def test_main_richtet_das_logging_ein(starte_mock, mocker):
     basic_config.assert_called_once_with(
         level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
+
+
+def test_python_m_bollinger_bot_ohne_keys_endet_mit_code_2(monkeypatch):
+    # Wie `python -m bollinger_bot` in einer leeren Umgebung, aber im selben Prozess.
+    monkeypatch.setattr("os.environ", {})
+
+    with pytest.raises(SystemExit) as ende:
+        runpy.run_module("bollinger_bot", run_name="__main__")
+
+    assert ende.value.code == 2
