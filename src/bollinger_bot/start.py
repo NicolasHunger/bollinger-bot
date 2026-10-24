@@ -51,12 +51,13 @@ def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
         raise ValueError(f"Umgebungsvariablen fehlen oder sind leer: {', '.join(fehlend)}")
     for name in PFLICHT:
         wert = umgebung[name]
-        # isprintable() ist False für Steuerzeichen wie Tabulator oder «\r», nicht für Leerzeichen
-        if wert != wert.strip() or not wert.isprintable():
+        # isprintable() ist False für Steuerzeichen wie Tabulator oder «\r», nicht für Leerzeichen.
+        # isascii(): httpx schickt Header nur in ASCII, mit «ä» scheiterte jede Anfrage.
+        if wert != wert.strip() or not wert.isprintable() or not wert.isascii():
             # Nur den Namen nennen, nie den Wert: Die Meldung landet im Log.
             raise ValueError(
-                f"{name} hat Leerzeichen am Rand oder Steuerzeichen (z.B. einen Zeilenumbruch). "
-                "Bitte den Wert in der .env prüfen."
+                f"{name} hat Leerzeichen am Rand, Steuerzeichen (z.B. einen Zeilenumbruch) "
+                "oder Zeichen ausserhalb von ASCII (z.B. «ä»). Bitte den Wert in der .env prüfen."
             )
     # «or»: Ein leerer Wert (z.B. «BOT_INTERVALL=» oder aus Docker Compose) gilt als nicht gesetzt.
     intervall = umgebung.get("BOT_INTERVALL") or "15min"
