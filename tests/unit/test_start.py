@@ -58,3 +58,21 @@ def test_leerer_key_gilt_als_fehlend():
     # z.B. «BITGET_API_SECRET=» in der .env, wenn man den Wert vergessen hat
     with pytest.raises(ValueError, match="BITGET_API_SECRET"):
         lies_konfiguration(KEYS | {"BITGET_API_SECRET": ""})
+
+
+@pytest.mark.parametrize(
+    "wert",
+    [
+        "geheim\r",  # .env mit Windows-Zeilenenden
+        "geheim\n",
+        " geheim",
+        "geheim ",
+    ],
+)
+def test_key_mit_leerzeichen_am_rand_wird_abgelehnt_ohne_den_wert_zu_zeigen(wert):
+    # Bitget würde den Key ablehnen, und httpx zeigte ihn in der Fehlermeldung im Log.
+    with pytest.raises(ValueError) as fehler:
+        lies_konfiguration(KEYS | {"BITGET_PASSPHRASE": wert})
+
+    assert "BITGET_PASSPHRASE" in str(fehler.value)
+    assert "geheim" not in str(fehler.value)
