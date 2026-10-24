@@ -4,7 +4,7 @@ import csv
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-from bollinger_bot.port import Kerze
+from bollinger_bot.port import Kerze, Order
 
 
 def lies_kerzen(pfad: str | Path) -> list[Kerze]:
@@ -60,3 +60,6 @@ class AufgezeichneteBoerse:
     def hole_kontostand(self, waehrung: str) -> float:
         """Guthaben im simulierten Konto. Es kennt nur USDT und BTC, alles andere ist 0.0."""
         return self._konto.get(waehrung, 0.0)
+
+    def kaufe(self, symbol: str, betrag: float) -> Order:
+        return Order(order_id="", menge=0.0, preis=0.0)

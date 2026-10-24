@@ -7,7 +7,7 @@ Den ganzen Backtest mit echter SQLite-Datei testen die Integrationstests in
 from datetime import UTC, datetime, timedelta
 
 from bollinger_bot.backtest import AufgezeichneteBoerse, lies_kerzen
-from bollinger_bot.port import Kerze
+from bollinger_bot.port import Kerze, Order
 
 CSV_KOPF = "startzeit,eroeffnung,hoch,tief,schluss,volumen\n"
 MIN_15 = timedelta(minutes=15)
@@ -102,3 +102,19 @@ def test_kontostand_am_anfang():
 
     boerse = AufgezeichneteBoerse(kerzen=kerzen(1), intervall_dauer=MIN_15, startguthaben=250.0)
     assert boerse.hole_kontostand("USDT") == 250.0
+
+
+def test_kauf_zum_schlusskurs_der_letzten_abgeschlossenen_kerze():
+    # Um 12:30 ist die Kerze ab 12:15 (Schlusskurs 50 000) die letzte abgeschlossene, die ab
+    # 12:30 (60 000) läuft noch. Kauf für 100 USDT:
+    #   100 / 50 000 = 0.002 BTC gekauft, ausgegeben 0.002 · 50 000 = 100.00 USDT
+    #   Gebühr 0.1 % von den gekauften BTC: 0.002 · 0.001 = 0.000002 BTC
+    #   auf dem Konto 0.002 − 0.000002 = 0.001998 BTC, USDT 1000 − 100 = 900
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(40_000, 50_000, 60_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR + 2 * MIN_15
+
+    order = boerse.kaufe("BTCUSDT", 100.0)
+
+    assert order == Order(order_id="sim-1", menge=0.001998, preis=50_000.0)
+    assert boerse.hole_kontostand("BTC") == 0.001998
+    assert boerse.hole_kontostand("USDT") == 900.0
