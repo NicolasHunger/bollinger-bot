@@ -4,6 +4,7 @@ Die kleinen Tests rechnen wie `tests/integration/test_tick.py` mit Kursen um 100
 Kerzen und k = 1, damit sich alles im Kopf nachrechnen lässt.
 """
 
+import logging
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -187,3 +188,16 @@ def test_main_gibt_eine_zusammenfassung_aus(tmp_path, capsys):
     # Die Datei bleibt für das Dashboard liegen.
     with Speicher(db) as speicher:
         assert len(speicher.hole_signale()) == 1981
+
+
+def test_main_richtet_logging_ein(tmp_path, mocker):
+    # Format wie in der Abmachung, aber erst ab WARNING: tick() loggt jeden Kauf und Verkauf als
+    # INFO (79 Zeilen auf den echten Kursen), das verdeckt die Zusammenfassung. Warnungen und
+    # Fehler aus tick() sollen sichtbar bleiben.
+    basic_config = mocker.patch("logging.basicConfig")
+
+    main([str(ECHTE_KERZEN), "--db", str(tmp_path / "backtest.db")])
+
+    basic_config.assert_called_once_with(
+        level=logging.WARNING, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
