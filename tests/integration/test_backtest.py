@@ -102,6 +102,53 @@ def test_backtest_speichert_pro_ausgewerteter_kerze_ein_signal(speicher):
     )
 
 
+def _stundenkerzen():
+    """Dieselben Kurse, aber eine Stunde Abstand statt 15 Minuten."""
+    return [
+        Kerze(
+            startzeit=ZWOELF_UHR + i * timedelta(hours=1),
+            eroeffnung=k.eroeffnung,
+            hoch=k.hoch,
+            tief=k.tief,
+            schluss=k.schluss,
+            volumen=k.volumen,
+        )
+        for i, k in enumerate(kerzen(*EIN_KAUF_EIN_VERKAUF))
+    ]
+
+
+@pytest.mark.parametrize(
+    "reihe",
+    [
+        # Lücke: Die 5. Kerze fehlt, die Bänder enthielten Kurse, die nicht nebeneinander liegen.
+        kerzen(*EIN_KAUF_EIN_VERKAUF)[:4] + kerzen(*EIN_KAUF_EIN_VERKAUF)[5:],
+        # Doppelte Kerze: tick() sähe die zweite als schon ausgewertet an.
+        kerzen(*EIN_KAUF_EIN_VERKAUF)[:4] + kerzen(*EIN_KAUF_EIN_VERKAUF)[3:],
+        # Stunden-Kerzen mit 15-Minuten-Einstellungen: Der Backtest hielte jede Kerze schon nach
+        # 15 Minuten für abgeschlossen und handelte zu einem Kurs, der erst 45 Minuten später
+        # feststeht.
+        _stundenkerzen(),
+    ],
+    ids=["luecke", "doppelt", "stundenkerzen"],
+)
+def test_backtest_lehnt_kerzen_mit_falschem_abstand_ab(speicher, reihe):
+    with pytest.raises(ValueError, match="Abstand"):
+        backtest(kerzen=reihe, speicher=speicher, einstellungen=EINSTELLUNGEN)
+    # Geprüft wird vor dem ersten tick(): In der Datenbank landet nichts.
+    assert speicher.hole_signale() == []
+
+
+@pytest.mark.parametrize("anzahl", [0, 3])
+def test_backtest_lehnt_zu_wenig_kerzen_ab(speicher, anzahl):
+    # Mit n = 4 braucht schon die erste Auswertung 4 Kerzen.
+    with pytest.raises(ValueError, match="Zu wenig Kerzen"):
+        backtest(
+            kerzen=kerzen(*EIN_KAUF_EIN_VERKAUF)[:anzahl],
+            speicher=speicher,
+            einstellungen=EINSTELLUNGEN,
+        )
+
+
 # --- Echte Kurse: 2000 BTCUSDT-Kerzen (15 min) von Bitget, 03.10. bis 24.10.2026 ---
 
 
