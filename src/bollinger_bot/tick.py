@@ -87,9 +87,10 @@ def tick(
             jetzt=jetzt,
         )
 
-    # Das Signal zuletzt: Erst damit gilt die Kerze als ausgewertet (siehe Modul-Docstring).
-    speicher.speichere_signal(_signal_eintrag(kerze, baender, signal))
+    # Erst Bitget fragen, dann speichern: Mit dem Signal gilt die Kerze als ausgewertet (siehe
+    # Modul-Docstring), danach darf nichts mehr an Bitget scheitern.
     betrag = boerse.hole_kontostand(einstellungen.quotewaehrung)
+    speicher.speichere_signal(_signal_eintrag(kerze, baender, signal))
     speicher.speichere_kontostand(
         Kontostand(zeit=jetzt, waehrung=einstellungen.quotewaehrung, betrag=betrag)
     )
