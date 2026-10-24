@@ -86,3 +86,15 @@ def test_key_mit_steuerzeichen_wird_abgelehnt_ohne_den_wert_zu_zeigen(wert):
 
     assert "BITGET_API_KEY" in str(fehler.value)
     assert wert not in str(fehler.value)
+
+
+def test_ungueltiges_intervall_nennt_die_erlaubten_werte():
+    # Bitget schreibt Spot-Intervalle "15min", Futures "15m"
+    with pytest.raises(ValueError) as fehler:
+        lies_konfiguration(KEYS | {"BOT_INTERVALL": "15m"})
+
+    meldung = str(fehler.value)
+    assert "BOT_INTERVALL" in meldung
+    assert "'15m'" in meldung
+    for erlaubt in ("1min", "5min", "15min", "30min", "1h"):
+        assert erlaubt in meldung
