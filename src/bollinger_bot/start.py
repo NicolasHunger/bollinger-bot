@@ -114,5 +114,9 @@ def main(umgebung: Mapping[str, str] | None = None, *, starte=starte) -> int:
         # Nur die Meldung, kein Traceback: Sie sagt schon, welche Variable falsch ist.
         log.error("%s", fehler)
         return 2
-    starte(konfiguration)
+    try:
+        starte(konfiguration)
+    except KeyboardInterrupt:
+        # Ctrl+C oder `docker stop` (Docker Compose mit `stop_signal: SIGINT`): gewolltes Ende
+        log.info("Bot beendet")
     return 0
