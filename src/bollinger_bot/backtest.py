@@ -126,6 +126,7 @@ class AufgezeichneteBoerse:
         gebuehr = gekauft * self._gebuehr_prozent / 100
         self._konto["USDT"] -= gekauft * kurs
         self._konto["BTC"] += gekauft - gebuehr
+        self.gebuehren += gebuehr * kurs
         return Order(order_id=self._neue_order_id(), menge=gekauft - gebuehr, preis=kurs)
 
     def verkaufe(self, symbol: str, menge: float) -> Order:
@@ -153,6 +154,7 @@ class AufgezeichneteBoerse:
         gebuehr = erloes * self._gebuehr_prozent / 100
         self._konto["BTC"] -= menge
         self._konto["USDT"] += erloes - gebuehr
+        self.gebuehren += gebuehr
         return Order(order_id=self._neue_order_id(), menge=menge, preis=kurs)
 
     def _kurs(self) -> float:
