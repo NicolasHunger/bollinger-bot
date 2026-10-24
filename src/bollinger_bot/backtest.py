@@ -16,6 +16,7 @@ import logging
 import sys
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from pathlib import Path
 
 from bollinger_bot.port import Kerze, Order
@@ -104,6 +105,11 @@ class AufgezeichneteBoerse:
         """
         if betrag <= 0:
             raise ValueError(f"betrag muss grösser als 0 sein, erhalten: {betrag}")
+        if betrag < BTCUSDT_SPOT.mindestbetrag:
+            raise ValueError(
+                f"Kauf für {betrag} USDT abgelehnt: unter dem Mindestbetrag von "
+                f"{BTCUSDT_SPOT.mindestbetrag} USDT"
+            )
         if betrag > self._konto["USDT"]:
             raise ValueError(
                 f"Kauf für {betrag} USDT abgelehnt: frei sind nur {self._konto['USDT']} USDT"
@@ -126,6 +132,12 @@ class AufgezeichneteBoerse:
                 f"auf dem Konto sind nur {self._konto['BTC']} BTC"
             )
         kurs = self._kurs()
+        # Über Decimal wie in risiko.verkaufsmenge(), damit genau 1.00 USDT noch erlaubt ist.
+        if Decimal(str(menge)) * Decimal(str(kurs)) < Decimal(str(BTCUSDT_SPOT.mindestbetrag)):
+            raise ValueError(
+                f"Verkauf von {menge} BTC abgelehnt: zum Kurs {kurs} unter dem Mindestbetrag "
+                f"von {BTCUSDT_SPOT.mindestbetrag} USDT"
+            )
         erloes = menge * kurs
         gebuehr = erloes * self._gebuehr_prozent / 100
         self._konto["BTC"] -= menge
