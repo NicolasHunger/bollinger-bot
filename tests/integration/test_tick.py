@@ -296,3 +296,21 @@ def test_stop_loss_aus_den_einstellungen(boerse, speicher):
     ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=einstellungen, jetzt=JETZT)
 
     assert ergebnis is Signal.VERKAUFEN
+
+
+def test_verkaufen_ohne_order_wenn_der_wert_unter_dem_mindestbetrag_liegt(
+    boerse, speicher, caplog
+):
+    # Position 0.005 BTC, Wert 0.005 · 102 = 0.51 USDT, unter dem Mindestbetrag von 1 USDT:
+    # verkaufsmenge() ergibt 0.0, Bitget würde die Order ablehnen.
+    kauf = position_in_der_datenbank(speicher, preis=97.0, menge=0.005)
+    boerse.hole_kerzen.return_value = kerzen(*UEBER_DEM_MITTELBAND)
+    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.005)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.VERKAUFEN
+    boerse.verkaufe.assert_not_called()
+    assert speicher.offene_position() == kauf
+    assert [r.levelname for r in caplog.records] == ["WARNING"]
+    assert [e.signal for e in speicher.hole_signale()] == ["verkaufen"]
