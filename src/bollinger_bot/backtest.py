@@ -263,13 +263,20 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
+    einstellungen = Einstellungen()
+    # Erst die Kerzen prüfen, dann die Datenbank anlegen: Sonst bliebe bei einem Fehler eine
+    # leere Datei liegen, und der nächste Versuch bräche mit «existiert schon» ab.
     try:
         kerzen = lies_kerzen(argumente.kerzen)
+        pruefe_kerzen(kerzen, einstellungen=einstellungen)
     except FileNotFoundError:
         print(f"Kerzen-Datei {argumente.kerzen} nicht gefunden.", file=sys.stderr)
         return 2
+    except ValueError as fehler:
+        print(f"Kerzen-Datei {argumente.kerzen} ungültig: {fehler}", file=sys.stderr)
+        return 2
     with Speicher(argumente.db) as speicher:
-        ergebnis = backtest(kerzen=kerzen, speicher=speicher, einstellungen=Einstellungen())
+        ergebnis = backtest(kerzen=kerzen, speicher=speicher, einstellungen=einstellungen)
 
     von, bis = kerzen[0].startzeit, kerzen[-1].startzeit
     print(f"Kerzen vom {von:%d.%m.%Y %H:%M} bis {bis:%d.%m.%Y %H:%M} UTC")
