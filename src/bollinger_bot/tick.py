@@ -4,9 +4,9 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from bollinger_bot.bollinger import berechne_baender
+from bollinger_bot.bollinger import Baender, berechne_baender
 from bollinger_bot.polling import letzte_abgeschlossene_kerze, neue_kerze_fertig
-from bollinger_bot.port import Boerse
+from bollinger_bot.port import Boerse, Kerze
 from bollinger_bot.regeln import Signal, entscheide
 from bollinger_bot.risiko import BTCUSDT_SPOT, Handelsregeln
 from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher
@@ -48,28 +48,14 @@ def tick(
         )
         return None
 
-    baender = berechne_baender(
-        [k.schluss for k in kerzen], n=einstellungen.n, k=einstellungen.k
-    )
+    baender = berechne_baender([k.schluss for k in kerzen], n=einstellungen.n, k=einstellungen.k)
     signal = entscheide(
         schlusskurs=kerze.schluss,
         unteres_band=baender.unten,
         mittelband=baender.mitte,
         kaufpreis=None,
     )
-    speicher.speichere_signal(
-        SignalEintrag(
-            startzeit=kerze.startzeit,
-            eroeffnung=kerze.eroeffnung,
-            hoch=kerze.hoch,
-            tief=kerze.tief,
-            schlusskurs=kerze.schluss,
-            mittelband=baender.mitte,
-            oberes_band=baender.oben,
-            unteres_band=baender.unten,
-            signal=signal.value,
-        )
-    )
+    speicher.speichere_signal(_signal_eintrag(kerze, baender, signal))
     speicher.speichere_kontostand(
         Kontostand(
             zeit=jetzt,
@@ -78,3 +64,18 @@ def tick(
         )
     )
     return signal
+
+
+def _signal_eintrag(kerze: Kerze, baender: Baender, signal: Signal) -> SignalEintrag:
+    """Übersetzt die Namen: `Kerze` sagt `schluss`, `Baender` sagt `mitte`, `oben`, `unten`."""
+    return SignalEintrag(
+        startzeit=kerze.startzeit,
+        eroeffnung=kerze.eroeffnung,
+        hoch=kerze.hoch,
+        tief=kerze.tief,
+        schlusskurs=kerze.schluss,
+        mittelband=baender.mitte,
+        oberes_band=baender.oben,
+        unteres_band=baender.unten,
+        signal=signal.value,
+    )
