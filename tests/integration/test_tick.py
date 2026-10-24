@@ -13,9 +13,9 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from bollinger_bot.port import Boerse, Kerze
+from bollinger_bot.port import Boerse, Kerze, Order
 from bollinger_bot.regeln import Signal
-from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher
+from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher, Trade
 from bollinger_bot.tick import Einstellungen, tick
 
 MIN_15 = timedelta(minutes=15)
@@ -57,8 +57,12 @@ def kerzen(*schlusskurse, letzte=LETZTE_KERZE):
 
 
 def guthaben_bei_bitget(boerse, **guthaben):
-    """Was `hole_kontostand()` liefert, z.B. `guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)`."""
+    """Was `hole_kontostand()` liefert, z.B. `guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)`.
+
+    Gibt das Dictionary zurück: Ein Test kann es ändern, z.B. nach einer Order.
+    """
     boerse.hole_kontostand.side_effect = lambda waehrung: guthaben[waehrung]
+    return guthaben
 
 
 def signal_eintrag(startzeit, signal="halten"):
@@ -131,3 +135,38 @@ def test_halten_speichert_signal_und_kontostand(boerse, speicher):
     assert speicher.hole_trades() == []
     boerse.kaufe.assert_not_called()
     boerse.verkaufe.assert_not_called()
+
+
+# Schlusskurse für ein Kaufsignal:
+#   Mittelband = (106 + 108 + 106 + 100) / 4 = 420 / 4 = 105
+#   Abweichungen +1, +3, +1, −5, Quadrate 1 + 9 + 1 + 25 = 36: Varianz = 36 / 4 = 9, σ = 3
+#   k = 1: oberes Band = 108, unteres Band = 102
+# Ohne Position: Schlusskurs 100 liegt unter 102, also kaufen.
+KAUFSIGNAL = (106, 108, 106, 100)
+
+
+def test_kaufen_kauft_und_speichert_den_trade(boerse, speicher):
+    boerse.hole_kerzen.return_value = kerzen(*KAUFSIGNAL)
+    konto = guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)
+
+    def kauf_bei_bitget(symbol, betrag):
+        # 100 USDT zu 100 USDT/BTC ergeben 1 BTC, Bitget zieht 0.1 % Gebühr ab: 0.999 BTC.
+        konto["USDT"] -= betrag
+        konto["BTC"] += 0.999
+        return Order(order_id="kauf-1", menge=0.999, preis=100.0)
+
+    boerse.kaufe.side_effect = kauf_bei_bitget
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.KAUFEN
+    # Kaufbetrag: 10 % von 1000 USDT = 100.00 USDT
+    boerse.kaufe.assert_called_once_with("BTCUSDT", 100.0)
+    assert speicher.hole_trades() == [
+        Trade(zeit=JETZT, seite="kauf", menge=0.999, preis=100.0, order_id="kauf-1")
+    ]
+    [eintrag] = speicher.hole_signale()
+    assert eintrag.signal == "kaufen"
+    assert (eintrag.mittelband, eintrag.oberes_band, eintrag.unteres_band) == (105.0, 108.0, 102.0)
+    # Der Kontostand wird nach dem Kauf gelesen: 1000 − 100 = 900 USDT
+    assert speicher.hole_kontostaende() == [Kontostand(zeit=JETZT, waehrung="USDT", betrag=900.0)]
