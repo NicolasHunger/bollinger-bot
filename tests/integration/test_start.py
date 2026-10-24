@@ -164,3 +164,18 @@ def test_main_startet_den_bot_mit_der_konfiguration_aus_der_umgebung(starte_mock
     assert main(umgebung, starte=starte_mock) == 0
 
     starte_mock.assert_called_once_with(lies_konfiguration(umgebung))
+
+
+def test_main_nach_ctrl_c_meldet_das_ende_und_gibt_0_zurueck(starte_mock, caplog):
+    # Ctrl+C oder `docker stop` ist ein gewolltes Ende, kein Fehler: Exit-Code 0, kein Traceback.
+    caplog.set_level(logging.INFO)
+    starte_mock.side_effect = KeyboardInterrupt
+    umgebung = {
+        "BITGET_API_KEY": "fake-key",
+        "BITGET_API_SECRET": "fake-secret",
+        "BITGET_PASSPHRASE": "fake-passphrase",
+    }
+
+    assert main(umgebung, starte=starte_mock) == 0
+
+    assert "Bot beendet" in caplog.text
