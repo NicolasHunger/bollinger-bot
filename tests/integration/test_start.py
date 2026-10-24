@@ -179,3 +179,14 @@ def test_main_nach_ctrl_c_meldet_das_ende_und_gibt_0_zurueck(starte_mock, caplog
     assert main(umgebung, starte=starte_mock) == 0
 
     assert "Bot beendet" in caplog.text
+
+
+def test_main_richtet_das_logging_ein(starte_mock, mocker):
+    # Abmachung: Nur der Einstiegspunkt konfiguriert das Logging, die Module loggen nur.
+    basic_config = mocker.patch("logging.basicConfig")
+
+    main({}, starte=starte_mock)
+
+    basic_config.assert_called_once_with(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
+    )
