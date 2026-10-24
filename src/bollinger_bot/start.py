@@ -21,11 +21,11 @@ class Konfiguration:
 
 def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
     """Liest die Konfiguration aus den Umgebungsvariablen (`os.environ` oder ein Dictionary)."""
-    intervall = umgebung["BOT_INTERVALL"]
+    intervall = umgebung.get("BOT_INTERVALL", "15min")
     return Konfiguration(
         api_key=umgebung["BITGET_API_KEY"],
         api_secret=umgebung["BITGET_API_SECRET"],
         passphrase=umgebung["BITGET_PASSPHRASE"],
-        db_pfad=Path(umgebung["BOT_DB_PFAD"]),
+        db_pfad=Path(umgebung.get("BOT_DB_PFAD", "data/bot.db")),
         einstellungen=Einstellungen(intervall=intervall, intervall_dauer=INTERVALLE[intervall]),
     )
