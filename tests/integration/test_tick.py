@@ -14,7 +14,8 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from bollinger_bot.port import Boerse, Kerze
-from bollinger_bot.speicher import SignalEintrag, Speicher
+from bollinger_bot.regeln import Signal
+from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher
 from bollinger_bot.tick import Einstellungen, tick
 
 MIN_15 = timedelta(minutes=15)
@@ -55,6 +56,11 @@ def kerzen(*schlusskurse, letzte=LETZTE_KERZE):
     ]
 
 
+def guthaben_bei_bitget(boerse, **guthaben):
+    """Was `hole_kontostand()` liefert, z.B. `guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)`."""
+    boerse.hole_kontostand.side_effect = lambda waehrung: guthaben[waehrung]
+
+
 def signal_eintrag(startzeit, signal="halten"):
     return SignalEintrag(
         startzeit=startzeit,
@@ -93,3 +99,35 @@ def test_neue_kerze_noch_nicht_bei_bitget(boerse, speicher, caplog):
     assert speicher.letzte_signal_startzeit() == LETZTE_KERZE - MIN_15
     assert speicher.hole_kontostaende() == []
     assert "noch nicht" in caplog.text
+
+
+def test_halten_speichert_signal_und_kontostand(boerse, speicher):
+    # Erster Start, die Datenbank ist leer. Schlusskurse 98, 102, 98, 102:
+    #   Mittelband = (98 + 102 + 98 + 102) / 4 = 100
+    #   Abweichungen −2, +2, −2, +2, Quadrate je 4: Varianz = 16 / 4 = 4, σ = 2
+    #   k = 1: oberes Band = 100 + 2 = 102, unteres Band = 100 − 2 = 98
+    # Schlusskurs 102 liegt nicht unter 98, keine Position offen: halten.
+    boerse.hole_kerzen.return_value = kerzen(98, 102, 98, 102)
+    guthaben_bei_bitget(boerse, USDT=1000.0, BTC=0.0)
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is Signal.HALTEN
+    # Eröffnung 102 − 1, Hoch 102 + 2, Tief 102 − 3 (siehe kerzen()).
+    assert speicher.hole_signale() == [
+        SignalEintrag(
+            startzeit=LETZTE_KERZE,
+            eroeffnung=101.0,
+            hoch=104.0,
+            tief=99.0,
+            schlusskurs=102.0,
+            mittelband=100.0,
+            oberes_band=102.0,
+            unteres_band=98.0,
+            signal="halten",
+        )
+    ]
+    assert speicher.hole_kontostaende() == [Kontostand(zeit=JETZT, waehrung="USDT", betrag=1000.0)]
+    assert speicher.hole_trades() == []
+    boerse.kaufe.assert_not_called()
+    boerse.verkaufe.assert_not_called()
