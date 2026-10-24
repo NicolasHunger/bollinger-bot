@@ -100,6 +100,18 @@ def test_key_mit_steuerzeichen_wird_abgelehnt_ohne_den_wert_zu_zeigen(name, wert
     assert wert not in str(fehler.value)
 
 
+@pytest.mark.parametrize("name", PFLICHT)
+@pytest.mark.parametrize("wert", ["geheimä", "geheim€", "geheim x"])  #  : geschütztes Leerzeichen
+def test_key_mit_zeichen_ausserhalb_von_ascii_wird_abgelehnt_ohne_den_wert_zu_zeigen(name, wert):
+    # httpx schickt Header nur in ASCII: Mit «ä» in Key oder Passphrase scheiterte sonst jede
+    # Anfrage an Bitget, und der Fehler fiele erst im Betrieb auf statt beim Start.
+    with pytest.raises(ValueError) as fehler:
+        lies_konfiguration(KEYS | {name: wert})
+
+    assert name in str(fehler.value)
+    assert "geheim" not in str(fehler.value)
+
+
 def test_ungueltiges_intervall_nennt_die_erlaubten_werte():
     # Bitget schreibt Spot-Intervalle "15min", Futures "15m"
     with pytest.raises(ValueError) as fehler:
