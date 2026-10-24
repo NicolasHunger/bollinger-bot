@@ -5,6 +5,7 @@ Kerzen und k = 1, damit sich alles im Kopf nachrechnen lässt.
 """
 
 import logging
+import runpy
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -226,3 +227,19 @@ def test_main_meldet_eine_fehlende_csv(tmp_path, capsys):
     assert "gibt_es_nicht.csv" in capsys.readouterr().err
     # Ohne Kerzen keine leere Datei anlegen, sonst scheitert der nächste Versuch an ihr.
     assert not db.exists()
+
+
+# runpy warnt, weil die Tests das Modul schon importiert haben. Auf der Kommandozeile mit
+# `python -m` kommt die Warnung nicht.
+@pytest.mark.filterwarnings("ignore:'bollinger_bot.backtest' found in sys.modules")
+def test_aufruf_mit_python_m(tmp_path, monkeypatch, capsys):
+    # Wie `python -m bollinger_bot.backtest <kerzen.csv> --db <datei>` auf der Kommandozeile:
+    # main() liest die Argumente aus sys.argv, der Rückgabewert wird zum Exit-Code.
+    db = tmp_path / "backtest.db"
+    monkeypatch.setattr("sys.argv", ["backtest", str(ECHTE_KERZEN), "--db", str(db)])
+
+    with pytest.raises(SystemExit) as ende:
+        runpy.run_module("bollinger_bot.backtest", run_name="__main__")
+
+    assert ende.value.code == 0
+    assert "Ausgewertete Kerzen: 1981" in capsys.readouterr().out
