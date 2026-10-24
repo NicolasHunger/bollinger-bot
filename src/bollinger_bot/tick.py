@@ -169,6 +169,19 @@ def _verkaufe(
     # Auf dem Demo-Konto gehören alle BTC dem Bot.
     bestand = boerse.hole_kontostand(einstellungen.basiswaehrung)
     menge = verkaufsmenge(bestand=bestand, kurs=kurs, regeln=einstellungen.regeln)
+    if menge == 0.0 and position.menge * kurs >= einstellungen.regeln.mindestbetrag:
+        # Laut Datenbank eine echte Position, bei Bitget fast nichts: Wohl schon verkauft, aber
+        # nicht gespeichert (z.B. Absturz zwischen verkaufe() und dem Speichern).
+        log.error(
+            "Verkaufssignal für die Position aus Order %s (%s %s), bei Bitget liegen aber nur "
+            "%s %s. Wohl schon verkauft. Bitte den Verkauf von Hand nachtragen.",
+            position.order_id,
+            position.menge,
+            einstellungen.basiswaehrung,
+            bestand,
+            einstellungen.basiswaehrung,
+        )
+        return
     if menge == 0.0:
         log.warning(
             "Verkaufssignal, aber %s %s sind weniger wert als der Mindestbetrag. "
