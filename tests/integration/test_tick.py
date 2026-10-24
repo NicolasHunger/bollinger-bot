@@ -129,6 +129,22 @@ def test_neue_kerze_noch_nicht_bei_bitget(boerse, speicher, caplog):
     assert "noch nicht" in caplog.text
 
 
+def test_ohne_kerzen_von_bitget_wird_im_naechsten_durchgang_neu_versucht(
+    boerse, speicher, caplog
+):
+    # Liefert Bitget gar keine Kerze, ist es wie eine Kerze, die noch fehlt: nichts speichern,
+    # eine Minute später neu versuchen (statt eines IndexError ohne verständliche Meldung).
+    caplog.set_level(logging.INFO)
+    boerse.hole_kerzen.return_value = []
+
+    ergebnis = tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    assert ergebnis is None
+    assert speicher.hole_signale() == []
+    assert speicher.hole_kontostaende() == []
+    assert "noch nicht" in caplog.text
+
+
 def test_liefert_bitget_schon_eine_neuere_kerze_wird_sie_ausgewertet(boerse, speicher):
     # Die Uhr der VM geht nach: Um 12:29:59 erwartet tick() die Kerze ab 12:00. Bitget hat nach
     # seiner Uhr die Kerze ab 12:15 schon abgeschlossen und liefert sie als neueste. Ausgewertet
