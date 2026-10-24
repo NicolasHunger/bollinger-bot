@@ -161,6 +161,15 @@ def test_kauf_zum_schlusskurs_der_letzten_abgeschlossenen_kerze():
     assert boerse.hole_kontostand("USDT") == 900.0
 
 
+def test_order_vor_der_ersten_abgeschlossenen_kerze_wird_abgelehnt():
+    # Um 12:00 beginnt die erste Kerze erst, es gibt noch keinen Kurs.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(50_000), intervall_dauer=MIN_15)
+    boerse.jetzt = ZWOELF_UHR
+
+    with pytest.raises(ValueError, match="keine Kerze abgeschlossen"):
+        boerse.kaufe("BTCUSDT", 100.0)
+
+
 def test_kauf_rundet_die_menge_auf_6_stellen_ab_wie_bitget():
     # Kurs 30 000, Kauf für 100 USDT: 100 / 30 000 = 0.0033333… BTC. Bitget rundet die gekaufte
     # Menge auf 6 Stellen ab und gibt nur aus, was diese Menge kostet (Rauchtest von Valentin):
