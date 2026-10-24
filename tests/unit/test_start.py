@@ -98,3 +98,13 @@ def test_ungueltiges_intervall_nennt_die_erlaubten_werte():
     assert "'15m'" in meldung
     for erlaubt in ("1min", "5min", "15min", "30min", "1h"):
         assert erlaubt in meldung
+
+
+def test_keys_stehen_nicht_in_der_textdarstellung():
+    # repr() zeigt sich z.B. in einem Traceback oder wenn jemand die Konfiguration loggt
+    text = repr(lies_konfiguration(KEYS))
+
+    assert "fake-key" not in text
+    assert "fake-secret" not in text
+    assert "fake-passphrase" not in text
+    assert "bot.db" in text  # der Rest bleibt sichtbar
