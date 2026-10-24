@@ -8,8 +8,8 @@ from bollinger_bot.bollinger import Baender, berechne_baender
 from bollinger_bot.polling import letzte_abgeschlossene_kerze, neue_kerze_fertig
 from bollinger_bot.port import Boerse, Kerze
 from bollinger_bot.regeln import Signal, entscheide
-from bollinger_bot.risiko import BTCUSDT_SPOT, Handelsregeln
-from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher
+from bollinger_bot.risiko import BTCUSDT_SPOT, Handelsregeln, kaufbetrag
+from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher, Trade
 
 log = logging.getLogger(__name__)
 
@@ -55,6 +55,8 @@ def tick(
         mittelband=baender.mitte,
         kaufpreis=None,
     )
+    if signal is Signal.KAUFEN:
+        _kaufe(boerse=boerse, speicher=speicher, einstellungen=einstellungen, jetzt=jetzt)
     speicher.speichere_signal(_signal_eintrag(kerze, baender, signal))
     speicher.speichere_kontostand(
         Kontostand(
@@ -64,6 +66,20 @@ def tick(
         )
     )
     return signal
+
+
+def _kaufe(
+    *, boerse: Boerse, speicher: Speicher, einstellungen: Einstellungen, jetzt: datetime
+) -> None:
+    betrag = kaufbetrag(
+        guthaben=boerse.hole_kontostand(einstellungen.quotewaehrung),
+        anteil_prozent=einstellungen.anteil_prozent,
+        regeln=einstellungen.regeln,
+    )
+    order = boerse.kaufe(einstellungen.symbol, betrag)
+    speicher.speichere_trade(
+        Trade(zeit=jetzt, seite="kauf", menge=order.menge, preis=order.preis, order_id=order.order_id)
+    )
 
 
 def _signal_eintrag(kerze: Kerze, baender: Baender, signal: Signal) -> SignalEintrag:
