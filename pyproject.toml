@@ -24,6 +24,9 @@ dev = [
     "pytest-cov>=7.1,<8",
     "pytest-mock>=3.16,<4",
     "respx>=0.23,<0.24",
+    # Zeitzonen-Datenbank für ZoneInfo in tests/unit/test_polling.py. Linux und macOS bringen sie
+    # mit, Windows nicht. Ohne Obergrenze: Neuere Versionen bringen nur aktuellere Zeitzonen-Regeln.
+    "tzdata; sys_platform == 'win32'",
 ]
 
 [tool.setuptools.packages.find]
