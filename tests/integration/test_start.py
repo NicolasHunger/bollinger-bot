@@ -9,7 +9,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
-from bollinger_bot.bitget_client import BitgetClient
+from bollinger_bot.bitget_client import BitgetClient, BitgetFehler
 from bollinger_bot.start import Konfiguration, starte
 from bollinger_bot.tick import Einstellungen
 
@@ -81,3 +81,20 @@ def test_ein_durchlauf_fragt_bitget_und_legt_die_datenbank_an(
     assert db_pfad.exists()
     assert uhr.pausen == [60]  # einmal eine Minute gewartet
     client.schliessen.assert_called_once_with()
+
+
+def test_ein_fehler_von_bitget_beendet_den_bot_nicht(client_fabrik, konfiguration, uhr):
+    client = client_fabrik.return_value
+    client.hole_kerzen.side_effect = BitgetFehler("Bitget nicht erreichbar")
+
+    starte(
+        konfiguration,
+        client_fabrik=client_fabrik,
+        uhr=uhr.jetzt,
+        schlafen=uhr.schlafe,
+        durchlaeufe=2,
+    )
+
+    # Beide Durchläufe fragen Bitget, der Fehler im ersten beendet die Schleife nicht.
+    assert client.hole_kerzen.call_count == 2
+    assert uhr.pausen == [60, 60]
