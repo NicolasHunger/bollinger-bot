@@ -167,7 +167,11 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
-    kerzen = lies_kerzen(argumente.kerzen)
+    try:
+        kerzen = lies_kerzen(argumente.kerzen)
+    except FileNotFoundError:
+        print(f"Kerzen-Datei {argumente.kerzen} nicht gefunden.", file=sys.stderr)
+        return 2
     with Speicher(argumente.db) as speicher:
         ergebnis = backtest(kerzen=kerzen, speicher=speicher, einstellungen=Einstellungen())
 
