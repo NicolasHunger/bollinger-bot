@@ -130,7 +130,10 @@ class AufgezeichneteBoerse:
 
     def _kurs(self) -> float:
         """Schlusskurs der zuletzt abgeschlossenen Kerze: dazu werden alle Orders ausgeführt."""
-        return self.hole_kerzen("", "", 1)[-1].schluss
+        kerzen = self.hole_kerzen("", "", 1)
+        if not kerzen:
+            raise ValueError(f"Um {self.jetzt} ist noch keine Kerze abgeschlossen, kein Kurs")
+        return kerzen[-1].schluss
 
     def _neue_order_id(self) -> str:
         """Fortlaufende Order-IDs, «sim-» zeigt in der Datenbank, dass sie simuliert sind."""
