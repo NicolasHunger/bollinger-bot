@@ -247,3 +247,16 @@ def test_verkaufen_verkauft_die_position_und_speichert_den_trade(boerse, speiche
     ]
     assert speicher.offene_position() is None
     assert [e.signal for e in speicher.hole_signale()] == ["verkaufen"]
+
+
+def test_verkaufen_hoechstens_was_bei_bitget_liegt(boerse, speicher):
+    # Gekauft wurden laut Datenbank 0.999 BTC, Bitget meldet nur 0.998 BTC. Mehr zu verkaufen,
+    # als auf dem Konto liegt, lehnt Bitget ab: Verkauft wird min(0.999, 0.998) = 0.998 BTC.
+    position_in_der_datenbank(speicher, preis=97.0, menge=0.999)
+    boerse.hole_kerzen.return_value = kerzen(*UEBER_DEM_MITTELBAND)
+    guthaben_bei_bitget(boerse, USDT=900.0, BTC=0.998)
+    boerse.verkaufe.return_value = Order(order_id="verkauf-1", menge=0.998, preis=102.0)
+
+    tick(boerse=boerse, speicher=speicher, einstellungen=EINSTELLUNGEN, jetzt=JETZT)
+
+    boerse.verkaufe.assert_called_once_with("BTCUSDT", 0.998)
