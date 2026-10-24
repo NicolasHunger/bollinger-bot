@@ -144,6 +144,14 @@ def _kaufe(
         return
 
     order = boerse.kaufe(einstellungen.symbol, betrag)
+    # Vor dem Speichern loggen: Scheitert es, steht die Order-ID wenigstens im Log.
+    log.info(
+        "Gekauft: Order %s, %s %s zu %s",
+        order.order_id,
+        order.menge,
+        einstellungen.basiswaehrung,
+        order.preis,
+    )
     speicher.speichere_trade(_trade(order, seite="kauf", zeit=jetzt))
 
 
@@ -169,6 +177,13 @@ def _verkaufe(
         return
 
     order = boerse.verkaufe(einstellungen.symbol, menge)
+    log.info(
+        "Verkauft: Order %s, %s %s zu %s",
+        order.order_id,
+        order.menge,
+        einstellungen.basiswaehrung,
+        order.preis,
+    )
     speicher.speichere_trade(_trade(order, seite="verkauf", zeit=jetzt))
 
 
