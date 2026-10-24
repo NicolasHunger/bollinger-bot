@@ -64,6 +64,7 @@ def test_backtest_mit_einem_kauf_und_einem_verkauf(speicher):
     )
 
     # Endwert 1009.78011 USDT + 0 BTC · 110. Rendite (1009.78011 − 1000) / 1000 = 0.978011 %.
+    # Gebühren: Kauf 0.001 BTC · 100 = 0.1 USDT, Verkauf 0.10989 USDT, zusammen 0.20989 USDT.
     assert ergebnis == Ergebnis(
         kerzen_ausgewertet=4,
         kaeufe=1,
@@ -71,6 +72,28 @@ def test_backtest_mit_einem_kauf_und_einem_verkauf(speicher):
         startwert=1000.0,
         endwert=pytest.approx(1009.78011),
         rendite_prozent=pytest.approx(0.978011),
+        gebuehren=pytest.approx(0.20989),
+        btc_am_ende=0.0,
+    )
+
+
+def test_backtest_mit_offener_position_am_ende(speicher):
+    # Nur die ersten vier Kerzen: Gekauft wird wie oben (0.999 BTC, 900 USDT), verkauft nicht.
+    # Die offene Position zählt zum letzten Schlusskurs: 900 + 0.999 · 100 = 999.9 USDT,
+    # Rendite (999.9 − 1000) / 1000 = −0.01 %. Gebühren nur vom Kauf: 0.1 USDT.
+    ergebnis = backtest(
+        kerzen=kerzen(*EIN_KAUF_EIN_VERKAUF[:4]), speicher=speicher, einstellungen=EINSTELLUNGEN
+    )
+
+    assert ergebnis == Ergebnis(
+        kerzen_ausgewertet=1,
+        kaeufe=1,
+        verkaeufe=0,
+        startwert=1000.0,
+        endwert=pytest.approx(999.9),
+        rendite_prozent=pytest.approx(-0.01),
+        gebuehren=pytest.approx(0.1),
+        btc_am_ende=0.999,
     )
 
 

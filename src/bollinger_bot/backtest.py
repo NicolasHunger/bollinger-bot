@@ -180,6 +180,8 @@ class Ergebnis:
     startwert: float  # Startguthaben, am Anfang liegen keine BTC auf dem Konto
     endwert: float  # freie USDT + BTC · letzter Schlusskurs, auch mit offener Position
     rendite_prozent: float
+    gebuehren: float  # alle bezahlten Gebühren
+    btc_am_ende: float  # offene Position, im Endwert zum letzten Schlusskurs eingerechnet
 
 
 def pruefe_kerzen(kerzen: list[Kerze], *, einstellungen: Einstellungen) -> None:
@@ -242,6 +244,8 @@ def backtest(
         startwert=startguthaben,
         endwert=endwert,
         rendite_prozent=(endwert - startguthaben) / startguthaben * 100,
+        gebuehren=0.0,
+        btc_am_ende=0.0,
     )
 
 
