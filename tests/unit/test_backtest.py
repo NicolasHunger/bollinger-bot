@@ -4,12 +4,29 @@ Den ganzen Backtest mit echter SQLite-Datei testen die Integrationstests in
 `tests/integration/test_backtest.py`.
 """
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
-from bollinger_bot.backtest import lies_kerzen
+from bollinger_bot.backtest import AufgezeichneteBoerse, lies_kerzen
 from bollinger_bot.port import Kerze
 
 CSV_KOPF = "startzeit,eroeffnung,hoch,tief,schluss,volumen\n"
+MIN_15 = timedelta(minutes=15)
+ZWOELF_UHR = datetime(2026, 10, 24, 12, 0, tzinfo=UTC)
+
+
+def kerzen(*schlusskurse):
+    """15-Minuten-Kerzen ab 12:00 UTC mit diesen Schlusskursen."""
+    return [
+        Kerze(
+            startzeit=ZWOELF_UHR + i * MIN_15,
+            eroeffnung=schluss,
+            hoch=schluss,
+            tief=schluss,
+            schluss=schluss,
+            volumen=1.0,
+        )
+        for i, schluss in enumerate(schlusskurse)
+    ]
 
 
 def test_lies_kerzen_liest_zeit_mit_utc_und_zahlen_als_float(tmp_path):
@@ -60,3 +77,17 @@ def test_lies_kerzen_liefert_die_aelteste_zuerst(tmp_path):
 
     # Die Kerze ab 18:45 (Schlusskurs 1) kommt vor der ab 19:00 (Schlusskurs 2).
     assert [k.schluss for k in kerzen] == [1.0, 2.0]
+
+
+def test_hole_kerzen_liefert_nur_kerzen_die_bis_jetzt_abgeschlossen_sind():
+    # Kerzen ab 12:00, 12:15, 12:30 und 12:45. Um 12:45 ist die Kerze ab 12:30 gerade fertig
+    # (Ende 12:30 + 15 min = 12:45), die ab 12:45 läuft noch.
+    boerse = AufgezeichneteBoerse(kerzen=kerzen(1, 2, 3, 4), intervall_dauer=MIN_15)
+
+    boerse.jetzt = ZWOELF_UHR + 3 * MIN_15
+    assert [k.schluss for k in boerse.hole_kerzen("BTCUSDT", "15min", 2)] == [2.0, 3.0]
+    # Eine Sekunde früher läuft die Kerze ab 12:30 noch.
+    boerse.jetzt = ZWOELF_UHR + 3 * MIN_15 - timedelta(seconds=1)
+    assert [k.schluss for k in boerse.hole_kerzen("BTCUSDT", "15min", 2)] == [1.0, 2.0]
+    # Mehr verlangt als abgeschlossen: alle abgeschlossenen, wie Bitget kurz nach dem Start.
+    assert [k.schluss for k in boerse.hole_kerzen("BTCUSDT", "15min", 20)] == [1.0, 2.0]
