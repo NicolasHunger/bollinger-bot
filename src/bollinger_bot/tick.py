@@ -102,7 +102,7 @@ def _hole_kerzen(
     """Die letzten n Kerzen, oder None, wenn Bitget die neueste noch nicht liefert."""
     erwartet = letzte_abgeschlossene_kerze(jetzt, einstellungen.intervall_dauer)
     kerzen = boerse.hole_kerzen(einstellungen.symbol, einstellungen.intervall, einstellungen.n)
-    if kerzen[-1].startzeit < erwartet:
+    if not kerzen or kerzen[-1].startzeit < erwartet:
         # Bitget legt eine neue Kerze erst 1–2 s nach dem Schluss an.
         log.info(
             "Bitget liefert die Kerze ab %s noch nicht, neuer Versuch im nächsten Durchgang",
