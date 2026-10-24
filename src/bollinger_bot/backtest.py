@@ -29,7 +29,7 @@ def lies_kerzen(pfad: str | Path) -> list[Kerze]:
     with open(pfad, newline="") as datei:
         kerzen = [
             Kerze(
-                startzeit=datetime.fromisoformat(zeile["startzeit"]),
+                startzeit=datetime.fromisoformat(zeile["startzeit"]).astimezone(UTC),
                 eroeffnung=float(zeile["eroeffnung"]),
                 hoch=float(zeile["hoch"]),
                 tief=float(zeile["tief"]),
