@@ -19,6 +19,8 @@ playwright-report/
 # Laufzeitdaten und Geheimnisse
 .env
 *.db
+*.db-wal
+*.db-shm
 *.sqlite3
 /data/
 
