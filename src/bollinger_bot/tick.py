@@ -127,7 +127,9 @@ def _verkaufe(
     kurs: float,
     jetzt: datetime,
 ) -> None:
-    menge = verkaufsmenge(bestand=position.menge, kurs=kurs, regeln=einstellungen.regeln)
+    # Meldet Bitget weniger, als gekauft wurde, nur das verkaufen: Mehr lehnt Bitget ab.
+    bestand = min(position.menge, boerse.hole_kontostand(einstellungen.basiswaehrung))
+    menge = verkaufsmenge(bestand=bestand, kurs=kurs, regeln=einstellungen.regeln)
     order = boerse.verkaufe(einstellungen.symbol, menge)
     speicher.speichere_trade(
         Trade(
