@@ -201,3 +201,17 @@ def test_main_richtet_logging_ein(tmp_path, mocker):
     basic_config.assert_called_once_with(
         level=logging.WARNING, format="%(asctime)s %(levelname)s %(name)s: %(message)s"
     )
+
+
+def test_main_bricht_ab_wenn_die_datenbank_schon_existiert(tmp_path, capsys):
+    # In einer Datei aus einem früheren Lauf würden sich zwei Läufe mischen, und tick() würde
+    # jede Kerze überspringen, die dort schon ausgewertet ist. Darum nie in eine bestehende Datei.
+    db = tmp_path / "backtest.db"
+    Speicher(db).schliessen()
+
+    code = main([str(ECHTE_KERZEN), "--db", str(db)])
+
+    assert code == 2
+    assert "existiert schon" in capsys.readouterr().err
+    with Speicher(db) as speicher:
+        assert speicher.hole_signale() == []
