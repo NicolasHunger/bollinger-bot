@@ -42,6 +42,7 @@ class AufgezeichneteBoerse:
     ):
         self._kerzen = kerzen
         self._intervall_dauer = intervall_dauer
+        self._konto = {"USDT": startguthaben, "BTC": 0.0}
         # Anfangs steht die Uhr vor allen Kerzen: Noch ist keine abgeschlossen.
         self.jetzt = datetime.min.replace(tzinfo=UTC)
 
@@ -57,4 +58,5 @@ class AufgezeichneteBoerse:
         return abgeschlossen[-anzahl:]
 
     def hole_kontostand(self, waehrung: str) -> float:
-        return 0.0
+        """Guthaben im simulierten Konto. Es kennt nur USDT und BTC, alles andere ist 0.0."""
+        return self._konto.get(waehrung, 0.0)
