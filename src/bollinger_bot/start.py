@@ -58,7 +58,8 @@ def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
                 f"{name} hat Leerzeichen am Rand oder Steuerzeichen (z.B. einen Zeilenumbruch). "
                 "Bitte den Wert in der .env prüfen."
             )
-    intervall = umgebung.get("BOT_INTERVALL", "15min")
+    # «or»: Ein leerer Wert (z.B. «BOT_INTERVALL=» oder aus Docker Compose) gilt als nicht gesetzt.
+    intervall = umgebung.get("BOT_INTERVALL") or "15min"
     if intervall not in INTERVALLE:
         erlaubt = ", ".join(INTERVALLE)
         raise ValueError(f"BOT_INTERVALL {intervall!r} ist ungültig, erlaubt: {erlaubt}")
@@ -66,7 +67,7 @@ def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration:
         api_key=umgebung["BITGET_API_KEY"],
         api_secret=umgebung["BITGET_API_SECRET"],
         passphrase=umgebung["BITGET_PASSPHRASE"],
-        db_pfad=Path(umgebung.get("BOT_DB_PFAD", "data/bot.db")),
+        db_pfad=Path(umgebung.get("BOT_DB_PFAD") or "data/bot.db"),
         einstellungen=Einstellungen(intervall=intervall, intervall_dauer=INTERVALLE[intervall]),
     )
 
