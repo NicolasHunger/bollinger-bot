@@ -5,6 +5,7 @@ Client erstellt wird, und schickt nie eine Anfrage an Bitget. Gespeichert wird i
 in `tmp_path`. Die Fake-Uhr stellt die Zeit beim Warten nur vorwärts, kein Test wartet echt.
 """
 
+import logging
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -110,3 +111,22 @@ def test_ctrl_c_beendet_den_bot_und_schliesst_den_client(client_fabrik, konfigur
         starte(konfiguration, client_fabrik=client_fabrik, uhr=uhr.jetzt, schlafen=schlafen)
 
     client_fabrik.return_value.schliessen.assert_called_once_with()
+
+
+def test_start_steht_im_log_ohne_keys(client_fabrik, konfiguration, db_pfad, uhr, caplog):
+    caplog.set_level(logging.INFO)
+
+    starte(
+        konfiguration,
+        client_fabrik=client_fabrik,
+        uhr=uhr.jetzt,
+        schlafen=uhr.schlafe,
+        durchlaeufe=1,
+    )
+
+    start_meldungen = [r.getMessage() for r in caplog.records if r.name == "bollinger_bot.start"]
+    assert len(start_meldungen) == 1
+    assert "BTCUSDT" in start_meldungen[0]
+    assert "15min" in start_meldungen[0]
+    assert str(db_pfad) in start_meldungen[0]
+    assert "fake-" not in caplog.text  # kein Key, auch nicht in anderen Meldungen
