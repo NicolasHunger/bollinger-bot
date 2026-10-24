@@ -215,3 +215,14 @@ def test_main_bricht_ab_wenn_die_datenbank_schon_existiert(tmp_path, capsys):
     assert "existiert schon" in capsys.readouterr().err
     with Speicher(db) as speicher:
         assert speicher.hole_signale() == []
+
+
+def test_main_meldet_eine_fehlende_csv(tmp_path, capsys):
+    db = tmp_path / "backtest.db"
+
+    code = main([str(tmp_path / "gibt_es_nicht.csv"), "--db", str(db)])
+
+    assert code == 2
+    assert "gibt_es_nicht.csv" in capsys.readouterr().err
+    # Ohne Kerzen keine leere Datei anlegen, sonst scheitert der nächste Versuch an ihr.
+    assert not db.exists()
