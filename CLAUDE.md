@@ -63,18 +63,19 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
   (Lucas) und dem `BitgetClient` (Valentin) sowie das SQLite-Schema zwischen `tick()` (Lucas) und
   dem Dashboard (Nicolas). Änderungen daran mit der anderen Person absprechen.
 - **Nur im eigenen Paket arbeiten.** Fällt in einem fremden Paket etwas auf, im PR kommentieren
-  statt selbst ändern.
+  statt selbst ändern. **Ausnahme:** Lucas' Code dürfen Valentin und Nicolas ändern, siehe «Auf
+  Lucas' Arbeit aufbauen und sie ändern» weiter unten.
 
-### Offene Aufgaben pro Person (Stand Sa 24.10.2026)
+### Offene Aufgaben pro Person (Stand So 25.10.2026)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
-Abgabe und Präsentation: Mi 28.10.2026, also noch 4 Tage.
+Abgabe und Präsentation: Mi 28.10.2026.
 
 Stand auf GitHub: PR #1 bis #5 gemergt (Grundgerüst, Versionsgrenzen, Bollinger, Regeln, Port),
 auf `main` laufen 42 Tests. Offen: PR #6 und #7 (Lucas, warten auf das erneute Review von
 Nicolas), #8 (Valentin, approved), #9 (Draft, Basis jetzt `main`), #10 (Draft, Basis
 `bitget-kerzen`, Änderungen verlangt), #11 (Review mit vier Punkten), #12 (Nicolas, approved, aber
-Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neuen Commits.
+Konflikt mit `main`).
 
 **Lucas** (Strategie und Ablauf)
 
@@ -93,13 +94,12 @@ Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neue
       227 Tests. Das echte `tick()` läuft gegen 2000 echte BTCUSDT-Kerzen (03.10. bis 24.10.2026).
       Ergebnis: 40 Käufe, 39 Verkäufe, aus 1000 USDT werden 993.07 USDT (−0.69 %), die Gebühren
       (7.87 USDT) machen den Verlust, der Stop-Loss hat nie ausgelöst. Der PR folgt nach `tick()`.
+- [x] Eigene Reflexion im README («## Reflexion» → «### Lucas»)
 - [ ] KI-Nutzung im README nachführen: «Zum Reviewen» (Reviews zu #8 bis #11 mit Claude Code
-      vorbereitet)
-- [ ] Eigene Reflexion (TDD, Code Reviews, KI-Nutzung)
+      vorbereitet), `tick()`, Einstiegspunkt und Backtest samt TDD-Zyklen von Claude Code, Entwurf
+      der Reflexion mit Claude Code
 
 **Valentin** (Börse). Hat 4 PRs, die Rubrik ist erfüllt.
-
-*Bis So 25.10.*
 
 - [ ] **PR #8 (Risiko-Check) mergen**, von Lucas approved. Die drei Vorschläge aus dem Review
       kommen vorher oder in einem kleinen Folge-PR: ein Puffer über dem Mindestbetrag beim Kauf,
@@ -112,11 +112,7 @@ Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neue
 - [ ] **PR #9: die Vorschläge aus Lucas' Review umsetzen**, dann aus dem Draft holen.
       Testlücken (Slice, Reihenfolge der Query-Parameter, Prüfung des Fehlercodes, alle
       Intervalle), Timeout nicht abschaltbar machen, Key und Passphrase im Konstruktor prüfen.
-- [ ] **Ersatz-Reviewer:** Hat Nicolas PR #6 und #7 bis So 25.10. abends nicht erneut reviewt,
-      reviewt Valentin sie.
-
-*Bis Mo 26.10.*
-
+- [ ] **Ersatz-Reviewer:** Kann Nicolas PR #6 und #7 nicht erneut reviewen, reviewt Valentin sie.
 - [ ] **Bestätigen:** `tick()` verkauft den ganzen BTC-Bestand bei Bitget, nicht nur die Menge laut
       Datenbank. Sonst sammeln sich Reste aus dem Abrunden an und blockieren irgendwann jeden
       Kauf. Annahme: Auf dem Demo-Konto gehören alle BTC dem Bot.
@@ -130,9 +126,6 @@ Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neue
       gilt, die fehlenden Teile der Vorlage ergänzen (Einleitung, ein Satz zu TDD, Werkzeuge, drei
       Fehlerklassen).
 - [ ] **KI-Nutzung im README** für seine PRs nachtragen.
-
-*Bis Di 27.10.*
-
 - [ ] **Demo-Keys** auf der VM in die `.env` eintragen, zusammen mit Nicolas. Nie per Chat
       verschicken.
 - [ ] **Den `tick()`-PR von Lucas mitlesen**, er nutzt Client und Risiko-Check.
@@ -141,15 +134,10 @@ Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neue
 **Nicolas** (Infra und Dashboard). Hat erst 1 PR, die Rubrik verlangt 3: SonarQube, Dashboard und
 Deploy je als eigenen PR.
 
-*Sofort, spätestens So 25.10.*
-
 - [ ] **PR #6 und #7 erneut reviewen**, die Forderungen sind seit dem 21.10. umgesetzt. Dann
       approven oder Änderungen verlangen.
 - [ ] **PR #12 mergen:** zuerst `main` in den Branch holen und den Konflikt in der `CLAUDE.md`
       lösen. Unter Settings → Pages die Quelle «GitHub Actions» setzen, das kann nur er als Admin.
-
-*Bis Mo 26.10.*
-
 - [ ] **SonarQube Cloud** als eigener PR: beide `coverage.xml` angeben
       (`reports/*/coverage.xml`), Quality Gate einrichten.
 - [ ] **Dashboard (AP 7)** als eigener PR: liest über `Speicher` (pro Durchlauf ein eigenes
@@ -161,9 +149,6 @@ Deploy je als eigenen PR.
       Bei diesen Daten ist die letzte Kerze vom 24.10., die Warnung «veraltet» darum zu erwarten.
       Vorschlag: Hinweis «Demo-Daten» anzeigen, wenn die Order-IDs mit `sim-` beginnen.
 - [ ] **Entscheid:** Streamlit als Pflicht-Abhängigkeit oder als eigenes Extra `dashboard`.
-
-*Bis Di 27.10.*
-
 - [ ] **Deploy (AP 8b)** als eigener PR: VM wählen, Dockerfile mit Python 3.12, Image in GHCR,
       `docker-compose.yml` mit Bot und Dashboard (gemeinsames Volume für `BOT_DB_PFAD`,
       `stop_signal: SIGINT`), `.env` nur auf der VM, einmal von Hand prüfen, ob der Container
@@ -196,8 +181,34 @@ Deploy je als eigenen PR.
   - **Nicolas:** Pipeline mit den Testreports auf GitHub Pages und der Coverage in SonarQube,
     Dashboard, Deploy (Bot auf der VM), eigene Reflexion kurz.
   - **Fazit** gemeinsam, eine halbe Minute.
-- Am Di 27.10. einmal zusammen durchspielen und die Tabs vorbereiten (PR-Liste, Pages-Report,
-  Terminal mit Backtest, Dashboard).
+- Vor der Präsentation einmal zusammen durchspielen und die Tabs vorbereiten (PR-Liste,
+  Pages-Report, Terminal mit Backtest, Dashboard).
+
+**Auf Lucas' Arbeit aufbauen und sie ändern**
+
+Lucas' Bausteine sind fertig und dafür da, dass Valentin und Nicolas darauf aufbauen:
+`bollinger.py`, `regeln.py` und `port.py` auf `main`, `speicher.py` und `polling.py` in PR #6 und
+#7, `tick.py`, `start.py` und `backtest.py` auf den Branches `tick`, `einstiegspunkt` und
+`backtest`. Was sie können und wie sie zusammenhängen, steht unter «Stand der PRs und
+Schnittstellen» und «Ablauf von `tick()`», dazu die «Code-Übersicht» im README.
+
+- **Darauf aufbauen:** Zum Beispiel baut Nicolas das Docker-Image gegen den Branch
+  `einstiegspunkt` (`python -m bollinger_bot`) und testet das Dashboard mit der Datei aus dem
+  Backtest. Braucht ein eigener Branch Code aus einem offenen PR oder Branch von Lucas, diesen
+  per Merge einbeziehen (`git merge origin/tick`), nicht Dateien kopieren. Im eigenen PR dann
+  erwähnen, dass er bis zum Merge von Lucas' PR auch dessen Änderungen zeigt.
+- **Ändern ist erlaubt, auch wenn Lucas erreichbar ist:** Valentin und Nicolas (und ihre
+  Claude-Sitzungen) dürfen Lucas' Code auf `main`, in seinen PRs und auf seinen Branches ändern,
+  wenn es für ihr Paket nötig ist oder sie einen Fehler finden. Kleine Anpassungen direkt auf
+  seinem Branch, grössere als eigener PR mit Lucas als Reviewer. Dabei gilt:
+  - ein eigener Commit mit kurzer Begründung in der Nachricht
+  - danach `pytest` lokal grün, bei geändertem Verhalten mit angepasstem oder neuem Test
+  - Port-Schnittstelle und SQLite-Schema bleiben gemeinsame Entscheide: eine Änderung daran hier
+    in «Öffentliche Schnittstellen» nachführen und im PR erwähnen
+  - die TDD-Historie in `tick`, `einstiegspunkt` und `backtest` nicht umschreiben: kein rebase,
+    kein amend, kein force-push
+  - Lucas im PR oder Commit-Kommentar mit @LostMyNutsLastXMas informieren und die Code-Übersicht
+    im README nachführen, falls sich Dateien ändern
 
 **Vertretung, wenn Lucas nicht erreichbar ist**
 
@@ -217,11 +228,9 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
    dem Stand von `main`. Konflikte im Python-Code löst die eigene Claude-Sitzung: Sie liest beide
    Seiten, den Ablauf von `tick()` und die Abmachungen in dieser Datei und entscheidet. Lucas
    muss dafür nicht gefragt werden. Danach `pytest` lokal, erst wenn alles grün ist pushen.
-4. **Code in Lucas' Branches darf geändert werden, wenn es Konflikte gibt** oder er sonst nicht
-   mehr zu einem gemergten PR passt (z.B. geänderte Signatur in PR #8 oder #10). Als eigener
-   Commit mit kurzer Begründung in der Nachricht, und die Tests müssen danach grün sein (bei
-   geändertem Verhalten mit angepasstem oder neuem Test). Die bestehende TDD-Historie (rote und
-   grüne Commits) nicht umschreiben: kein rebase, kein amend, kein force-push.
+4. **Code in Lucas' Branches ändern**, wenn es Konflikte gibt oder er nicht mehr zu einem
+   gemergten PR passt (z.B. geänderte Signatur in PR #8 oder #10). Es gelten die Regeln aus «Auf
+   Lucas' Arbeit aufbauen und sie ändern».
 5. **Lucas informieren:** im PR mit @LostMyNutsLastXMas kurz schreiben, was übernommen wurde.
 
 **Mergen: so und in dieser Reihenfolge**
@@ -238,17 +247,7 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
   und #7 ändern die Liste `dev` in der `pyproject.toml` (pytest-html, tzdata; beides behalten,
   mit den Versionsgrenzen aus PR #2), mehrere PRs ändern das README.
 
-**Zeitplan bis zur Abgabe** (Stand 24.10., der alte Plan ist um rund zwei Tage verrutscht)
-
-| Bis | Was |
-|---|---|
-| Sa 24.10. | PR #2 bis #5 gemergt ✅ |
-| So 25.10. | PR #6, #7, #8 und #12 gemergt, PR #9 und #10 aus dem Draft |
-| Mo 26.10. | PR #9 bis #11 gemergt, `tick()` und Dashboard als PR offen |
-| Di 27.10. | `tick()` und Dashboard gemergt, Deploy oder Notfallplan, Reflexion und Präsentation fertig |
-| Mi 28.10. | Abgabe und Präsentation |
-
-**Notfallplan:** Läuft der Bot bis Mo 26.10. abends nicht auf der VM, zeigt die Präsentation den
+**Notfallplan:** Läuft der Bot zur Präsentation nicht auf der VM, zeigt die Präsentation den
 Backtest (`python -m bollinger_bot.backtest …`, Branch `backtest`): das echte `tick()` auf drei
 Wochen echter Kurse, dazu das Dashboard mit der Datei aus dem Backtest. Die Rubrik bewertet vor allem Tests,
 Reports, PRs und Doku, nicht ob der Bot echt handelt.
