@@ -54,7 +54,8 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
   Pages und SonarQube Cloud Admin-Rechte im Repo brauchen, die nur er hat.
 - **#8a.1 ist erledigt** (PR #1, gemergt am 30.09.2026). Alle anderen Pakete bauen auf diesem
   Grundgerüst auf: keine eigene Projektstruktur anlegen, sondern `main` pullen.
-- **Bis #8a.2 steht, gibt es keine Pipeline:** vor jedem Merge `pytest` lokal laufen lassen.
+- **Pipeline (#8a.2):** `.github/workflows/pipeline.yml` prüft jeden PR (Aufbau im README unter
+  «Pipeline»). Mit roter Pipeline wird nicht gemergt.
 - **Reviews im Ring:** Lucas reviewt Valentin, Nicolas reviewt Lucas, Valentin reviewt Nicolas.
   Für die bereits offenen PRs von Lucas gilt: Valentin reviewt PR #2 bis #5 (PR #5 ist die
   Schnittstelle zu seinem Client), Nicolas reviewt PR #6 und #7 (PR #6 ist das Schema für sein
@@ -298,8 +299,8 @@ Danach wie oben aktivieren und `pip install -e ".[dev]"` ausführen.
 
 - **Code nie direkt auf `main` committen.** Pro Arbeitspaket ein Branch, immer von aktuellem
   `main` abgezweigt (`git switch main && git pull && git switch -c <paket>`).
-- **Vor jedem Push und vor jedem Merge `pytest` lokal laufen lassen**, solange es keine Pipeline
-  gibt.
+- **Vor jedem Push `pytest` lokal laufen lassen.** Die Pipeline prüft jeden PR noch einmal,
+  gemergt wird nur mit grüner Pipeline.
 - **PR-Beschreibung:** was der PR macht, wie man ihn testet, und Fragen ans Review.
 - **Nicht selbst mergen, bevor reviewt wurde.** Die Rubrik verlangt aktiv kommentierte und
   gechallengte PRs: Der Reviewer hinterlässt Fragen oder Änderungswünsche, erst nach seinem
@@ -352,8 +353,9 @@ Aus dem Review von Valentin zu PR #1
   - **Unit- und Integrationstests nur über die Ordner trennen**, keine pytest-Marker.
     `--strict-markers` bleibt an, damit vertippte Marker auffallen.
   - **`tests/unit/test_grundgeruest.py`** wird mit #1 gelöscht.
-- **Noch offen, entscheidet Nicolas mit der Pipeline (#8a.2):**
-  - **`coverage.xml`** schon in `addopts` oder nur in der Pipeline erzeugen?
+- **Entschieden (21.10.2026, Nicolas):** **`coverage.xml`** und die anderen Reports (JUnit-XML,
+  HTML-Report) entstehen nur in der Pipeline, `addopts` bleibt ohne Report-Optionen.
+- **Noch offen, entscheidet Nicolas:**
   - **Streamlit** als Pflicht-Abhängigkeit oder als eigenes Extra `dashboard`? Hängt davon ab, ob
     Bot und Dashboard im selben Image laufen.
 
@@ -621,9 +623,11 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
 
 ### Pipeline und Deploy (Nicolas)
 
-- Pipeline: Python 3.12, Installation mit `pip install -e ".[dev]"`, Tests getrennt mit
-  `pytest tests/unit` und `pytest tests/integration`. Coverage für SonarQube Cloud mit
-  `--cov=bollinger_bot --cov-report=xml`, Testresultate mit `--junitxml=…`.
+- Pipeline: `.github/workflows/pipeline.yml`, Python 3.12, Installation mit
+  `pip install -e ".[dev]"`, Tests getrennt mit `pytest tests/unit` und `pytest tests/integration`.
+  Coverage für SonarQube Cloud mit `--cov=bollinger_bot --cov-branch --cov-report=xml`,
+  Testresultate mit `--junitxml=…`, HTML-Report mit pytest-html. Die Reports liegen pro Ordner
+  unter `reports/unit/` und `reports/integration/`.
 - Docker Compose: `stop_signal: SIGINT` für den Bot. Dann kommt im Bot ein `KeyboardInterrupt` an,
   und die Polling-Schleife endet sofort (sonst ignoriert der Prozess mit PID 1 das SIGTERM, und
   Docker beendet ihn nach 10 s hart).

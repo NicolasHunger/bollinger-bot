@@ -1,0 +1,180 @@
+# Pipeline (AP 8a.2): Build, Test und Veröffentlichen der Testresultate, wie in der Kursunterlage
+# https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/projekt/ci-cd.md
+name: Pipeline
+
+on:
+  pull_request:        # jeder PR, bei jedem Push in den PR
+  push:
+    branches: [main]   # jeder Merge auf main
+  workflow_dispatch:   # von Hand starten, im Tab «Actions»
+
+# Standard für alle Jobs: nur den Code lesen. Was ein Job mehr darf, steht beim Job.
+permissions:
+  contents: read
+
+env:
+  PYTHON_VERSION: "3.12"   # fest, dieselbe Version kommt ins Docker-Image (AP 8b)
+
+# Sicherheit (Funde von SonarQube Cloud):
+# - pip installiert mit --only-binary :all: nur fertige Pakete (Wheels). Aus einem Quellpaket
+#   würde pip sonst beim Installieren dessen Setup-Skript ausführen.
+# - Fremde Actions sind auf einen Commit festgelegt, nicht auf einen Tag wie v2: Ein Tag kann
+#   später auf anderen Code zeigen. Die Version steht als Kommentar dahinter.
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Paket bauen
+        run: pip wheel --no-deps --wheel-dir dist .
+      - name: Gebautes Paket installieren und importieren
+        run: |
+          pip install --only-binary :all: dist/*.whl
+          python -c "import bollinger_bot"
+
+  test:
+    name: ${{ matrix.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    # Derselbe Job zweimal, einmal pro Testordner. fail-fast aus: Ein roter Unit-Test bricht
+    # die Integrationstests nicht ab.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Unit-Tests
+            ebene: unit
+          - name: Integrationstests
+            ebene: integration
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Abhängigkeiten installieren
+        run: |
+          pip install --only-binary :all: -e ".[dev]"
+      - name: pytest tests/${{ matrix.ebene }}
+        env:
+          EBENE: ${{ matrix.ebene }}
+          # Rohdaten der Coverage, daraus entsteht im Pages-Job die Coverage beider Ordner
+          COVERAGE_FILE: reports/${{ matrix.ebene }}/coverage.dat
+        run: |
+          pytest "tests/$EBENE" \
+            -o junit_suite_name="$EBENE" \
+            --junitxml="reports/$EBENE/junit.xml" \
+            --html="reports/$EBENE/tests.html" --self-contained-html \
+            --cov=bollinger_bot --cov-branch \
+            --cov-report=term \
+            --cov-report=xml:"reports/$EBENE/coverage.xml" \
+            --cov-report=html:"reports/$EBENE/coverage"
+      - name: Reports hochladen
+        if: ${{ !cancelled() }}   # gerade bei roten Tests braucht es die Reports
+        uses: actions/upload-artifact@v7
+        with:
+          name: testreport-${{ matrix.ebene }}
+          path: reports/
+          if-no-files-found: ignore
+
+  testresultate:
+    name: Testresultate veröffentlichen
+    needs: test
+    # Auch bei roten Tests, aber nicht, wenn die Tests gar nicht liefen (Build rot).
+    if: ${{ !cancelled() && needs.test.result != 'skipped' }}
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write          # Check «Testresultate» am Commit
+      pull-requests: write   # Kommentar mit den Zahlen im PR
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: testreport-*
+          merge-multiple: true
+          path: reports
+      - uses: EnricoMi/publish-unit-test-result-action@7622c5bf3d112a72ab4fa3951c2aa5723d8ab92d # v2.25.0
+        with:
+          files: reports/**/junit.xml
+          check_name: Testresultate
+
+  pages:
+    name: Testreport auf GitHub Pages
+    needs: test
+    # Nur auf main. Ohne Statusfunktion wie always() im if läuft der Job nur, wenn alle Tests
+    # grün sind.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read    # Quellcode für den Coverage-Report
+      pages: write      # auf GitHub Pages veröffentlichen
+      id-token: write   # Pages prüft damit, dass der Upload aus diesem Workflow kommt
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:        # nie zwei Veröffentlichungen gleichzeitig
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Abhängigkeiten installieren
+        run: |
+          pip install --only-binary :all: -e ".[dev]"
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: testreport-*
+          merge-multiple: true
+          path: site
+      - name: Coverage beider Testordner zusammenführen
+        # Jeder Test-Job misst nur seinen Ordner. Erst zusammen ergibt sich die Coverage, die auch
+        # SonarQube Cloud rechnet. combine löscht die Rohdaten danach, sie landen nicht auf Pages.
+        run: |
+          coverage combine site/unit/coverage.dat site/integration/coverage.dat
+          coverage html -d site/coverage --title "Coverage gesamt"
+      - name: Startseite erzeugen
+        run: |
+          commit="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
+          lauf="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          cat > site/index.html <<EOF
+          <!doctype html>
+          <html lang="de">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Testreport Bollinger-Bot</title>
+            <style>body { font-family: system-ui, sans-serif; max-width: 40rem; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }</style>
+          </head>
+          <body>
+            <h1>Testreport Bollinger-Bot</h1>
+            <p>Commit <a href="$commit">${GITHUB_SHA::7}</a> vom $(TZ=Europe/Zurich date '+%d.%m.%Y, %H:%M'),
+              <a href="$lauf">Pipeline-Lauf</a></p>
+            <h2>Testresultate</h2>
+            <ul>
+              <li><a href="unit/tests.html">Unit-Tests</a></li>
+              <li><a href="integration/tests.html">Integrationstests</a></li>
+            </ul>
+            <h2>Coverage</h2>
+            <ul>
+              <li><a href="coverage/index.html">Gesamt</a>: beide Testordner zusammen, so rechnet auch SonarQube Cloud</li>
+              <li>Nur ein Testordner: <a href="unit/coverage/index.html">Unit-Tests</a>, <a href="integration/coverage/index.html">Integrationstests</a></li>
+            </ul>
+          </body>
+          </html>
+          EOF
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5
