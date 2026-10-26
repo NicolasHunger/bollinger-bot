@@ -67,12 +67,6 @@ jobs:
         env:
           EBENE: ${{ matrix.ebene }}
         run: |
-          # tests/integration/ kommt erst mit PR #6. Ohne den Ordner bricht pytest mit
-          # Exit-Code 4 ab.
-          if [ ! -d "tests/$EBENE" ]; then
-            echo "::notice::tests/$EBENE/ gibt es noch nicht, nichts zu testen."
-            exit 0
-          fi
           pytest "tests/$EBENE" \
             -o junit_suite_name="$EBENE" \
             --junitxml="reports/$EBENE/junit.xml" \
