@@ -15,6 +15,12 @@ permissions:
 env:
   PYTHON_VERSION: "3.12"   # fest, dieselbe Version kommt ins Docker-Image (AP 8b)
 
+# Sicherheit (Funde von SonarQube Cloud):
+# - pip installiert mit --only-binary :all: nur fertige Pakete (Wheels). Aus einem Quellpaket
+#   würde pip sonst beim Installieren dessen Setup-Skript ausführen.
+# - Fremde Actions sind auf einen Commit festgelegt, nicht auf einen Tag wie v2: Ein Tag kann
+#   später auf anderen Code zeigen. Die Version steht als Kommentar dahinter.
+
 jobs:
   build:
     name: Build
@@ -30,7 +36,7 @@ jobs:
         run: pip wheel --no-deps --wheel-dir dist .
       - name: Gebautes Paket installieren und importieren
         run: |
-          pip install dist/*.whl
+          pip install --only-binary :all: dist/*.whl
           python -c "import bollinger_bot"
       - uses: actions/upload-artifact@v7
         with:
@@ -59,7 +65,8 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
       - name: Abhängigkeiten installieren
-        run: pip install -e ".[dev]"
+        run: |
+          pip install --only-binary :all: -e ".[dev]"
       - name: pytest tests/${{ matrix.ebene }}
         env:
           EBENE: ${{ matrix.ebene }}
@@ -101,7 +108,7 @@ jobs:
           pattern: testreport-*
           merge-multiple: true
           path: reports
-      - uses: EnricoMi/publish-unit-test-result-action@v2
+      - uses: EnricoMi/publish-unit-test-result-action@7622c5bf3d112a72ab4fa3951c2aa5723d8ab92d # v2.25.0
         with:
           files: reports/**/junit.xml
           check_name: Testresultate
