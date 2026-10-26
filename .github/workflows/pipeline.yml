@@ -38,10 +38,6 @@ jobs:
         run: |
           pip install --only-binary :all: dist/*.whl
           python -c "import bollinger_bot"
-      - uses: actions/upload-artifact@v7
-        with:
-          name: paket
-          path: dist/
 
   test:
     name: ${{ matrix.name }}
