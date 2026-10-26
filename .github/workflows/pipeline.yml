@@ -66,6 +66,8 @@ jobs:
       - name: pytest tests/${{ matrix.ebene }}
         env:
           EBENE: ${{ matrix.ebene }}
+          # Rohdaten der Coverage, daraus entsteht im Pages-Job die Coverage beider Ordner
+          COVERAGE_FILE: reports/${{ matrix.ebene }}/coverage.dat
         run: |
           pytest "tests/$EBENE" \
             -o junit_suite_name="$EBENE" \
@@ -111,6 +113,7 @@ jobs:
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
+      contents: read    # Quellcode für den Coverage-Report
       pages: write      # auf GitHub Pages veröffentlichen
       id-token: write   # Pages prüft damit, dass der Upload aus diesem Workflow kommt
     environment:
@@ -120,23 +123,30 @@ jobs:
       group: pages
       cancel-in-progress: false
     steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Abhängigkeiten installieren
+        run: |
+          pip install --only-binary :all: -e ".[dev]"
       - uses: actions/download-artifact@v8
         with:
           pattern: testreport-*
           merge-multiple: true
           path: site
+      - name: Coverage beider Testordner zusammenführen
+        # Jeder Test-Job misst nur seinen Ordner. Erst zusammen ergibt sich die Coverage, die auch
+        # SonarQube Cloud rechnet. combine löscht die Rohdaten danach, sie landen nicht auf Pages.
+        run: |
+          coverage combine site/unit/coverage.dat site/integration/coverage.dat
+          coverage html -d site/coverage --title "Coverage gesamt"
       - name: Startseite erzeugen
         run: |
-          eintrag() {   # $1 Ordner, $2 Titel
-            if [ -d "site/$1" ]; then
-              echo "<li>$2: <a href=\"$1/tests.html\">Testresultate</a>, <a href=\"$1/coverage/index.html\">Coverage</a></li>"
-            else
-              echo "<li>$2: noch keine Tests</li>"
-            fi
-          }
           commit="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/commit/$GITHUB_SHA"
           lauf="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          mkdir -p site
           cat > site/index.html <<EOF
           <!doctype html>
           <html lang="de">
@@ -150,9 +160,15 @@ jobs:
             <h1>Testreport Bollinger-Bot</h1>
             <p>Commit <a href="$commit">${GITHUB_SHA::7}</a> vom $(TZ=Europe/Zurich date '+%d.%m.%Y, %H:%M'),
               <a href="$lauf">Pipeline-Lauf</a></p>
+            <h2>Testresultate</h2>
             <ul>
-              $(eintrag unit Unit-Tests)
-              $(eintrag integration Integrationstests)
+              <li><a href="unit/tests.html">Unit-Tests</a></li>
+              <li><a href="integration/tests.html">Integrationstests</a></li>
+            </ul>
+            <h2>Coverage</h2>
+            <ul>
+              <li><a href="coverage/index.html">Gesamt</a>: beide Testordner zusammen, so rechnet auch SonarQube Cloud</li>
+              <li>Nur ein Testordner: <a href="unit/coverage/index.html">Unit-Tests</a>, <a href="integration/coverage/index.html">Integrationstests</a></li>
             </ul>
           </body>
           </html>
