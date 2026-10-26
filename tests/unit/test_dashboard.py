@@ -17,6 +17,7 @@ from bollinger_bot.dashboard import (
     als_zahl,
     gesamtwerte,
     ist_veraltet,
+    kerzen_zeilen,
     lies_konfiguration,
     sind_demo_daten,
     zeit_als_text,
@@ -313,7 +314,7 @@ def test_nachgetragener_trade_zaehlt_nach_seiner_zeit():
     assert [wert.gesamt for wert in werte] == [1000.0, 1020.0]
 
 
-# --- Zeitraum ---
+# --- Zeitraum und Chart-Zeilen ---
 
 
 def test_zeitraum_von_einem_tag_endet_mit_der_letzten_kerze():
@@ -330,3 +331,27 @@ def test_zeitraum_alles():
     assert (
         zeitraum_beginn(letzte_startzeit=utc(14, 30), intervall=MIN_15, dauer=None) is None
     )
+
+
+def test_kerzen_zeile_fuer_den_chart():
+    # Kerze ab 14:30 UTC = 16:30 Sommerzeit. Ein Zehntel von 15 min Abstand zu den Nachbarn:
+    # Körper von 16:31:30 bis 16:43:30, Mitte bei 16:37:30.
+    eintrag = SignalEintrag(
+        startzeit=utc(14, 30),
+        eroeffnung=100.0,
+        hoch=104.0,
+        tief=98.0,
+        schlusskurs=103.0,
+        mittelband=101.0,
+        oberes_band=106.0,
+        unteres_band=96.0,
+        signal="halten",
+    )
+
+    (zeile,) = kerzen_zeilen([eintrag], intervall=MIN_15)
+
+    assert zeile["von"] == "2026-10-24T16:31:30Z"
+    assert zeile["mitte"] == "2026-10-24T16:37:30Z"
+    assert zeile["bis"] == "2026-10-24T16:43:30Z"
+    assert zeile["zeit"] == "24.10.2026 16:30"
+    assert zeile["steigend"]  # Schluss 103 über der Eröffnung 100
