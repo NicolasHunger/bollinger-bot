@@ -178,9 +178,16 @@ flowchart LR
 | Build | baut das Paket (Wheel), installiert und importiert es | immer |
 | Unit-Tests, Integrationstests | derselbe Job pro Testordner: `pytest` mit JUnit-XML, `coverage.xml` und HTML-Reports, alles als Artefakt im Pipeline-Lauf | nach dem Build |
 | Testresultate veröffentlichen | Check «Testresultate» am Commit, Kommentar mit den Zahlen im PR | auch bei roten Tests |
-| Testreport auf GitHub Pages | Testresultate und Coverage pro Testordner als Webseite | nur auf `main`, nur wenn alle Tests grün sind |
+| Testreport auf GitHub Pages | Testresultate pro Testordner und die Coverage beider Ordner zusammen (`coverage combine`) als Webseite | nur auf `main`, nur wenn alle Tests grün sind |
 
 - **Testreport:** <https://nicolashunger.github.io/bollinger-bot/>
+- **Coverage gesamt:** Jeder Test-Job misst nur seinen Ordner. Der Client ist zum Beispiel nur
+  in den Integrationstests getestet. Aussagekräftig ist darum erst die Coverage beider Ordner
+  zusammen, so rechnet auch SonarQube Cloud.
+- **Sicherheit:** pip installiert nur fertige Pakete (`--only-binary :all:`), damit beim
+  Installieren kein Setup-Skript aus einem Quellpaket läuft. Fremde Actions sind auf einen
+  Commit festgelegt statt auf einen Tag, der später auf anderen Code zeigen könnte. Beides hat
+  SonarQube Cloud gemeldet.
 - **Reports nur in der Pipeline:** Coverage, JUnit-XML und HTML-Reports erzeugt nur der Workflow,
   nicht `addopts` in der `pyproject.toml`. Lokal bleibt `pytest` schnell und ohne Report-Dateien.
 - **Coverage mit Zweigen** (`--cov-branch`): Gezählt wird nicht nur, welche Zeilen laufen, sondern
