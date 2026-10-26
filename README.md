@@ -126,6 +126,7 @@ noch in offenen PRs oder Branches (Spalte «Stand»).
 | `tick.py` | Ein Durchgang des Bots: Kerzen holen, Bänder berechnen, entscheiden, kaufen oder verkaufen, alles speichern | `tests/unit/test_tick.py`, `tests/integration/test_tick.py` | Branch `tick` |
 | `start.py`, `__main__.py` | Einstiegspunkt `python -m bollinger_bot`: liest die Umgebungsvariablen und startet Client, Speicher und Polling-Schleife | `tests/unit/test_start.py`, `tests/integration/test_start.py` | Branch `einstiegspunkt` |
 | `backtest.py` | Spielt `tick()` mit einer simulierten Börse auf aufgezeichneten Kursen ab und schreibt alles in eine SQLite-Datei (Demo, Testdaten fürs Dashboard) | `tests/unit/test_backtest.py`, `tests/integration/test_backtest.py` | Branch `backtest` |
+| `dashboard.py` | Streamlit-Seite: Kurs als Kerzen mit den Bollinger-Bändern, Käufe und Verkäufe, Gesamtwert des Kontos und eine Warnung, wenn keine neuen Kerzen kommen. Liest die SQLite-Datei nur | `tests/unit/test_dashboard.py`, `tests/integration/test_dashboard.py` | PR #14 |
 
 Dazu zwei Skripte ausserhalb des Pakets, die nie in der Pipeline laufen:
 
@@ -136,8 +137,8 @@ Dazu zwei Skripte ausserhalb des Pakets, die nie in der Pipeline laufen:
 
 Zusammenspiel: `tick.py` nutzt `bollinger.py`, `regeln.py`, `risiko.py` und `speicher.py` und
 spricht über `port.py` mit der Börse. `start.py` setzt dafür den echten `BitgetClient` ein,
-`backtest.py` die simulierte Börse. Das Dashboard (AP 7) liest die SQLite-Datei von
-`speicher.py`.
+`backtest.py` die simulierte Börse. `dashboard.py` liest die SQLite-Datei über `speicher.py`
+und schreibt nie hinein.
 
 ## Entwicklung
 
@@ -159,6 +160,33 @@ pytest                           # alle Tests ausführen
   das nächste Major-Release, bei Paketen unter 1.0 schon die nächste Minor-Version.
 - `-e` installiert das Projekt «editierbar»: Änderungen am Code wirken sofort, ohne neu zu
   installieren.
+
+### Dashboard starten
+
+Das Dashboard zeigt im Browser, was der Bot gemacht hat: den Kurs als Kerzen mit den
+Bollinger-Bändern, die Käufe ▲ und Verkäufe ▼, den Gesamtwert des Kontos (freie USDT plus die
+offene Position zum letzten Schlusskurs) und eine Warnung, wenn keine neuen Kerzen mehr kommen.
+
+```bash
+streamlit run src/bollinger_bot/dashboard.py    # danach http://localhost:8501 öffnen
+```
+
+- Es liest dieselben Umgebungsvariablen wie der Bot: `BOT_DB_PFAD` (Standard `data/bot.db`) und
+  `BOT_INTERVALL` (Standard `15min`). Bot und Dashboard brauchen dieselbe Datei. Das Dashboard
+  liest sie nur, und eine fehlende Datei legt es nicht an, sondern meldet sie.
+- Die Warnung erscheint, wenn die letzte ausgewertete Kerze vor mehr als zwei Intervallen fertig
+  war. Dann steht der Bot vermutlich, oder Bitget lehnt jede Anfrage ab (z.B. ungültiger
+  API-Key).
+- Alle Zeiten erscheinen in Schweizer Zeit, mit Sommer- und Winterzeit. In der Datenbank bleiben
+  sie in UTC.
+- Zum Ausprobieren ohne laufenden Bot liefert der Backtest (Branch `backtest`) eine Datei mit
+  echten Kursen. Das Dashboard zeigt dann den Hinweis «Demo-Daten» (die Order-IDs beginnen mit
+  `sim-`) und die Warnung, weil die letzte Kerze vom 24.10.2026 ist:
+
+```bash
+python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db
+BOT_DB_PFAD=data/backtest.db streamlit run src/bollinger_bot/dashboard.py
+```
 
 ## Teststrategie
 
@@ -310,7 +338,11 @@ nachgeführt.
   Änderungen nach den Reviews und die Entwürfe der Antworten auf die Reviews. Lucas hat die
   Vorgaben gemacht, die Entscheide getroffen und die Antworten freigegeben. Die Soll-Werte in den
   Tests sind von Hand hergeleitet (Rechnung als Kommentar im Test). Die Werte der
-  Bollinger-Berechnung hat Valentin im Review nachgerechnet.
+  Bollinger-Berechnung hat Valentin im Review nachgerechnet. Das Dashboard (AP 7,
+  `dashboard.py` mit seinen Tests) hat Claude Code mit Nicolas geschrieben und Schritt für
+  Schritt erklärt. Die Vorgaben stammen aus Nicolas' Reviews von PR #6 und #7 (Kerzen,
+  Gesamtwert, Warnung, Schweizer Zeit), die Entscheide hat Nicolas getroffen und das Ergebnis mit
+  den Daten aus dem Backtest geprüft. Die Soll-Werte der Tests sind von Hand gerechnet.
 - **Zum Reviewen oder Optimieren:** _noch offen_
 
 ## Kursunterlagen
