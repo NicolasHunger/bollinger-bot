@@ -105,13 +105,13 @@ Mikrosekunden genau (z.B. `2026-10-17T12:00:00.000000+00:00`).
 | HTTP | httpx |
 | Datenhaltung | SQLite |
 | Dashboard | Streamlit |
-| Tests | pytest, pytest-mock, respx, pytest-cov |
+| Tests | pytest, pytest-mock, respx, pytest-cov, pytest-html |
 | CI/CD | GitHub Actions, SonarQube Cloud, GitHub Pages, GitHub Container Registry |
 | Betrieb | Docker Compose auf einer Cloud-VM |
 
 ## Code-Übersicht
 
-Der Code liegt in `src/bollinger_bot/`, eine Datei pro Baustein. Stand 24.10.2026: Ein Teil liegt
+Der Code liegt in `src/bollinger_bot/`, eine Datei pro Baustein. Stand 26.10.2026: Ein Teil liegt
 noch in offenen PRs oder Branches (Spalte «Stand»).
 
 | Datei | Was sie macht | Tests | Stand |
@@ -119,9 +119,9 @@ noch in offenen PRs oder Branches (Spalte «Stand»).
 | `bollinger.py` | Berechnet aus den letzten n Schlusskursen das Mittelband (Durchschnitt) und das obere und untere Band (± k · σ, σ geteilt durch n) | `tests/unit/test_bollinger.py` | `main` |
 | `regeln.py` | Entscheidet nach jeder Kerze: kaufen (Schluss unter dem unteren Band), verkaufen (über dem Mittelband oder 3 % unter dem Kaufpreis, Stop-Loss) oder halten | `tests/unit/test_regeln.py` | `main` |
 | `port.py` | Die Schnittstelle zur Börse (`Boerse` mit vier Methoden) und die Datenklassen `Kerze` und `Order`. `tick()` kennt nur diesen Port, nicht Bitget selbst | `tests/unit/test_port.py` | `main` |
-| `risiko.py` | Rechnet den Kaufbetrag in USDT und die Verkaufsmenge in BTC, immer abgerundet auf die Stellen von Bitget, unter 1 USDT keine Order | `tests/unit/test_risiko.py` | PR #8 |
-| `speicher.py` | Speichert Signale, Trades und Kontostände in SQLite, prüft die Werte selbst und weiss nach einem Neustart, ob eine Position offen ist | `tests/integration/test_speicher.py` | PR #6 |
-| `polling.py` | Erkennt, ob eine neue Kerze fertig ist, und ruft in einer Schleife jede Minute `tick()` auf | `tests/unit/test_polling.py` | PR #7 |
+| `risiko.py` | Rechnet den Kaufbetrag in USDT und die Verkaufsmenge in BTC, immer abgerundet auf die Stellen von Bitget, unter 1 USDT keine Order | `tests/unit/test_risiko.py` | `main` |
+| `speicher.py` | Speichert Signale, Trades und Kontostände in SQLite, prüft die Werte selbst und weiss nach einem Neustart, ob eine Position offen ist | `tests/integration/test_speicher.py` | `main` |
+| `polling.py` | Erkennt, ob eine neue Kerze fertig ist, und ruft in einer Schleife jede Minute `tick()` auf | `tests/unit/test_polling.py` | `main` |
 | `bitget_client.py` | Spricht mit Bitget im Demo-Modus: signierte Anfragen, Kerzen, Kontostand, Market-Orders. Erfüllt den Port | `tests/unit/test_signatur.py`, `tests/integration/test_bitget_*.py` | PR #9, #10 |
 | `tick.py` | Ein Durchgang des Bots: Kerzen holen, Bänder berechnen, entscheiden, kaufen oder verkaufen, alles speichern | `tests/unit/test_tick.py`, `tests/integration/test_tick.py` | Branch `tick` |
 | `start.py`, `__main__.py` | Einstiegspunkt `python -m bollinger_bot`: liest die Umgebungsvariablen und startet Client, Speicher und Polling-Schleife | `tests/unit/test_start.py`, `tests/integration/test_start.py` | Branch `einstiegspunkt` |
@@ -215,12 +215,46 @@ _Entwurf, wird im Projekt verfeinert._
 
 ## Pipeline
 
-```text
-Build ──► Test ──► Deploy (nur auf main, nur wenn alle Tests grün sind)
-           │        ├─ Testreport   → GitHub Pages
-           │        ├─ Docker-Image → GitHub Container Registry
-           │        └─ Cloud-VM     → docker compose pull && docker compose up -d
-           └─ JUnit-XML → Testresultate im PR, coverage.xml → SonarQube Cloud
+GitHub Actions mit dem Workflow [`pipeline.yml`](.github/workflows/pipeline.yml). Er läuft bei
+jedem Pull Request, nach jedem Merge auf `main` und von Hand (Tab «Actions», «Pipeline», «Run
+workflow»). Aufgebaut wie in der
+[Kursunterlage](https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/projekt/ci-cd.md):
+Build, Test, Testresultate veröffentlichen.
+
+```mermaid
+flowchart LR
+    build["Build<br/>Paket bauen"] --> unit["Unit-Tests<br/>pytest tests/unit"]
+    build --> integration["Integrationstests<br/>pytest tests/integration"]
+    unit & integration --> resultate["Testresultate<br/>Check und Kommentar im PR"]
+    unit & integration -->|"nur main, nur grün"| pages["Testreport<br/>GitHub Pages"]
+```
+
+| Job | Was er macht | Wann |
+|---|---|---|
+| Build | baut das Paket (Wheel), installiert und importiert es | immer |
+| Unit-Tests, Integrationstests | derselbe Job pro Testordner: `pytest` mit JUnit-XML, `coverage.xml` und HTML-Reports, alles als Artefakt im Pipeline-Lauf | nach dem Build |
+| Testresultate veröffentlichen | Check «Testresultate» am Commit, Kommentar mit den Zahlen im PR | auch bei roten Tests |
+| Testreport auf GitHub Pages | Testresultate pro Testordner und die Coverage beider Ordner zusammen (`coverage combine`) als Webseite | nur auf `main`, nur wenn alle Tests grün sind |
+
+- **Testreport:** <https://nicolashunger.github.io/bollinger-bot/>
+- **Coverage gesamt:** Jeder Test-Job misst nur seinen Ordner. Der Client ist zum Beispiel nur
+  in den Integrationstests getestet. Aussagekräftig ist darum erst die Coverage beider Ordner
+  zusammen, so rechnet auch SonarQube Cloud.
+- **Sicherheit:** pip installiert nur fertige Pakete (`--only-binary :all:`), damit beim
+  Installieren kein Setup-Skript aus einem Quellpaket läuft. Fremde Actions sind auf einen
+  Commit festgelegt statt auf einen Tag, der später auf anderen Code zeigen könnte. Beides hat
+  SonarQube Cloud gemeldet.
+- **Reports nur in der Pipeline:** Coverage, JUnit-XML und HTML-Reports erzeugt nur der Workflow,
+  nicht `addopts` in der `pyproject.toml`. Lokal bleibt `pytest` schnell und ohne Report-Dateien.
+- **Coverage mit Zweigen** (`--cov-branch`): Gezählt wird nicht nur, welche Zeilen laufen, sondern
+  auch, ob bei jedem `if` beide Wege getestet sind (Zweigabdeckung).
+- **Folgt:** SonarQube Cloud (eigener PR), Docker-Image in die GitHub Container Registry und
+  Deploy auf die Cloud-VM (AP 8b), beide nur bei grünen Tests.
+
+Dieselben Reports lokal (landen in `reports/` und `htmlcov/`, beide stehen in der `.gitignore`):
+
+```bash
+pytest tests/unit --html=reports/unit.html --self-contained-html --cov=bollinger_bot --cov-branch --cov-report=html
 ```
 
 ## Geheimnisse
@@ -277,6 +311,8 @@ PRs pro Person.
   Futures mit Hebel 1 und nur Long-Positionen.
 - Handelspaar (z.B. BTCUSDT) und Kerzen-Intervall (z.B. 15 Minuten)
 - Anbieter der Cloud-VM (z.B. Hetzner oder Infomaniak)
+- **Entschieden: Reports nur in der Pipeline** (21.10.2026). Coverage, JUnit-XML und HTML-Report
+  erzeugt der Workflow, `addopts` in der `pyproject.toml` bleibt ohne Report-Optionen.
 
 ## Testkonzept
 
@@ -338,11 +374,13 @@ nachgeführt.
   Änderungen nach den Reviews und die Entwürfe der Antworten auf die Reviews. Lucas hat die
   Vorgaben gemacht, die Entscheide getroffen und die Antworten freigegeben. Die Soll-Werte in den
   Tests sind von Hand hergeleitet (Rechnung als Kommentar im Test). Die Werte der
-  Bollinger-Berechnung hat Valentin im Review nachgerechnet. Das Dashboard (AP 7,
-  `dashboard.py` mit seinen Tests) hat Claude Code mit Nicolas geschrieben und Schritt für
-  Schritt erklärt. Die Vorgaben stammen aus Nicolas' Reviews von PR #6 und #7 (Kerzen,
-  Gesamtwert, Warnung, Schweizer Zeit), die Entscheide hat Nicolas getroffen und das Ergebnis mit
-  den Daten aus dem Backtest geprüft. Die Soll-Werte der Tests sind von Hand gerechnet.
+  Bollinger-Berechnung hat Valentin im Review nachgerechnet. Den Workflow der Pipeline
+  (`.github/workflows/pipeline.yml`) hat Claude Code mit Nicolas geschrieben und Schritt für
+  Schritt erklärt. Die Entscheide zu den Reports und zu pytest-html hat Nicolas getroffen. Das
+  Dashboard (AP 7, `dashboard.py` mit seinen Tests) ist genauso entstanden: Die Vorgaben stammen
+  aus Nicolas' Reviews von PR #6 und #7 (Kerzen, Gesamtwert, Warnung, Schweizer Zeit), die
+  Entscheide hat Nicolas getroffen und das Ergebnis mit den Daten aus dem Backtest geprüft. Die
+  Soll-Werte der Tests sind von Hand gerechnet.
 - **Zum Reviewen oder Optimieren:** _noch offen_
 
 ## Kursunterlagen
