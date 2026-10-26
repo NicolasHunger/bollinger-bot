@@ -325,7 +325,9 @@ def _kursachse(feld: str) -> alt.Y:
 
 def kurs_chart(*, kerzen: list[dict], trades: list[dict]) -> alt.LayerChart:
     """Kerzen, Bollinger-Bänder und die Käufe und Verkäufe übereinander in einem Chart."""
-    basis = alt.Chart(alt.Data(values=kerzen))
+    # Ohne eigene Daten: Die Ebenen der Kerzen bekommen sie unten gemeinsam. Sonst stünden alle
+    # Kerzen einmal pro Ebene im Chart, bei «Alles» wären das mehrere MB für den Browser.
+    basis = alt.Chart()
     mitte = _zeitachse("mitte")
 
     # Bänder: blasse Fläche zwischen unterem und oberem Band, darauf die drei Linien.
@@ -414,8 +416,18 @@ def kurs_chart(*, kerzen: list[dict], trades: list[dict]) -> alt.LayerChart:
             ],
         )
     )
+    kerzen_ebenen = alt.layer(
+        flaeche,
+        oberes,
+        unteres,
+        mittelband,
+        docht,
+        koerper,
+        fadenkreuz,
+        data=alt.Data(values=kerzen),
+    )
     return (
-        alt.layer(flaeche, oberes, unteres, mittelband, docht, koerper, fadenkreuz, markierungen)
+        alt.layer(kerzen_ebenen, markierungen)
         .properties(height=420)
         .configure(locale=SCHWEIZER_ZAHLEN)
     )
@@ -428,7 +440,7 @@ def gesamtwert_chart(*, werte: list[dict], startwert: float | None) -> alt.Layer
     erst nach dem Start beginnt: Sonst müsste die Achse bis zum Startwert reichen, und die Kurve
     würde flach.
     """
-    basis = alt.Chart(alt.Data(values=werte))
+    basis = alt.Chart()  # Daten wie im Kurs-Chart einmal für alle Ebenen, siehe unten
     zeit = _zeitachse("zeit_chart")
     wert = alt.Y("gesamt:Q", title="Gesamtwert in USDT", scale=alt.Scale(zero=False))
 
@@ -471,7 +483,7 @@ def gesamtwert_chart(*, werte: list[dict], startwert: float | None) -> alt.Layer
         .transform_filter(unter_maus)
     )
     return (
-        alt.layer(*ebenen, linie, fadenkreuz, punkt)
+        alt.layer(*ebenen, alt.layer(linie, fadenkreuz, punkt, data=alt.Data(values=werte)))
         .properties(height=260)
         .configure(locale=SCHWEIZER_ZAHLEN)
     )
