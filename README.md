@@ -591,7 +591,53 @@ _Folgt._
 
 ### Nicolas
 
-_Folgt._
+**Code Reviews.** Am meisten gebracht haben mir Reviews dort, wo zwei Pakete zusammenkommen. Bei
+Lucas' SQLite-Speicher (PR #6) habe ich aus Sicht des Dashboards drei Bedingungen gestellt:
+Eröffnung, Hoch und Tief speichern, damit das Dashboard Kerzen zeigen kann, festhalten, was
+`betrag` genau ist, und ungültige Werte schon in der Datenbank ablehnen. Lucas hat alles
+umgesetzt, und mein Dashboard (PR #14) kam später ohne eine einzige Änderung am Schema aus. In
+PR #7 habe ich mit Blick auf den Deploy einen Test für `KeyboardInterrupt` verlangt, ausserdem ist
+aufgefallen, dass ein Intervall von 500 ms zu einem `ZeroDivisionError` führt. Umgekehrt hat
+Valentin in meinem Pipeline-PR (#12) gezeigt, dass die Coverage pro Testordner täuscht: Unit 41 %,
+Integration 57 %, zusammen aber 83 %. Das hätte ich allein nicht gemerkt. Vorbereitet habe ich
+meine Reviews mit Claude Code, entschieden und gepostet habe ich selbst. Dabei musste ich jeden
+Punkt verstehen, denn er steht unter meinem Namen. Weniger gut lief es gegen Schluss: Unter
+Zeitdruck habe ich #13, #14 und #17 ohne schriftliches Review gemergt, #13 und #14 hatten Lucas
+und Valentin nur mündlich approved. Für den Beruf nehme ich mit: Bedingungen klar von Wünschen
+trennen, schriftlich reviewen und `main` schützen, damit niemand ohne Approve mergen kann.
+
+**TDD.** TDD ist nichts für mich. In meinen Teilen, also Pipeline, Docker und Oberfläche, sehe ich
+oft erst beim Ausprobieren, was herauskommen soll, und einen Test für eine YAML-Datei zuerst zu
+schreiben, ergibt für mich wenig Sinn. Ich baue lieber so, dass sich der Code gut testen lässt,
+und schreibe die Tests gleich danach. Bei Lucas' `tick()` sieht man in der Git-Historie, wie TDD
+aussieht: 41 Commits, davon 16 mit «TDD rot», und jeder Test beschreibt genau ein Verhalten. Bei
+Logik mit klaren Regeln wie `tick()` verstehe ich den Nutzen, für meine Arbeit war mir der Aufwand
+im Verhältnis zur Zeit zu gross.
+
+**Testing.** Mein Teil am Testing war vor allem, die Tests sichtbar zu machen. Die Pipeline
+(PR #12) führt Unit- und Integrationstests in getrennten Jobs aus, meldet das Ergebnis als Check
+und Kommentar im PR und stellt den Testreport auf GitHub Pages. Gemergt wird nur mit grüner
+Pipeline, und ins Docker-Image kommt nur, was alle Tests bestanden hat. SonarQube Cloud (PR #13)
+finde ich ein cooles Werkzeug: Es zeigt die Coverage bis auf die einzelne Zeile, prüft jeden PR
+mit einem Quality Gate (unter anderem mindestens 80 % Coverage auf neuem Code) und hat in meiner
+Pipeline Sicherheitsprobleme gefunden, die keinem von uns aufgefallen waren, zum Beispiel
+Actions, die nur auf einen Tag statt auf einen Commit festgelegt waren. Heute meldet es auf `main`
+100 % Coverage. Gelernt habe ich aber auch, dass eine Zahl allein wenig sagt: Richtig war die
+Coverage erst, als beide Testordner zusammengerechnet wurden. Beim Dashboard habe ich die
+Rechnungen als reine Funktionen gebaut, damit sie sich ohne Streamlit testen lassen: Gesamtwert,
+Warnung bei veralteten Daten und Schweizer Zeit. Die Soll-Werte sind von Hand gerechnet, und
+Grenzwerte wie die Zeitumstellung am 25.10.2026 sind ausdrücklich getestet. Die ganze Seite prüft
+Streamlits `AppTest` mit Testdaten in einer echten SQLite-Datei. Nicht automatisch getestet ist
+der Container auf dem VPS, den prüfe ich nach dem Deploy von Hand.
+
+**Fazit.** Das grösste Problem waren Zeit und Komplexität. Ich bin erst am 21.10. richtig
+eingestiegen, danach mussten Pipeline, SonarQube, Dashboard und Deploy in einer Woche entstehen.
+Zu dritt kamen wir auf fast 20 PRs und mehrere Branches, die aufeinander aufbauen (#10 auf #9,
+`einstiegspunkt` auf `tick` und #10). Wir mussten eine feste Merge-Reihenfolge abmachen, im
+README gab es immer wieder Konflikte, und einmal hat GitHub einen PR geschlossen, weil sein
+Basis-Branch gelöscht wurde. Nächstes Mal würde ich die Pipeline gleich zu Beginn aufsetzen, wie
+es bis am 30.09. geplant war, und kleinere PRs machen, die nicht aufeinander aufbauen. Die
+Pipeline mit Testreport und SonarQube würde ich in einem nächsten Projekt wieder genauso aufbauen.
 
 ## KI-Nutzung
 
@@ -603,7 +649,8 @@ nachgeführt.
 - **Für die Dokumentation:** Den ersten Entwurf dieses READMEs hat Claude Code aus unserem
   Interview erstellt. Den Entwurf des Testkonzepts hat Claude Code nach der Vorlage aus den
   Kursunterlagen geschrieben. Planung, Architektur und Entscheide hat Claude Code am 27.10.2026
-  nach Nicolas' Vorgaben nachgeführt.
+  nach Nicolas' Vorgaben nachgeführt. Die Reflexion von Nicolas hat Claude Code aus seinen
+  Stichworten und Beispielen aus den PRs formuliert.
 - **Zum Schreiben von Code:** _noch offen_
 - **Zum automatischen Erstellen von Code durch einen Agenten:** Den Code und die Tests von Lucas
   (Grundgerüst, Bollinger-Berechnung, Kauf- und Verkaufsregeln, Port-Schnittstelle,
