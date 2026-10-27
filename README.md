@@ -317,9 +317,8 @@ docker compose pull && docker compose up -d
   endet dann sofort mit Exit-Code 0.
 - **Rechte:** Der Container schreibt als Benutzer mit der UID 1000 in `data/`. Auf Linux muss der
   Ordner diesem Benutzer gehören.
-- **Image öffentlich:** Nach dem ersten Push ist das Paket in GHCR privat. Öffentlich stellen kann
-  es nur Nicolas, unter «Package settings». Sonst braucht der VPS vor dem Pull ein
-  `docker login ghcr.io`.
+- **Image öffentlich:** Das Paket in GHCR ist öffentlich, der VPS holt das Image ohne
+  `docker login`. Die Sichtbarkeit ändern kann nur Nicolas, unter «Package settings».
 
 ## Geheimnisse
 
