@@ -73,13 +73,13 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
 Abgabe und Präsentation: Mi 28.10.2026.
 
-Stand auf GitHub: PR #1 bis #8, #11 bis #14 und #17 gemergt (Grundgerüst, Versionsgrenzen,
+Stand auf GitHub: PR #1 bis #8, #11 bis #15 und #17 gemergt (Grundgerüst, Versionsgrenzen,
 Bollinger, Regeln, Port, Speicher, Polling, Risiko-Check, Testkonzept, Pipeline, SonarQube Cloud,
-Dashboard, Deploy). Auf `main` laufen 198 Tests, SonarQube Cloud meldet 100 % Coverage und einen
-bestandenen Quality Gate. Offen: #9 (Vorschläge umgesetzt, wartet auf Lucas), #10 (Bedingung
-umgesetzt, Basis `bitget-kerzen`, wartet auf Lucas), #15 (Doku von Nicolas), #16 (Nachtrag zum
-Risiko-Check von Valentin, wartet auf Lucas). Noch ohne PR: die Branches `tick`, `einstiegspunkt`
-und `backtest` (Lucas).
+Dashboard, Doku, Deploy). Auf `main` laufen 198 Tests, SonarQube Cloud meldet 100 % Coverage und
+einen bestandenen Quality Gate. Offen: #9 (Vorschläge umgesetzt, wartet auf Lucas), #10 (Bedingung
+umgesetzt, Basis `bitget-kerzen`, wartet auf Lucas), #16 (Nachtrag zum Risiko-Check von Valentin,
+wartet auf Lucas), #18 (Nachtrag zum Testkonzept von Valentin, wartet auf Nicolas). Noch ohne PR:
+die Branches `tick`, `einstiegspunkt` und `backtest` (Lucas).
 **#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
 Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Review-Kommentar nach.
 
@@ -96,7 +96,7 @@ Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Revie
       umgesetzt. Danach #16 reviewen (Nachtrag zum Risiko-Check).
 - [ ] **Review-Kommentar in #13, #14 und #17 nachtragen**, mit einer Frage oder einem Einwand.
       Nicolas antwortet darauf.
-- [ ] **#15 reviewen** (Doku von Nicolas). Es genügt, wenn Lucas oder Valentin es macht.
+- [x] **#15 reviewen:** hat Valentin übernommen, gemergt am 27.10.
 - [x] Die unsachlichen Kommentare in PR #6 sind gelöscht.
 - [x] PR #7: Konflikt mit `main` gelöst (24.10.)
 - [x] **`tick()` (AP 6, Teil 3)** fertig auf dem Branch `tick`: test-first (TDD) gebaut, 41 Commits
@@ -118,7 +118,7 @@ Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Revie
 - [x] **Folge-PR zu #8:** #16 mit den Vorschlägen aus Lucas' Review (Puffer beim Kauf,
       `kaufbetrag` in `Decimal`), wartet auf Lucas' Review.
 - [ ] **Review-Kommentar in #13, #14 und #17 nachtragen**, mit einer Frage oder einem Einwand.
-- [ ] **#15 reviewen** (Doku von Nicolas), falls Lucas es nicht macht.
+- [x] **#15** reviewt und approved (27.10.).
 - [x] **PR #10:** die Bedingung aus Lucas' Review umgesetzt (27.10.): Nach einem Netzfehler geht
       keine Order mehr verloren. Wartet auf Lucas' erneutes Review.
 - [x] **PR #9:** die Vorschläge aus Lucas' Review umgesetzt und aus dem Draft geholt (27.10.).
@@ -135,9 +135,10 @@ Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Revie
 - [x] **PR #11 (Testkonzept):** die vier Punkte aus Lucas' Review und die Begründung zu «kein
       TDD» umgesetzt, von Nicolas approved und gemergt (27.10.).
 - [ ] **KI-Nutzung im README** für seine PRs nachtragen.
-- [ ] **Demo-Key für den Bot:** Nicolas trägt ihn selbst auf dem VPS ein. Valentin bekommt keinen
-      Zugang zum VPS. Kommt der Key von Valentin, dann zusammen an Nicolas' Rechner, nie per Chat.
-      Nötig erst, wenn `einstiegspunkt` gemergt ist.
+- [x] **Demo-Key für den Bot:** Nicolas nutzt Valentins bestehenden Demo-Key und trägt ihn selbst
+      auf dem VPS ein, Valentin bekommt keinen Zugang zum VPS. Solange der Bot läuft, mit diesem
+      Key keine Rauchtests mit `--order` mehr: BTC auf dem Konto, von denen die Datenbank nichts
+      weiss, blockieren jeden Kauf (Sicherheitsnetz in `tick()`).
 - [ ] **Den `tick()`-PR von Lucas mitlesen**, er nutzt Client und Risiko-Check.
 - [ ] **Eigene Reflexion** und sein Teil der Präsentation.
 
@@ -160,14 +161,15 @@ bisher nur #12.
       öffentlich. Der Bot kommt mit `einstiegspunkt` dazu. Details unter «Pipeline und Deploy».
 - [x] **#11** reviewt (Approve mit vier Vorschlägen) und gemergt (27.10.).
 - [ ] **Den `tick()`-PR von Lucas reviewen.**
-- [ ] **README nachführen:** Planung, Architektur und Entscheide stehen in PR #15 und warten auf
-      ein Review. Den Link zu GitHub Pages gibt es seit #13 oben im README.
-- [ ] **Eigene Reflexion** (kommt in PR #15) und sein Teil der Präsentation.
+- [x] **README nachführen:** Planung, Architektur und Entscheide mit #15 gemergt (27.10.).
+- [x] **Eigene Reflexion**, mit #15 gemergt.
+- [ ] **#18 reviewen** (Nachtrag zum Testkonzept von Valentin), schriftlich auf GitHub.
+- [ ] **Sein Teil der Präsentation.**
 
 **Alle zusammen**
 
-- [ ] Handelspaar und Kerzen-Intervall bestätigen: BTCUSDT mit 15min steht so in #15 (Frage 1
-      im PR).
+- [x] Handelspaar und Kerzen-Intervall: BTCUSDT mit 15min, von Valentin im Review von #15
+      bestätigt.
 - [ ] **Reflexion** (Pflicht in der Doku): im README unter «## Reflexion», jede Person in ihrem
       Unterabschnitt («### Lucas», «### Valentin», «### Nicolas»). Über Code Reviews und TDD,
       rund eine halbe Seite, in eigenen Worten, die Leitfragen stehen im Abschnitt. Claude hilft
@@ -250,7 +252,7 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
   Zuerst PR #10 umstellen (`gh pr edit 10 --base main` oder auf GitHub «Edit» neben dem Titel),
   erst danach `bitget-kerzen` löschen.
 - Reihenfolge ab jetzt: `tick()`, dann Backtest. #9 und #10, danach Einstiegspunkt (baut auf
-  `tick`, #9 und #10 auf). #15 und #16 hängen von nichts davon ab. Konflikt möglich im README:
+  `tick`, #9 und #10 auf). #16 und #18 hängen von nichts davon ab. Konflikt möglich im README:
   `einstiegspunkt` und `main` bei «Bot starten» und «Dashboard starten» (beide Abschnitte
   behalten).
 
@@ -351,7 +353,7 @@ die Tests liegen und wo sie steht («`main`», «PR #n» oder «Branch `…`»).
   wird nur von Hand, ohne Deploy-Job und ohne Timer: Weder die Pipeline noch sonst jemand bekommt
   Zugriff auf den VPS.
 - **Handelspaar und Intervall:** BTCUSDT mit 15min, so stehen sie in den Einstellungen von `tick()`
-  und im Backtest. Eingetragen in #15, die Bestätigung kommt im Review.
+  und im Backtest. Bestätigt von Valentin im Review von #15.
 
 Aus dem Review von Valentin zu PR #1
 (https://github.com/NicolasHunger/bollinger-bot/pull/1#issuecomment-5912599081):
@@ -418,9 +420,10 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | ✅ gemergt |
 | #13 | `pipeline-sonar` | Nicolas | AP 8a.2: SonarQube Cloud | ✅ gemergt (nur mündlich approved) |
 | #14 | `dashboard` | Nicolas | AP 7: `dashboard.py` | ✅ gemergt (nur mündlich approved) |
-| #15 | `doku-nachfuehren` | Nicolas | Doku: Planung, Architektur, Entscheide, Reflexion Nicolas | wartet auf Review |
+| #15 | `doku-nachfuehren` | Nicolas | Doku: Planung, Architektur, Entscheide, Reflexion Nicolas | ✅ gemergt |
 | #16 | `risiko-nachtrag` | Valentin | Risiko-Check: Puffer beim Kauf, `kaufbetrag` in `Decimal` | wartet auf Review (Lucas) |
 | #17 | `deploy` | Nicolas | AP 8b: Dockerfile, Docker Compose, Image in GHCR | ✅ gemergt (ohne Review auf GitHub) |
+| #18 | `testkonzept-nachtrag` | Valentin | Testkonzept: Vorschläge aus dem Review von Nicolas | wartet auf Review (Nicolas) |
 | – | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | fertig, PR jetzt möglich (#6, #7, #8 gemergt) |
 | – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR nach #9, #10 |
 | – | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | fertig, PR nach `tick` |
@@ -599,7 +602,7 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
   `BITGET_API_SECRET`, `BITGET_PASSPHRASE` für die Demo-Keys, `BOT_DB_PFAD` für die SQLite-Datei
   (Vorschlag: `data/bot.db`, `/data/` ist gitignored, der Speicher legt den Ordner selbst an),
   `BOT_INTERVALL` im Bitget-Format (Vorschlag: `15min`, gültig sind die Schlüssel von
-  `bitget_client.INTERVALLE`). Handelspaar `BTCUSDT` (Bestätigung in #15).
+  `bitget_client.INTERVALLE`). Handelspaar `BTCUSDT`.
 
 ### Bitget und Risiko-Check (Valentin, entschieden im Review von PR #5)
 
