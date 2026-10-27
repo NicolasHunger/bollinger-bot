@@ -340,7 +340,7 @@ Geplant am 23.09.2026, nachgeführt am 27.10.2026.
 | bis Mi 30.09. | Grundgerüst, Pipeline mit Build und Test, SonarQube Cloud angebunden, erste Bausteine | Grundgerüst gemergt (PR #1, 30.09.). Die Pipeline kam als PR #12 ab 21.10. (gemergt 26.10.), SonarQube Cloud am 27.10. (PR #13) |
 | Mi 30.09. (Unterricht CI/CD und Deployment) | Deploy-Stage auf die Cloud-VM | Deploy auf den VPS von Nicolas statt auf eine neue Cloud-VM, ab 27.10. |
 | Herbstferien | Bitget-Client, Risiko-Check, `tick()` mit Polling, SQLite, Dashboard. Der Bot läuft spätestens Mitte Ferien auf der VM. | Lucas: Versionsgrenzen, Bollinger-Berechnung, Regeln, Port, SQLite und Polling (PR #2 bis #7, eröffnet 16. und 17.10.). Valentin: Bitget-Client und Risiko-Check (PR #8 bis #10, eröffnet 21.10.). Der Bot lief in den Ferien noch nicht |
-| Mi 21.10. (Unterricht Code Reviews) | Offene PRs abschliessen, Reflexion schreiben | Reviews zu PR #6 bis #12. Danach `tick()`, Einstiegspunkt und Backtest test-first gebaut (24.10.) |
+| Mi 21.10. (Unterricht Code Reviews) | Offene PRs abschliessen, Reflexion schreiben | Reviews zu PR #2 bis #12. Danach `tick()`, Einstiegspunkt und Backtest test-first gebaut (24.10.) |
 | 24. bis 27.10. | | PR #2 bis #8 und #12 bis #14 gemergt: Bausteine, Pipeline, SonarQube Cloud, Dashboard |
 | Mi 28.10. | Doku fertig, Präsentation (10 Minuten) | |
 
@@ -371,7 +371,7 @@ PRs pro Person.
 | 8b | Deploy auf den VPS | Nicolas | Valentin | #17 |
 | – | Einstiegspunkt `python -m bollinger_bot` | Lucas | Nicolas | Branch `einstiegspunkt` |
 | – | Backtest | Lucas | Nicolas | Branch `backtest` |
-| – | Testkonzept | Valentin | Lucas, Nicolas | #11 |
+| – | Testkonzept | Valentin | Lucas, Nicolas | #11, #18 |
 
 - **Reviews im Ring, entlang der Abhängigkeiten:** Lucas reviewt Valentin (`tick()` benutzt den
   Client), Nicolas reviewt Lucas (das Dashboard liest die SQLite-Tabellen), Valentin reviewt
