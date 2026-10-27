@@ -631,6 +631,18 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
 - SonarQube Cloud: Einstellungen in `sonar-project.properties`, Token als GitHub Secret
   `SONAR_TOKEN`, «Automatic Analysis» im Sonar-Projekt aus. Der Job läuft nur bei grünen Tests und
   liest `coverage.xml` und `junit.xml` beider Testordner.
+- **Image:** `Dockerfile` mit `python:3.12-slim`, `pip install --only-binary :all: .` (ohne
+  `.[dev]`), Benutzer `bot` mit UID 1000, ohne Befehl startet das Dashboard. Der Job
+  «Docker-Image» baut es in jedem PR und schiebt es nur auf `main` nach
+  `ghcr.io/nicolashunger/bollinger-bot` (Tags `latest` und Commit-SHA). Das Paket in GHCR stellt
+  nur Nicolas öffentlich (Package settings).
+- **Compose:** `docker-compose.yml`. Das Dashboard ist nur auf `127.0.0.1:8501` veröffentlicht
+  (Docker umgeht sonst die Firewall, Streamlit hat keine Anmeldung), Zugriff per SSH-Tunnel.
+  Der Bot startet nur mit `--profile bot`, bis der Branch `einstiegspunkt` auf `main` ist. Beide
+  teilen `./data:/data`. Für die Demo zeigt `DASHBOARD_DB=backtest.db` die Datei aus dem Backtest.
+- **Deploy:** auf Nicolas' VPS (SSH über Tailscale), von Hand mit
+  `docker compose pull && docker compose up -d`. Befehle auf dem VPS nur nach Nicolas' OK. Ein
+  automatischer Deploy-Job ist geplant, seine Secrets kommen in das GitHub-Environment `vps`.
 - Docker Compose: `stop_signal: SIGINT` für den Bot. Dann kommt im Bot ein `KeyboardInterrupt` an,
   und die Polling-Schleife endet sofort (sonst ignoriert der Prozess mit PID 1 das SIGTERM, und
   Docker beendet ihn nach 10 s hart).
