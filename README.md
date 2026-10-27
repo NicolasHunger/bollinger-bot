@@ -233,6 +233,7 @@ flowchart LR
     unit & integration --> resultate["Testresultate<br/>Check und Kommentar im PR"]
     unit & integration -->|"nur grün"| sonar["SonarQube Cloud<br/>Coverage und Codequalität"]
     unit & integration -->|"nur main, nur grün"| pages["Testreport<br/>GitHub Pages"]
+    sonar --> image["Docker-Image<br/>auf main nach GHCR"]
 ```
 
 | Job | Was er macht | Wann |
@@ -242,6 +243,7 @@ flowchart LR
 | Testresultate veröffentlichen | Check «Testresultate» am Commit, Kommentar mit den Zahlen im PR | auch bei roten Tests |
 | SonarQube Cloud | schickt Code, `coverage.xml` und JUnit-XML beider Testordner an SonarQube Cloud. Im PR erscheint der Quality Gate als eigener Check | nur wenn alle Tests grün sind |
 | Testreport auf GitHub Pages | Testresultate pro Testordner und die Coverage beider Ordner zusammen (`coverage combine`) als Webseite | nur auf `main`, nur wenn alle Tests grün sind |
+| Docker-Image | baut das Image aus dem [`Dockerfile`](Dockerfile), auf `main` mit den Tags `latest` und Commit-SHA nach `ghcr.io/nicolashunger/bollinger-bot` | nach grünen Tests und Sonar, geschoben nur auf `main` |
 
 - **Testreport:** <https://nicolashunger.github.io/bollinger-bot/>
 - **SonarQube Cloud:** <https://sonarcloud.io/project/overview?id=NicolasHunger_bollinger-bot>.
@@ -262,8 +264,9 @@ flowchart LR
   nicht `addopts` in der `pyproject.toml`. Lokal bleibt `pytest` schnell und ohne Report-Dateien.
 - **Coverage mit Zweigen** (`--cov-branch`): Gezählt wird nicht nur, welche Zeilen laufen, sondern
   auch, ob bei jedem `if` beide Wege getestet sind (Zweigabdeckung).
-- **Folgt:** Docker-Image in die GitHub Container Registry und Deploy auf die Cloud-VM (AP 8b),
-  beide nur bei grünen Tests.
+- **Image nur aus grünem `main`:** In PRs baut der Job das Image nur, damit ein kaputtes
+  Dockerfile schon im PR auffällt. Geschoben wird erst nach dem Merge, angemeldet mit dem
+  automatischen `GITHUB_TOKEN`.
 
 Dieselben Reports lokal (landen in `reports/` und `htmlcov/`, beide stehen in der `.gitignore`):
 
@@ -271,12 +274,53 @@ Dieselben Reports lokal (landen in `reports/` und `htmlcov/`, beide stehen in de
 pytest tests/unit --html=reports/unit.html --self-contained-html --cov=bollinger_bot --cov-branch --cov-report=html
 ```
 
+### Deploy mit Docker Compose
+
+Bot und Dashboard laufen aus demselben Image: Python 3.12, nur die Laufzeit-Abhängigkeiten
+(`pip install .`, ohne die Test-Werkzeuge), als Benutzer `bot` statt root. Auf dem VPS startet
+sie die [`docker-compose.yml`](docker-compose.yml) mit dem Image aus GHCR:
+
+| Dienst | Was | Start |
+|---|---|---|
+| `dashboard` | Streamlit auf Port 8501, nur auf dem VPS selbst erreichbar (`127.0.0.1`) | `docker compose up -d` |
+| `bot` | `python -m bollinger_bot`, die Keys kommen aus der `.env` | nur mit `--profile bot`, sobald der Einstiegspunkt (Branch `einstiegspunkt`) auf `main` ist |
+
+Einrichten auf dem VPS, einmal:
+
+```bash
+mkdir -p ~/bollinger-bot/data && cd ~/bollinger-bot
+# docker-compose.yml aus dem Repo hierher kopieren, für den Bot die .env nach .env.example anlegen
+docker compose pull && docker compose up -d
+```
+
+- **Demo mit dem Backtest:** die Datei aus dem Backtest nach `data/backtest.db` kopieren und in
+  der `.env` `DASHBOARD_DB=backtest.db` setzen (oder `DASHBOARD_DB=backtest.db docker compose up -d`).
+  Ohne die Variable zeigt das Dashboard die Datei des Bots, `data/bot.db`.
+- **Dashboard ansehen:** Ein veröffentlichter Port umgeht die Firewall, und Streamlit hat keine
+  Anmeldung. Darum ist Port 8501 nur auf dem VPS selbst offen. Von aussen geht es über einen
+  SSH-Tunnel, zum Beispiel über Tailscale: `ssh -L 8501:127.0.0.1:8501 <vps>`, danach
+  http://localhost:8501 öffnen.
+- **Neue Version:** `docker compose pull && docker compose up -d` holt das neueste Image von `main`
+  und startet nur die Dienste neu, deren Image sich geändert hat.
+- **Stopp:** `docker compose stop` schickt dem Bot `SIGINT` statt `SIGTERM`. Die Polling-Schleife
+  endet dann sofort mit Exit-Code 0.
+- **Rechte:** Der Container schreibt als Benutzer mit der UID 1000 in `data/`. Auf Linux muss der
+  Ordner diesem Benutzer gehören.
+- **Image öffentlich:** Nach dem ersten Push ist das Paket in GHCR privat. Öffentlich stellen kann
+  es nur Nicolas, unter «Package settings». Sonst braucht der VPS vor dem Pull ein
+  `docker login ghcr.io`.
+
 ## Geheimnisse
 
-- Die Bitget-Demo-Keys liegen nur auf der VM, als Umgebungsvariablen in einer `.env`-Datei, die
-  per `.gitignore` ausgeschlossen ist.
-- Die Pipeline braucht keine Bitget-Keys, nur das Sonar-Token (`SONAR_TOKEN`) und später einen
-  SSH-Schlüssel für das Deployment, beide als GitHub Secrets.
+- **Bitget-Demo-Keys** liegen nur auf dem VPS, in der `.env` neben der `docker-compose.yml`
+  (Vorlage `.env.example`, per `.gitignore` ausgeschlossen). Nicolas und Valentin tragen sie
+  direkt auf dem VPS ein, nie per Chat. Ins Image kommt keine `.env` (`.dockerignore`).
+- **Pipeline:** braucht keine Bitget-Keys. SonarQube Cloud liest das Secret `SONAR_TOKEN`. Das
+  Image schiebt der Job mit dem automatischen `GITHUB_TOKEN`, ohne eigenes Secret.
+- **Automatischer Deploy (nächster Schritt):** Bis dahin deployt Nicolas von Hand. Die Secrets
+  für den Job (Tailscale-Zugang für einen kurzlebigen CI-Knoten mit `tag:ci`, Host und Benutzer,
+  je nach Lösung ein eigener SSH-Schlüssel nur für den Deploy) kommen in ein GitHub-Environment
+  `vps`, das nur `main` benutzen darf.
 
 ## Planung
 
