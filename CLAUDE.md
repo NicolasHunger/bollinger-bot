@@ -73,14 +73,15 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
 Abgabe und Präsentation: Mi 28.10.2026.
 
-Stand auf GitHub: PR #1 bis #8 und #12 bis #14 gemergt (Grundgerüst, Versionsgrenzen, Bollinger,
-Regeln, Port, Speicher, Polling, Risiko-Check, Pipeline, SonarQube Cloud, Dashboard). Auf `main`
-laufen 198 Tests, SonarQube Cloud meldet 100 % Coverage und einen bestandenen Quality Gate. Offen:
-#9 (Draft), #10 (Draft, Basis `bitget-kerzen`, Änderungen verlangt), #11 (vier Punkte von Lucas,
-Review von Nicolas in Arbeit), #15 (Doku von Nicolas, wartet auf Review). In Arbeit: Deploy auf den
-VPS (Nicolas). Noch ohne PR: die Branches `tick`, `einstiegspunkt` und `backtest` (Lucas).
-**#13 und #14 sind nur mündlich approved.** Die Lehrperson sieht nur GitHub, darum tragen Lucas
-und Valentin dort je einen Review-Kommentar nach.
+Stand auf GitHub: PR #1 bis #8, #11 bis #14 und #17 gemergt (Grundgerüst, Versionsgrenzen,
+Bollinger, Regeln, Port, Speicher, Polling, Risiko-Check, Testkonzept, Pipeline, SonarQube Cloud,
+Dashboard, Deploy). Auf `main` laufen 198 Tests, SonarQube Cloud meldet 100 % Coverage und einen
+bestandenen Quality Gate. Offen: #9 (Vorschläge umgesetzt, wartet auf Lucas), #10 (Bedingung
+umgesetzt, Basis `bitget-kerzen`, wartet auf Lucas), #15 (Doku von Nicolas), #16 (Nachtrag zum
+Risiko-Check von Valentin, wartet auf Lucas). Noch ohne PR: die Branches `tick`, `einstiegspunkt`
+und `backtest` (Lucas).
+**#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
+Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Review-Kommentar nach.
 
 **Lucas** (Strategie und Ablauf)
 
@@ -91,7 +92,9 @@ und Valentin dort je einen Review-Kommentar nach.
 - [x] PR #6 und #7 gemergt (26.10., nach dem Approve von Nicolas)
 - [ ] **PR für `tick` öffnen:** #6, #7 und #8 sind gemergt, der Branch lässt sich ohne Konflikt mit
       `main` zusammenführen. Reviewer ist Nicolas. Danach den PR für `backtest`.
-- [ ] **Review-Kommentar in #13 und #14 nachtragen**, mit einer Frage oder einem Einwand.
+- [ ] **#9 und #10 erneut reviewen:** Valentin hat am 27.10. die Vorschläge und die Bedingung
+      umgesetzt. Danach #16 reviewen (Nachtrag zum Risiko-Check).
+- [ ] **Review-Kommentar in #13, #14 und #17 nachtragen**, mit einer Frage oder einem Einwand.
       Nicolas antwortet darauf.
 - [ ] **#15 reviewen** (Doku von Nicolas). Es genügt, wenn Lucas oder Valentin es macht.
 - [x] Die unsachlichen Kommentare in PR #6 sind gelöscht.
@@ -109,21 +112,17 @@ und Valentin dort je einen Review-Kommentar nach.
       vorbereitet), `tick()`, Einstiegspunkt und Backtest samt TDD-Zyklen von Claude Code, Entwurf
       der Reflexion mit Claude Code
 
-**Valentin** (Börse). Hat 4 PRs, die Rubrik ist erfüllt.
+**Valentin** (Börse). Hat 5 PRs (#8 bis #11, #16), die Rubrik ist erfüllt.
 
 - [x] **PR #8 (Risiko-Check)** gemergt (26.10.).
-- [ ] Optional als kleiner Folge-PR: die drei Vorschläge aus Lucas' Review zu #8 (ein Puffer über
-      dem Mindestbetrag beim Kauf, der Test
-      `test_mindestbetrag_gilt_fuer_den_abgerundeten_betrag`, `kaufbetrag` in `Decimal` rechnen).
-- [ ] **Review-Kommentar in #13 und #14 nachtragen**, mit einer Frage oder einem Einwand.
+- [x] **Folge-PR zu #8:** #16 mit den Vorschlägen aus Lucas' Review (Puffer beim Kauf,
+      `kaufbetrag` in `Decimal`), wartet auf Lucas' Review.
+- [ ] **Review-Kommentar in #13, #14 und #17 nachtragen**, mit einer Frage oder einem Einwand.
 - [ ] **#15 reviewen** (Doku von Nicolas), falls Lucas es nicht macht.
-- [ ] **PR #10: die Bedingung aus Lucas' Review umsetzen.** Fällt eine einzelne
-      `orderInfo`-Abfrage aus, den Fehler abfangen und weiter abfragen. Scheitert es am Ende doch,
-      einen Fehler mit `order_id` als Attribut werfen. Bei unplausibler Gebühr 0.1 % abziehen
-      statt 0. Zwei Tests: `partially_filled` → `filled` und ein teilweise ausgeführter Verkauf.
-- [ ] **PR #9: die Vorschläge aus Lucas' Review umsetzen**, dann aus dem Draft holen.
-      Testlücken (Slice, Reihenfolge der Query-Parameter, Prüfung des Fehlercodes, alle
-      Intervalle), Timeout nicht abschaltbar machen, Key und Passphrase im Konstruktor prüfen.
+- [x] **PR #10:** die Bedingung aus Lucas' Review umgesetzt (27.10.): Nach einem Netzfehler geht
+      keine Order mehr verloren. Wartet auf Lucas' erneutes Review.
+- [x] **PR #9:** die Vorschläge aus Lucas' Review umgesetzt und aus dem Draft geholt (27.10.).
+      Wartet auf Lucas.
 - [x] **Ersatz-Reviewer** für #6 und #7: nicht nötig, Nicolas hat sie reviewt.
 - [ ] **Bestätigen:** `tick()` verkauft den ganzen BTC-Bestand bei Bitget, nicht nur die Menge laut
       Datenbank. Sonst sammeln sich Reste aus dem Abrunden an und blockieren irgendwann jeden
@@ -133,18 +132,17 @@ und Valentin dort je einen Review-Kommentar nach.
 - [ ] **PR #9 mergen**, mit Merge-Commit. Danach PR #10 auf `main` umstellen
       (`gh pr edit 10 --base main`). Erst dann den Branch `bitget-kerzen` löschen. PR #10 aus dem
       Draft holen und nach Lucas' Approve mergen.
-- [ ] **PR #11 (Testkonzept): die vier Punkte aus Lucas' Review.** Ergebnis des Rauchtests
-      eintragen, «Zu testende Funktionen» nachführen, «Bestanden» so formulieren, wie es heute
-      gilt, die fehlenden Teile der Vorlage ergänzen (Einleitung, ein Satz zu TDD, Werkzeuge, drei
-      Fehlerklassen).
+- [x] **PR #11 (Testkonzept):** die vier Punkte aus Lucas' Review und die Begründung zu «kein
+      TDD» umgesetzt, von Nicolas approved und gemergt (27.10.).
 - [ ] **KI-Nutzung im README** für seine PRs nachtragen.
-- [ ] **Demo-Keys** auf dem VPS in die `.env` eintragen, zusammen mit Nicolas. Nie per Chat
-      verschicken.
+- [ ] **Demo-Key für den Bot:** Nicolas trägt ihn selbst auf dem VPS ein. Valentin bekommt keinen
+      Zugang zum VPS. Kommt der Key von Valentin, dann zusammen an Nicolas' Rechner, nie per Chat.
+      Nötig erst, wenn `einstiegspunkt` gemergt ist.
 - [ ] **Den `tick()`-PR von Lucas mitlesen**, er nutzt Client und Risiko-Check.
 - [ ] **Eigene Reflexion** und sein Teil der Präsentation.
 
-**Nicolas** (Infra und Dashboard). Hat 4 PRs (#12, #13, #14, #15), dazu kommt der Deploy. Auf
-GitHub sichtbar reviewt ist bisher nur #12.
+**Nicolas** (Infra und Dashboard). Hat 5 PRs (#12 bis #15, #17). Auf GitHub sichtbar reviewt ist
+bisher nur #12.
 
 - [x] **PR #6 und #7** erneut reviewt, approved und gemergt (26.10.).
 - [x] **PR #12** gemergt (26.10.), der Testreport läuft auf GitHub Pages.
@@ -155,12 +153,12 @@ GitHub sichtbar reviewt ist bisher nur #12.
       `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db`.
 - [x] **Entscheid:** Streamlit ist eine Pflicht-Abhängigkeit, Bot und Dashboard laufen im selben
       Image.
-- [ ] **Deploy (AP 8b)** als eigener PR, in Arbeit seit dem 27.10.: auf den VPS von Nicolas
-      (Zugriff über SSH und Tailscale), Dockerfile mit Python 3.12, Image in GHCR,
-      `docker-compose.yml` mit Bot und Dashboard (gemeinsames Volume für `BOT_DB_PFAD`,
-      `stop_signal: SIGINT`), `.env` nur auf dem VPS. Zuerst läuft nur das Dashboard, der Bot
-      kommt mit `einstiegspunkt` dazu. Details unter «Pipeline und Deploy».
-- [ ] **#11 reviewen** (angefragt). Der Review wird vorbereitet.
+- [x] **Deploy (AP 8b)** als PR #17, gemergt am 27.10. (ohne Review auf GitHub): Dockerfile,
+      `docker-compose.yml`, Image in GHCR. Deployt wird nur von Hand (Entscheid 27.10.).
+- [ ] **Dashboard auf dem VPS starten:** das Paket in GHCR öffentlich stellen, auf dem VPS die
+      `.env` mit `DASHBOARD_DB=backtest.db` anlegen, dann `docker compose pull && docker compose
+      up -d`. Der Bot kommt mit `einstiegspunkt` dazu. Details unter «Pipeline und Deploy».
+- [x] **#11** reviewt (Approve mit vier Vorschlägen) und gemergt (27.10.).
 - [ ] **Den `tick()`-PR von Lucas reviewen.**
 - [ ] **README nachführen:** Planung, Architektur und Entscheide stehen in PR #15 und warten auf
       ein Review. Den Link zu GitHub Pages gibt es seit #13 oben im README.
@@ -252,8 +250,7 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
   Zuerst PR #10 umstellen (`gh pr edit 10 --base main` oder auf GitHub «Edit» neben dem Titel),
   erst danach `bitget-kerzen` löschen.
 - Reihenfolge ab jetzt: `tick()`, dann Backtest. #9 und #10, danach Einstiegspunkt (baut auf
-  `tick`, #9 und #10 auf). #11, #15 und der Deploy-PR hängen von nichts davon ab. Konflikte
-  möglich im README: #15 und #11 in einer Zeile der KI-Nutzung (beide Sätze behalten),
+  `tick`, #9 und #10 auf). #15 und #16 hängen von nichts davon ab. Konflikt möglich im README:
   `einstiegspunkt` und `main` bei «Bot starten» und «Dashboard starten» (beide Abschnitte
   behalten).
 
@@ -350,7 +347,9 @@ die Tests liegen und wo sie steht («`main`», «PR #n» oder «Branch `…`»).
 - **SQLite-Schema: entschieden** (PR #6, von Nicolas approved, gemergt am 26.10.2026). Siehe
   «Öffentliche Schnittstellen».
 - **Deploy: entschieden (27.10.2026, Nicolas):** auf seinen VPS statt auf eine neue Cloud-VM.
-  Zugriff über SSH und Tailscale, Start mit Docker Compose, das Image kommt aus GHCR.
+  Zugriff über SSH und Tailscale, Start mit Docker Compose, das Image kommt aus GHCR. Deployt
+  wird nur von Hand, ohne Deploy-Job und ohne Timer: Weder die Pipeline noch sonst jemand bekommt
+  Zugriff auf den VPS.
 - **Handelspaar und Intervall:** BTCUSDT mit 15min, so stehen sie in den Einstellungen von `tick()`
   und im Backtest. Eingetragen in #15, die Bestätigung kommt im Review.
 
@@ -413,14 +412,15 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #6 | `sqlite-speicher` | Lucas | AP 6, Teil 1: `speicher.py` | ✅ gemergt |
 | #7 | `polling-schleife` | Lucas | AP 6, Teil 2: `polling.py` | ✅ gemergt |
 | #8 | `risiko-check` | Valentin | AP 5: `risiko.py` | ✅ gemergt (3 Vorschläge offen) |
-| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | Draft, Basis `main`, kommentiert (6 Vorschläge) |
-| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Draft, Basis `bitget-kerzen`, Änderungen verlangt |
-| #11 | `testkonzept` | Valentin | Testkonzept im README | kommentiert (Lucas), Review von Nicolas in Arbeit |
+| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | Vorschläge umgesetzt (27.10.), wartet auf Lucas |
+| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Basis `bitget-kerzen`, Bedingung umgesetzt (27.10.), wartet auf Lucas |
+| #11 | `testkonzept` | Valentin | Testkonzept im README | ✅ gemergt |
 | #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | ✅ gemergt |
 | #13 | `pipeline-sonar` | Nicolas | AP 8a.2: SonarQube Cloud | ✅ gemergt (nur mündlich approved) |
 | #14 | `dashboard` | Nicolas | AP 7: `dashboard.py` | ✅ gemergt (nur mündlich approved) |
 | #15 | `doku-nachfuehren` | Nicolas | Doku: Planung, Architektur, Entscheide, Reflexion Nicolas | wartet auf Review |
-| – | `deploy` | Nicolas | AP 8b: Dockerfile, Docker Compose, Deploy auf den VPS | in Arbeit |
+| #16 | `risiko-nachtrag` | Valentin | Risiko-Check: Puffer beim Kauf, `kaufbetrag` in `Decimal` | wartet auf Review (Lucas) |
+| #17 | `deploy` | Nicolas | AP 8b: Dockerfile, Docker Compose, Image in GHCR | ✅ gemergt (ohne Review auf GitHub) |
 | – | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | fertig, PR jetzt möglich (#6, #7, #8 gemergt) |
 | – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR nach #9, #10 |
 | – | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | fertig, PR nach `tick` |
@@ -658,9 +658,9 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
   teilen `./data:/data`. Für die Demo zeigt `DASHBOARD_DB=backtest.db` die Datei aus dem Backtest.
 - **Deploy:** auf Nicolas' VPS (SSH über Tailscale), von Hand mit
   `docker compose pull && docker compose up -d`. Befehle auf dem VPS nur nach Nicolas' OK. Der
-  VPS nimmt SSH über Tailscale SSH mit «check» an (Anmeldung im Browser). Ein automatischer
-  Deploy-Job ist bewusst erst der nächste Schritt (Entscheid Nicolas, 27.10.2026), Vorüberlegungen
-  in der Beschreibung des Deploy-PRs. Seine Secrets kommen in das GitHub-Environment `vps`.
+  VPS nimmt SSH über Tailscale SSH mit «check» an (Anmeldung im Browser). Einen automatischen
+  Deploy gibt es bewusst nicht (Entscheid Nicolas, 27.10.2026): Weder die Pipeline noch sonst
+  jemand bekommt Zugriff auf den VPS. Die Gründe stehen in der Beschreibung von PR #17.
 - Docker Compose: `stop_signal: SIGINT` für den Bot. Dann kommt im Bot ein `KeyboardInterrupt` an,
   und die Polling-Schleife endet sofort (sonst ignoriert der Prozess mit PID 1 das SIGTERM, und
   Docker beendet ihn nach 10 s hart).
