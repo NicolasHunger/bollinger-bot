@@ -17,7 +17,7 @@ import httpx
 import pytest
 import respx
 
-from bollinger_bot.bitget_client import BitgetClient, BitgetFehler
+from bollinger_bot.bitget_client import INTERVALLE, BitgetClient, BitgetFehler
 from bollinger_bot.port import Kerze
 
 KERZEN_URL = "https://api.bitget.com/api/v2/spot/market/candles"
@@ -127,6 +127,43 @@ def test_kerze_eine_millisekunde_vor_dem_schluss_laeuft_noch(client):
 
 
 @respx.mock
+def test_in_der_luecke_nach_dem_schluss_kommen_die_neuesten_kerzen(client):
+    # Serverzeit 13:00:01, Bitget hat die Kerze ab 13:00 noch nicht angelegt. Darum sind alle drei
+    # gelieferten Zeilen (12:15, 12:30, 12:45) abgeschlossen, verlangt sind aber nur 2. Gemeint
+    # sind die zwei neuesten, nicht die zwei ältesten.
+    kerze_1215 = ["1790770500000", "83000", "83100", "82900", "83050", "0.1", "8305", "8305"]
+    luecke = {**ANTWORT, "requestTime": 1790773201000, "data": [kerze_1215, *ANTWORT["data"][:2]]}
+    respx.get(KERZEN_URL).respond(json=luecke)
+
+    kerzen = client.hole_kerzen("BTCUSDT", "15min", 2)
+
+    assert [k.startzeit.minute for k in kerzen] == [30, 45]
+
+
+@pytest.mark.parametrize(("intervall", "dauer"), list(INTERVALLE.items()))
+@pytest.mark.parametrize(
+    ("abstand_ms", "abgeschlossen"),
+    [(0, True), (-1, False)],  # genau beim Schluss / 1 ms davor
+)
+@respx.mock
+def test_grenze_beim_schluss_gilt_fuer_alle_intervalle(
+    client, intervall, dauer, abstand_ms, abgeschlossen
+):
+    # Kerze ab 13:00 UTC (1790773200000 ms), sie endet nach `dauer`. Die Serverzeit liegt genau
+    # auf diesem Ende oder 1 ms davor.
+    start_ms = 1790773200000
+    ende_ms = start_ms + int(dauer.total_seconds() * 1000)
+    zeile = [str(start_ms), "83000", "83100", "82900", "83050", "0.1", "8305", "8305"]
+    respx.get(KERZEN_URL).respond(
+        json={**ANTWORT, "requestTime": ende_ms + abstand_ms, "data": [zeile]}
+    )
+
+    kerzen = client.hole_kerzen("BTCUSDT", intervall, 1)
+
+    assert len(kerzen) == (1 if abgeschlossen else 0)
+
+
+@respx.mock
 def test_leere_antwort_ergibt_leere_liste(client):
     respx.get(KERZEN_URL).respond(json={**ANTWORT, "data": []})
 
@@ -145,6 +182,20 @@ def test_fehlercode_von_bitget_wird_als_bitget_fehler_geworfen(client):
         client.hole_kerzen("GIBTESNICHT", "15min", 2)
 
     assert fehler.value.code == "40034"
+
+
+@respx.mock
+def test_fehlercode_bei_http_200_wird_als_bitget_fehler_geworfen(client):
+    # Bitget meldet manche Fehler mit HTTP 200 und einem Code ungleich "00000". Ohne die Prüfung
+    # des Codes würde der Client dann `data: null` als Kerzen lesen.
+    respx.get(KERZEN_URL).respond(
+        200, json={"code": "40019", "msg": "Parameter cannot be empty", "data": None}
+    )
+
+    with pytest.raises(BitgetFehler, match="Bitget-Code 40019") as fehler:
+        client.hole_kerzen("BTCUSDT", "15min", 2)
+
+    assert fehler.value.code == "40019"
 
 
 @respx.mock

@@ -95,6 +95,25 @@ class BitgetClient:
         timeout_sekunden: float = 10,
         uhr: Callable[[], datetime] = _jetzt,
     ):
+        # Die Keys gehen als Header an Bitget. Ein Zeilenumbruch darin (z.B. aus einer .env mit
+        # Windows-Zeilenenden) liesse httpx mit einer Meldung abbrechen, die den Wert im
+        # Klartext enthält, und die landet dann jede Minute im Log. Darum hier prüfen, ohne den
+        # Wert zu nennen.
+        for name, wert in (
+            ("api_key", api_key),
+            ("api_secret", api_secret),
+            ("passphrase", passphrase),
+        ):
+            if not wert or wert != wert.strip() or not wert.isprintable():
+                raise ValueError(
+                    f"{name} ist leer oder enthält Leerzeichen am Rand bzw. Steuerzeichen "
+                    "(z.B. einen Zeilenumbruch). Bitte in der .env prüfen."
+                )
+        # Ohne Timeout liesse ein hängender Request den Bot ohne Fehlermeldung stillstehen.
+        if timeout_sekunden is None or timeout_sekunden <= 0:
+            raise ValueError(
+                f"timeout_sekunden muss grösser als 0 sein, erhalten: {timeout_sekunden}"
+            )
         self._api_key = api_key
         self._api_secret = api_secret
         self._passphrase = passphrase
