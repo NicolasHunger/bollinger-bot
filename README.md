@@ -317,9 +317,10 @@ docker compose pull && docker compose up -d
   direkt auf dem VPS ein, nie per Chat. Ins Image kommt keine `.env` (`.dockerignore`).
 - **Pipeline:** braucht keine Bitget-Keys. SonarQube Cloud liest das Secret `SONAR_TOKEN`. Das
   Image schiebt der Job mit dem automatischen `GITHUB_TOKEN`, ohne eigenes Secret.
-- **Automatischer Deploy (geplant):** Die Secrets dafür (Tailscale-Schlüssel, ein eigener
-  SSH-Schlüssel nur für den Deploy, Host und Benutzer) kommen in ein GitHub-Environment `vps`, das
-  nur `main` benutzen darf.
+- **Automatischer Deploy (nächster Schritt):** Bis dahin deployt Nicolas von Hand. Die Secrets
+  für den Job (Tailscale-Zugang für einen kurzlebigen CI-Knoten mit `tag:ci`, Host und Benutzer,
+  je nach Lösung ein eigener SSH-Schlüssel nur für den Deploy) kommen in ein GitHub-Environment
+  `vps`, das nur `main` benutzen darf.
 
 ## Planung
 

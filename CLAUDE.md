@@ -641,8 +641,10 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
   Der Bot startet nur mit `--profile bot`, bis der Branch `einstiegspunkt` auf `main` ist. Beide
   teilen `./data:/data`. Für die Demo zeigt `DASHBOARD_DB=backtest.db` die Datei aus dem Backtest.
 - **Deploy:** auf Nicolas' VPS (SSH über Tailscale), von Hand mit
-  `docker compose pull && docker compose up -d`. Befehle auf dem VPS nur nach Nicolas' OK. Ein
-  automatischer Deploy-Job ist geplant, seine Secrets kommen in das GitHub-Environment `vps`.
+  `docker compose pull && docker compose up -d`. Befehle auf dem VPS nur nach Nicolas' OK. Der
+  VPS nimmt SSH über Tailscale SSH mit «check» an (Anmeldung im Browser). Ein automatischer
+  Deploy-Job ist bewusst erst der nächste Schritt (Entscheid Nicolas, 27.10.2026), Vorüberlegungen
+  in der Beschreibung des Deploy-PRs. Seine Secrets kommen in das GitHub-Environment `vps`.
 - Docker Compose: `stop_signal: SIGINT` für den Bot. Dann kommt im Bot ein `KeyboardInterrupt` an,
   und die Polling-Schleife endet sofort (sonst ignoriert der Prozess mit PID 1 das SIGTERM, und
   Docker beendet ihn nach 10 s hart).
