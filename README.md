@@ -389,18 +389,14 @@ nachgeführt.
   Vorgaben gemacht, die Entscheide getroffen und die Antworten freigegeben. Die Soll-Werte in den
   Tests sind von Hand hergeleitet (Rechnung als Kommentar im Test). Die Werte der
   Bollinger-Berechnung hat Valentin im Review nachgerechnet. Den Workflow der Pipeline
-  (`.github/workflows/pipeline.yml`) hat Claude Code mit Nicolas geschrieben und Schritt für
-  Schritt erklärt. Die Entscheide zu den Reports und zu pytest-html hat Nicolas getroffen. Das
-  Dashboard (AP 7, `dashboard.py` mit seinen Tests) ist genauso entstanden: Die Vorgaben stammen
-  aus Nicolas' Reviews von PR #6 und #7 (Kerzen, Gesamtwert, Warnung, Schweizer Zeit), die
-  Entscheide hat Nicolas getroffen und das Ergebnis mit den Daten aus dem Backtest geprüft. Die
-  Soll-Werte der Tests sind von Hand gerechnet.
-- **Zum Reviewen oder Optimieren:** _noch offen_
   (`.github/workflows/pipeline.yml`) und die Anbindung an SonarQube Cloud hat Claude Code mit
   Nicolas geschrieben und Schritt für Schritt erklärt, ebenso die Entwürfe der Antworten auf die
   Reviews von PR #12. Die Entscheide zu den Reports, zu pytest-html und zu den Funden von
   SonarQube Cloud hat Nicolas getroffen, GitHub Pages und SonarQube Cloud hat er selbst
-  eingerichtet.
+  eingerichtet. Das Dashboard (AP 7, `dashboard.py` mit seinen Tests) ist genauso entstanden: Die
+  Vorgaben stammen aus Nicolas' Reviews von PR #6 und #7 (Kerzen, Gesamtwert, Warnung, Schweizer
+  Zeit), die Entscheide hat Nicolas getroffen und das Ergebnis mit den Daten aus dem Backtest
+  geprüft. Die Soll-Werte der Tests sind von Hand gerechnet.
 - **Zum Reviewen oder Optimieren:** Die Reviews von PR #6 und PR #7 hat Nicolas mit Claude Code
   vorbereitet: Claude Code hat die PRs lokal getestet, Randfälle nachgeprüft und die Kommentare
   formuliert. Die inhaltlichen Entscheide (z.B. Kerzen im Dashboard, Kontostand als Gesamtwert,
