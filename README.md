@@ -320,12 +320,12 @@ PRs pro Person.
 | 2 | Kauf- und Verkaufsregeln | Lucas | Valentin | #4 |
 | 3 | Bitget-Client: Signatur und Kerzen | Valentin | Lucas | #9 |
 | 4 | Bitget-Client: Orders und Kontostand | Valentin | Lucas | #10 |
-| 5 | Risiko-Check | Valentin | Lucas | #8 |
+| 5 | Risiko-Check | Valentin | Lucas | #8, #16 |
 | 6 | `tick()`, Polling-Schleife und SQLite | Lucas | Nicolas | #5 (Port), #6, #7, Branch `tick` |
 | 7 | Dashboard | Nicolas | Valentin | #14 |
 | 8a.1 | Grundgerüst (Projektstruktur, `pyproject.toml`, pytest läuft lokal) | Lucas | Valentin | #1, #2 |
 | 8a.2 | Pipeline (Build, Test, SonarQube Cloud) | Nicolas | Valentin | #12, #13 |
-| 8b | Deploy auf den VPS | Nicolas | Valentin | folgt |
+| 8b | Deploy auf den VPS | Nicolas | Valentin | #17 |
 | – | Einstiegspunkt `python -m bollinger_bot` | Lucas | Nicolas | Branch `einstiegspunkt` |
 | – | Backtest | Lucas | Nicolas | Branch `backtest` |
 | – | Testkonzept | Valentin | Lucas, Nicolas | #11 |
