@@ -393,7 +393,9 @@ Dateien gerade liegen, steht in der Code-Übersicht.
 ### Vorgehen
 
 - **Kein TDD als Regel:** Das Team hat in der Projektfindung (23.09.2026) entschieden, TDD nicht
-  als Regel zu verwenden. _Begründung: folgt._ Die Tests entstehen mit dem Code im selben PR.
+  als Regel zu verwenden: Der Zeitplan war knapp, und wegen einiger Ausfälle im Team war es
+  einfacher, die Tests zusammen mit dem Code zu schreiben statt vorher. Die Tests entstehen darum
+  mit dem Code im selben PR.
   Ausnahme: Lucas hat `tick()`, den Einstiegspunkt und den Backtest test-first gebaut (Commits
   «TDD rot», «TDD grün», «TDD refactor»), mehr dazu in der [Reflexion](#reflexion).
 - **Grenzwerte:** Jede Grenze wird genau auf der Grenze und knapp daneben getestet, z.B. Kurs
