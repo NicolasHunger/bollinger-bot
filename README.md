@@ -334,9 +334,18 @@ Klein gehalten nach der
 [Vorlage aus den Kursunterlagen](https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/testkonzept/README.md)
 (IEEE 829). Welche Ebene womit getestet wird, steht oben unter [Teststrategie](#teststrategie).
 
+### Einleitung
+
+Getestet wird der Bollinger-Bot: Er holt Kerzen von Bitget, berechnet die Bänder, entscheidet
+über Kauf und Verkauf, platziert Orders auf dem Demo-Konto und speichert alles für das
+Dashboard. Ziel der Tests ist, dass der Bot die Regeln korrekt umsetzt und dabei kein Geld
+falsch bewegt: kein Kauf zu viel, kein falscher Betrag, keine Order, von der er nichts weiss.
+Ob die Strategie Gewinn macht, ist nicht Ziel der Tests.
+
 ### Testobjekte
 
-Die Bausteine aus der [Architektur](#architektur), je eine Datei in `src/bollinger_bot/`:
+Die Bausteine aus der [Architektur](#architektur), je eine Datei in `src/bollinger_bot/`. Wo die
+Dateien gerade liegen, steht in der Code-Übersicht.
 
 | Baustein | Datei | Art | Tests |
 |---|---|---|---|
@@ -344,88 +353,130 @@ Die Bausteine aus der [Architektur](#architektur), je eine Datei in `src/bolling
 | Kauf- und Verkaufsregeln | `regeln.py` | reine Funktion | Unit |
 | Risiko-Check | `risiko.py` | reine Funktion | Unit |
 | Port zur Börse | `port.py` | Schnittstelle (`Protocol`) | Unit (Mock nach Vorbild des Ports) |
-| Bitget-Client | `bitget_client.py` | Adapter zu Bitget | Unit (Signatur), Integration (respx) |
+| Bitget-Client | `bitget_client.py` | Adapter zu Bitget | Unit (Signatur, Konstruktor), Integration (respx) |
 | SQLite-Speicher | `speicher.py` | Adapter zur Datenbank | Integration (echte temporäre Datei) |
 | Polling | `polling.py` | Zeitlogik und Schleife | Unit (Fake-Uhr) |
-| `tick()` | folgt | setzt alles zusammen | Integration (Port gemockt, echte DB) |
-| Dashboard | folgt | Streamlit | E2E (`AppTest` mit Testdaten) |
+| `tick()` | `tick.py` | setzt alles zusammen | Unit und Integration (Port gemockt, echte DB) |
+| Backtest | `backtest.py` | `tick()` auf aufgezeichneten Kursen | Unit und Integration (echte Kurse als CSV) |
+| Dashboard | `dashboard.py` | Streamlit | Unit (reine Funktionen), Integration (Streamlit `AppTest` mit Testdaten) |
 
 ### Zu testende Funktionen
 
-- **Rechnen:** Bänder mit σ geteilt durch n, Kaufbetrag und Verkaufsmenge abgerundet auf die
-  Stellen von Bitget, Mindestbetrag von 1 USDT
-- **Entscheiden:** Kauf unter dem unteren Band, Verkauf über dem Mittelband oder beim Stop-Loss,
-  höchstens eine offene Position
-- **Mit Bitget sprechen:** Signatur, Header `paptrading: 1`, nur abgeschlossene Kerzen, Market-Orders
-  mit Menge ohne Gebühr, Fehler von Bitget und Netzwerkfehler als `BitgetFehler`
+- **Rechnen:** Bänder mit σ geteilt durch n. Kaufbetrag in USDT und Verkaufsmenge in BTC, immer
+  abgerundet auf die Stellen von Bitget, unter dem Mindestbetrag keine Order.
+- **Entscheiden:** Kauf unter dem unteren Band, Verkauf über dem Mittelband oder beim Stop-Loss
+  (3 %), höchstens eine offene Position.
+- **Mit Bitget sprechen:** Signatur, Header `paptrading: 1`, nur abgeschlossene Kerzen (nach der
+  Uhr von Bitget). Kauf mit Betrag in USDT, Verkauf mit Menge in BTC, als Market-Order, warten
+  bis zur Ausführung, gekaufte Menge ohne Gebühr. Fehler von Bitget und Netzfehler als
+  `BitgetFehler`. Ist eine Order platziert, aber ihr Ergebnis unklar, als `OrderFehler` mit
+  Order-ID. Keys und Timeout werden beim Start geprüft.
 - **Speichern:** Signale, Trades und Kontostände, jede Kerze nur einmal, offene Position nach
-  einem Neustart, Zeiten immer in UTC
-- **Ablauf:** eine neue Kerze wird genau einmal ausgewertet, ein Fehler in `tick()` beendet den
-  Bot nicht
+  einem Neustart, Zeiten immer in UTC. Die Datenbank prüft ihre Regeln selbst (`CHECK`) und
+  lässt höchstens eine offene Position zu.
+- **Ablauf:** Eine neue Kerze wird genau einmal ausgewertet, auch über die Zeitumstellung. Das
+  Intervall wird geprüft. Ein Fehler in `tick()` beendet den Bot nicht, `KeyboardInterrupt`
+  (Stoppen des Containers) schon.
+- **Anzeigen:** Kerzen, Bänder, Trades und Gesamtwert im Dashboard, Warnung, wenn die letzte
+  Kerze zu alt ist.
 
 ### Nicht getestet
 
 - **Echte Bitget-API in der Pipeline.** Die Pipeline hat keine API-Keys. Ob Bitget die Anfragen
-  wirklich annimmt, prüfen wir einmal von Hand (siehe unten, Testaufgaben).
-- **Gewinn der Strategie.** Ziel ist, dass der Bot die Regeln korrekt umsetzt, nicht, dass er
-  Geld verdient.
+  wirklich annimmt, prüft der Rauchtest von Hand (siehe Testaufgaben).
+- **Gewinn der Strategie.** Der Backtest zeigt, was die Strategie auf echten Kursen gemacht
+  hätte, aber kein Test verlangt einen Gewinn.
 - **Performance und Last.** Der Bot macht eine Anfrage pro Minute.
-- **Docker-Image und VM.** Der Deploy wird nur dadurch geprüft, dass der Container startet.
+- **Docker-Image und VM** automatisch. Dass der Container läuft, prüfen wir einmal von Hand
+  (Testaufgabe zu AP 8b).
 
 ### Vorgehen
 
+- **Kein TDD als Regel:** Das Team hat in der Projektfindung (23.09.2026) entschieden, TDD nicht
+  als Regel zu verwenden. _Begründung: folgt._ Die Tests entstehen mit dem Code im selben PR.
+  Ausnahme: Lucas hat `tick()`, den Einstiegspunkt und den Backtest test-first gebaut (Commits
+  «TDD rot», «TDD grün», «TDD refactor»), mehr dazu in der [Reflexion](#reflexion).
 - **Grenzwerte:** Jede Grenze wird genau auf der Grenze und knapp daneben getestet, z.B. Kurs
-  genau auf dem Band, Kaufbetrag genau 1.00 USDT und 0.99 USDT, Kerze genau beim Schluss und
-  1 ms davor.
+  genau auf dem Band, Mindestbetrag genau erreicht und um einen Rappen verfehlt, Kerze genau
+  beim Schluss und 1 ms davor.
 - **Soll-Werte unabhängig berechnet:** von Hand (Rechnung als Kommentar im Test) oder mit einem
   anderen Werkzeug, z.B. die Signaturen mit `openssl`.
 - **Abhängigkeiten ersetzt:** Bitget mit respx (HTTP) oder einem Autospec-Mock des Ports, die
   Uhr mit einer Fake-Uhr, das Warten mit einer Fake-Funktion. Die Datenbank ist echt, aber eine
   temporäre Datei pro Test.
 - **Testdaten nah an der Wirklichkeit:** Die Bitget-Antworten in den Tests haben die Form echter
-  Antworten der Demo-API.
+  Antworten der Demo-API, eine stammt direkt aus dem Rauchtest. Der Backtest läuft auf echten
+  BTCUSDT-Kursen.
+- **Tests prüfen:** Im Review bauen wir absichtlich Fehler in den Code ein (Mutationstest von
+  Hand). Bleiben die Tests grün, fehlt ein Test.
 
 ### Bestanden, wenn
 
-- alle Tests grün sind. Ein roter Test verhindert den Merge und den Deploy.
-- die Coverage den Quality Gate von SonarQube Cloud erfüllt (Standard: 80 % auf neuem Code).
+- alle Tests in der Pipeline grün sind. `main` hat keine Pflicht-Checks: Mit roter Pipeline
+  mergen wir nicht, das ist eine Abmachung im Team. Der Testreport auf GitHub Pages und (mit
+  AP 8b) der Deploy laufen dagegen technisch nur bei grünen Tests.
+- der Quality Gate «Sonar way» in SonarQube Cloud grün ist (unter anderem 80 % Coverage auf neuem
+  Code, keine neuen Sicherheitsprobleme).
 - der Reviewer im PR die Soll-Werte mindestens eines Tests selbst nachgerechnet hat.
 
-Gefundene Fehler halten wir im PR als Kommentar fest. Schwere Fehler (falsche Order, falscher
-Betrag, Absturz) blockieren den Merge, leichte (Text, Logmeldung) dürfen in einem Folge-PR kommen.
+Gefundene Fehler halten wir im PR als Kommentar fest und ordnen sie einer von drei Klassen zu:
+
+| Klasse | Bedeutung | Beispiel | Folge |
+|---|---|---|---|
+| Schwerwiegend | Bot stürzt ab oder bewegt Geld falsch | doppelter Kauf, falscher Betrag, Order ohne Eintrag in der Datenbank | blockiert den Merge |
+| Mittelschwer | Bot läuft, aber offensichtlich falsch | falscher Gesamtwert im Dashboard, fehlende Warnung | vor der Abgabe beheben |
+| Geringfügig | Bot läuft, kleiner Mangel | Text, Logmeldung, Kommentar | darf in einem Folge-PR kommen |
 
 ### Ergebnisse
 
-- **JUnit-XML** aus pytest: Testresultate im PR und in GitHub Actions
-- **HTML-Testreport** auf GitHub Pages
-- **`coverage.xml`** aus pytest-cov für SonarQube Cloud
+- **JUnit-XML** aus pytest: Testresultate als Check und Kommentar im PR
+- **HTML-Testreport** und gemeinsame Coverage auf [GitHub Pages](https://nicolashunger.github.io/bollinger-bot/)
+- **`coverage.xml`** aus pytest-cov für [SonarQube Cloud](https://sonarcloud.io/project/overview?id=NicolasHunger_bollinger-bot)
+- **Rauchtest und Backtest:** Ergebnis unten unter Testaufgaben
 
 ### Testaufgaben
 
 | Ebene | Befehl | Wann |
 |---|---|---|
 | Unit | `pytest tests/unit` | lokal vor jedem Push, in der Pipeline bei jedem PR |
-| Integration | `pytest tests/integration` | lokal vor jedem Push, in der Pipeline bei jedem PR |
-| E2E Dashboard | folgt mit #7 | in der Pipeline bei jedem PR |
-| Rauchtest Bitget | von Hand mit Demo-Key: Kerzen holen, Kontostand, ein Kauf und ein Verkauf für 5 USDT | einmal vor dem ersten Deploy |
+| Integration (inkl. Dashboard mit `AppTest`) | `pytest tests/integration` | lokal vor jedem Push, in der Pipeline bei jedem PR |
+| Rauchtest Bitget | `python scripts/rauchtest.py`, mit `--order` zusätzlich Kauf und Verkauf für 5 USDT | von Hand mit Demo-Key, vor dem ersten Deploy |
+| Backtest | `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db` | von Hand, nach Änderungen an Strategie oder `tick()` |
+| Container | `docker compose up -d`, dann Log und Dashboard ansehen | von Hand, einmal nach dem Deploy (AP 8b, Nicolas) |
 
-Der Rauchtest prüft, was die Mocks nicht prüfen können: ob Bitget die Signatur annimmt, ob das
-Demo-Konto die Classic-Endpunkte `/api/v2/spot/…` verwendet und wie die Gebühr in `feeDetail`
-wirklich aussieht.
+**Ergebnis Rauchtest** (21.10.2026, Valentin, Demo-Konto): Bitget nimmt die Signatur an, das
+Demo-Konto verwendet die Classic-Endpunkte `/api/v2/spot/…`. Kauf und Verkauf für 5 USDT sind
+ausgeführt worden. Die Gebühr beträgt 0.1 % und steht in `feeDetail` unter `newFees.r`, in BTC
+abgezogen. Die gekaufte Menge ohne Gebühr (0.000058941 BTC) stimmte genau mit dem Kontostand bei
+Bitget überein. Vorher, mit leerem Spot-Konto, kam der Fehler 43012 «Insufficient balance» als
+`BitgetFehler`. Die echte Antwort ist heute ein Testfall in
+`tests/integration/test_bitget_orders.py`. Der Rauchtest hat damit gefunden, was die Mocks nicht
+finden konnten: Die Gebühr ist 0.1 %, nicht 0.2 % wie in der Symbol-Info von Bitget.
+
+**Ergebnis Backtest** (Branch `backtest`, Stand 24.10.2026): das echte `tick()` auf 2000
+BTCUSDT-Kerzen vom 03.10. bis 24.10.2026. 40 Käufe, 39 Verkäufe, aus 1000 USDT werden 993.07 USDT
+(−0.69 %). Den Verlust machen die Gebühren (7.87 USDT), der Stop-Loss hat nie ausgelöst.
 
 ### Testumgebung
 
+- **Werkzeuge:** pytest, pytest-mock (Autospec-Mock des Ports), respx (Bitget-HTTP), pytest-cov
+  (Coverage mit Zweigen), pytest-html (HTML-Report), Streamlit `AppTest` (Dashboard), GitHub
+  Actions (Pipeline), SonarQube Cloud (Coverage und Codequalität)
 - Python 3.12, Installation mit `pip install -e ".[dev]"` (siehe [Entwicklung](#entwicklung))
 - lokal: Windows und macOS, in der Pipeline: Ubuntu auf GitHub Actions
-- kein Netzwerk nötig, keine API-Keys, keine echte Datenbank ausser temporären Dateien
+- kein Netzwerk nötig, keine API-Keys, keine echte Datenbank ausser temporären Dateien. Nur der
+  Rauchtest braucht den Demo-Key in einer lokalen `.env`.
 
 ### Zeitplan und Verantwortung
 
 - Wer einen Baustein schreibt, schreibt seine Tests im selben PR (siehe
-  [Arbeitspakete](#arbeitspakete)). Kein TDD, die Tests entstehen mit dem Code.
-- Wer reviewt, führt die Tests lokal aus und rechnet mindestens einen Soll-Wert nach.
+  [Arbeitspakete](#arbeitspakete)).
+- Wer reviewt, führt die Tests lokal aus, rechnet mindestens einen Soll-Wert nach und baut wenn
+  möglich einen Fehler ein, um die Tests zu prüfen.
+- Rauchtest: Valentin (erledigt am 21.10.). Backtest: Lucas. Container nach dem Deploy: Nicolas.
 - Bis Mi 21.10.: Unit- und Integrationstests aller Bausteine ausser `tick()` und Dashboard.
-  Bis Mi 28.10.: `tick()`, Dashboard, Rauchtest, Reports in der Pipeline.
+  Bis Mi 28.10.: `tick()`, Dashboard, Backtest, Reports in der Pipeline, Container nach dem
+  Deploy.
 
 ## Reflexion
 
