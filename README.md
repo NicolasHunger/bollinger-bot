@@ -1,5 +1,10 @@
 # Bollinger-Bot
 
+[![Pipeline](https://github.com/NicolasHunger/bollinger-bot/actions/workflows/pipeline.yml/badge.svg)](https://github.com/NicolasHunger/bollinger-bot/actions/workflows/pipeline.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=NicolasHunger_bollinger-bot&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=NicolasHunger_bollinger-bot)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=NicolasHunger_bollinger-bot&metric=coverage)](https://sonarcloud.io/component_measures?id=NicolasHunger_bollinger-bot&metric=coverage)
+[![Testreport](https://img.shields.io/badge/Testreport-GitHub%20Pages-blue)](https://nicolashunger.github.io/bollinger-bot/)
+
 Ein Krypto-Trading-Bot in Python, der mit der Bollinger-Strategie auf dem **Demo-Konto** von
 Bitget handelt, also mit Spielgeld. Projektarbeit im Modul 450 «Applikationen testen» an der TBZ.
 
@@ -226,6 +231,7 @@ flowchart LR
     build["Build<br/>Paket bauen"] --> unit["Unit-Tests<br/>pytest tests/unit"]
     build --> integration["Integrationstests<br/>pytest tests/integration"]
     unit & integration --> resultate["Testresultate<br/>Check und Kommentar im PR"]
+    unit & integration -->|"nur grün"| sonar["SonarQube Cloud<br/>Coverage und Codequalität"]
     unit & integration -->|"nur main, nur grün"| pages["Testreport<br/>GitHub Pages"]
 ```
 
@@ -234,22 +240,30 @@ flowchart LR
 | Build | baut das Paket (Wheel), installiert und importiert es | immer |
 | Unit-Tests, Integrationstests | derselbe Job pro Testordner: `pytest` mit JUnit-XML, `coverage.xml` und HTML-Reports, alles als Artefakt im Pipeline-Lauf | nach dem Build |
 | Testresultate veröffentlichen | Check «Testresultate» am Commit, Kommentar mit den Zahlen im PR | auch bei roten Tests |
+| SonarQube Cloud | schickt Code, `coverage.xml` und JUnit-XML beider Testordner an SonarQube Cloud. Im PR erscheint der Quality Gate als eigener Check | nur wenn alle Tests grün sind |
 | Testreport auf GitHub Pages | Testresultate pro Testordner und die Coverage beider Ordner zusammen (`coverage combine`) als Webseite | nur auf `main`, nur wenn alle Tests grün sind |
 
 - **Testreport:** <https://nicolashunger.github.io/bollinger-bot/>
+- **SonarQube Cloud:** <https://sonarcloud.io/project/overview?id=NicolasHunger_bollinger-bot>.
+  Einstellungen in [`sonar-project.properties`](sonar-project.properties), der Token liegt als
+  GitHub Secret `SONAR_TOKEN` im Repo. «Automatic Analysis» ist in SonarQube Cloud ausgeschaltet:
+  Nur die Analyse aus der Pipeline kennt die Coverage, und beide gleichzeitig gehen nicht.
+- **Quality Gate:** Standard «Sonar way», unter anderem mindestens 80 % Coverage auf neuem Code
+  und keine neuen Sicherheitsprobleme.
 - **Coverage gesamt:** Jeder Test-Job misst nur seinen Ordner. Der Client ist zum Beispiel nur
   in den Integrationstests getestet. Aussagekräftig ist darum erst die Coverage beider Ordner
   zusammen, so rechnet auch SonarQube Cloud.
 - **Sicherheit:** pip installiert nur fertige Pakete (`--only-binary :all:`), damit beim
   Installieren kein Setup-Skript aus einem Quellpaket läuft. Fremde Actions sind auf einen
   Commit festgelegt statt auf einen Tag, der später auf anderen Code zeigen könnte. Beides hat
-  SonarQube Cloud gemeldet.
+  SonarQube Cloud gemeldet. Die zwei Funde «kein Lockfile» sind in `sonar-project.properties`
+  mit Begründung ausgenommen.
 - **Reports nur in der Pipeline:** Coverage, JUnit-XML und HTML-Reports erzeugt nur der Workflow,
   nicht `addopts` in der `pyproject.toml`. Lokal bleibt `pytest` schnell und ohne Report-Dateien.
 - **Coverage mit Zweigen** (`--cov-branch`): Gezählt wird nicht nur, welche Zeilen laufen, sondern
   auch, ob bei jedem `if` beide Wege getestet sind (Zweigabdeckung).
-- **Folgt:** SonarQube Cloud (eigener PR), Docker-Image in die GitHub Container Registry und
-  Deploy auf die Cloud-VM (AP 8b), beide nur bei grünen Tests.
+- **Folgt:** Docker-Image in die GitHub Container Registry und Deploy auf die Cloud-VM (AP 8b),
+  beide nur bei grünen Tests.
 
 Dieselben Reports lokal (landen in `reports/` und `htmlcov/`, beide stehen in der `.gitignore`):
 
@@ -261,8 +275,8 @@ pytest tests/unit --html=reports/unit.html --self-contained-html --cov=bollinger
 
 - Die Bitget-Demo-Keys liegen nur auf der VM, als Umgebungsvariablen in einer `.env`-Datei, die
   per `.gitignore` ausgeschlossen ist.
-- Die Pipeline braucht keine Bitget-Keys, nur ein Sonar-Token und einen SSH-Schlüssel für das
-  Deployment, beide als GitHub Secrets.
+- Die Pipeline braucht keine Bitget-Keys, nur das Sonar-Token (`SONAR_TOKEN`) und später einen
+  SSH-Schlüssel für das Deployment, beide als GitHub Secrets.
 
 ## Planung
 
@@ -382,6 +396,16 @@ nachgeführt.
   Entscheide hat Nicolas getroffen und das Ergebnis mit den Daten aus dem Backtest geprüft. Die
   Soll-Werte der Tests sind von Hand gerechnet.
 - **Zum Reviewen oder Optimieren:** _noch offen_
+  (`.github/workflows/pipeline.yml`) und die Anbindung an SonarQube Cloud hat Claude Code mit
+  Nicolas geschrieben und Schritt für Schritt erklärt, ebenso die Entwürfe der Antworten auf die
+  Reviews von PR #12. Die Entscheide zu den Reports, zu pytest-html und zu den Funden von
+  SonarQube Cloud hat Nicolas getroffen, GitHub Pages und SonarQube Cloud hat er selbst
+  eingerichtet.
+- **Zum Reviewen oder Optimieren:** Die Reviews von PR #6 und PR #7 hat Nicolas mit Claude Code
+  vorbereitet: Claude Code hat die PRs lokal getestet, Randfälle nachgeprüft und die Kommentare
+  formuliert. Die inhaltlichen Entscheide (z.B. Kerzen im Dashboard, Kontostand als Gesamtwert,
+  `stop_signal: SIGINT`) und den Review-Status hat Nicolas getroffen, gepostet wurde erst nach
+  Durchsicht.
 
 ## Kursunterlagen
 
