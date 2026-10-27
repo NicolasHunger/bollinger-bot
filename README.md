@@ -243,6 +243,7 @@ flowchart LR
     unit & integration --> resultate["Testresultate<br/>Check und Kommentar im PR"]
     unit & integration -->|"nur grün"| sonar["SonarQube Cloud<br/>Coverage und Codequalität"]
     unit & integration -->|"nur main, nur grün"| pages["Testreport<br/>GitHub Pages"]
+    sonar --> image["Docker-Image<br/>auf main nach GHCR"]
 ```
 
 | Job | Was er macht | Wann |
@@ -252,6 +253,7 @@ flowchart LR
 | Testresultate veröffentlichen | Check «Testresultate» am Commit, Kommentar mit den Zahlen im PR | auch bei roten Tests |
 | SonarQube Cloud | schickt Code, `coverage.xml` und JUnit-XML beider Testordner an SonarQube Cloud. Im PR erscheint der Quality Gate als eigener Check | nur wenn alle Tests grün sind |
 | Testreport auf GitHub Pages | Testresultate pro Testordner und die Coverage beider Ordner zusammen (`coverage combine`) als Webseite | nur auf `main`, nur wenn alle Tests grün sind |
+| Docker-Image | baut das Image aus dem [`Dockerfile`](Dockerfile), auf `main` mit den Tags `latest` und Commit-SHA nach `ghcr.io/nicolashunger/bollinger-bot` | nach grünen Tests und Sonar, geschoben nur auf `main` |
 
 - **Testreport:** <https://nicolashunger.github.io/bollinger-bot/>
 - **SonarQube Cloud:** <https://sonarcloud.io/project/overview?id=NicolasHunger_bollinger-bot>.
@@ -272,8 +274,9 @@ flowchart LR
   nicht `addopts` in der `pyproject.toml`. Lokal bleibt `pytest` schnell und ohne Report-Dateien.
 - **Coverage mit Zweigen** (`--cov-branch`): Gezählt wird nicht nur, welche Zeilen laufen, sondern
   auch, ob bei jedem `if` beide Wege getestet sind (Zweigabdeckung).
-- **Folgt:** Docker-Image in die GitHub Container Registry und Deploy auf die Cloud-VM (AP 8b),
-  beide nur bei grünen Tests.
+- **Image nur aus grünem `main`:** In PRs baut der Job das Image nur, damit ein kaputtes
+  Dockerfile schon im PR auffällt. Geschoben wird erst nach dem Merge, angemeldet mit dem
+  automatischen `GITHUB_TOKEN`.
 
 Dieselben Reports lokal (landen in `reports/` und `htmlcov/`, beide stehen in der `.gitignore`):
 
@@ -281,12 +284,53 @@ Dieselben Reports lokal (landen in `reports/` und `htmlcov/`, beide stehen in de
 pytest tests/unit --html=reports/unit.html --self-contained-html --cov=bollinger_bot --cov-branch --cov-report=html
 ```
 
+### Deploy mit Docker Compose
+
+Bot und Dashboard laufen aus demselben Image: Python 3.12, nur die Laufzeit-Abhängigkeiten
+(`pip install .`, ohne die Test-Werkzeuge), als Benutzer `bot` statt root. Auf dem VPS startet
+sie die [`docker-compose.yml`](docker-compose.yml) mit dem Image aus GHCR:
+
+| Dienst | Was | Start |
+|---|---|---|
+| `dashboard` | Streamlit auf Port 8501, nur auf dem VPS selbst erreichbar (`127.0.0.1`) | `docker compose up -d` |
+| `bot` | `python -m bollinger_bot`, die Keys kommen aus der `.env` | nur mit `--profile bot`, sobald der Einstiegspunkt (Branch `einstiegspunkt`) auf `main` ist |
+
+Einrichten auf dem VPS, einmal:
+
+```bash
+mkdir -p ~/bollinger-bot/data && cd ~/bollinger-bot
+# docker-compose.yml aus dem Repo hierher kopieren, für den Bot die .env nach .env.example anlegen
+docker compose pull && docker compose up -d
+```
+
+- **Demo mit dem Backtest:** die Datei aus dem Backtest nach `data/backtest.db` kopieren und in
+  der `.env` `DASHBOARD_DB=backtest.db` setzen (oder `DASHBOARD_DB=backtest.db docker compose up -d`).
+  Ohne die Variable zeigt das Dashboard die Datei des Bots, `data/bot.db`.
+- **Dashboard ansehen:** Ein veröffentlichter Port umgeht die Firewall, und Streamlit hat keine
+  Anmeldung. Darum ist Port 8501 nur auf dem VPS selbst offen. Von aussen geht es über einen
+  SSH-Tunnel, zum Beispiel über Tailscale: `ssh -L 8501:127.0.0.1:8501 <vps>`, danach
+  http://localhost:8501 öffnen.
+- **Neue Version:** `docker compose pull && docker compose up -d` holt das neueste Image von `main`
+  und startet nur die Dienste neu, deren Image sich geändert hat.
+- **Stopp:** `docker compose stop` schickt dem Bot `SIGINT` statt `SIGTERM`. Die Polling-Schleife
+  endet dann sofort mit Exit-Code 0.
+- **Rechte:** Der Container schreibt als Benutzer mit der UID 1000 in `data/`. Auf Linux muss der
+  Ordner diesem Benutzer gehören.
+- **Image öffentlich:** Nach dem ersten Push ist das Paket in GHCR privat. Öffentlich stellen kann
+  es nur Nicolas, unter «Package settings». Sonst braucht der VPS vor dem Pull ein
+  `docker login ghcr.io`.
+
 ## Geheimnisse
 
-- Die Bitget-Demo-Keys liegen nur auf der VM, als Umgebungsvariablen in einer `.env`-Datei, die
-  per `.gitignore` ausgeschlossen ist.
-- Die Pipeline braucht keine Bitget-Keys, nur das Sonar-Token (`SONAR_TOKEN`) und später einen
-  SSH-Schlüssel für das Deployment, beide als GitHub Secrets.
+- **Bitget-Demo-Keys** liegen nur auf dem VPS, in der `.env` neben der `docker-compose.yml`
+  (Vorlage `.env.example`, per `.gitignore` ausgeschlossen). Nicolas und Valentin tragen sie
+  direkt auf dem VPS ein, nie per Chat. Ins Image kommt keine `.env` (`.dockerignore`).
+- **Pipeline:** braucht keine Bitget-Keys. SonarQube Cloud liest das Secret `SONAR_TOKEN`. Das
+  Image schiebt der Job mit dem automatischen `GITHUB_TOKEN`, ohne eigenes Secret.
+- **Automatischer Deploy (nächster Schritt):** Bis dahin deployt Nicolas von Hand. Die Secrets
+  für den Job (Tailscale-Zugang für einen kurzlebigen CI-Knoten mit `tag:ci`, Host und Benutzer,
+  je nach Lösung ein eigener SSH-Schlüssel nur für den Deploy) kommen in ein GitHub-Environment
+  `vps`, das nur `main` benutzen darf.
 
 ## Planung
 
@@ -359,8 +403,155 @@ PRs pro Person.
 
 ## Testkonzept
 
-_Folgt, klein gehalten nach der
-[Vorlage aus den Kursunterlagen](https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/testkonzept/README.md)._
+Klein gehalten nach der
+[Vorlage aus den Kursunterlagen](https://gitlab.com/ch-tbz-it/Stud/m450/m450/-/blob/main/Unterlagen/testkonzept/README.md)
+(IEEE 829). Welche Ebene womit getestet wird, steht oben unter [Teststrategie](#teststrategie).
+
+### Einleitung
+
+Getestet wird der Bollinger-Bot: Er holt Kerzen von Bitget, berechnet die Bänder, entscheidet
+über Kauf und Verkauf, platziert Orders auf dem Demo-Konto und speichert alles für das
+Dashboard. Ziel der Tests ist, dass der Bot die Regeln korrekt umsetzt und dabei kein Geld
+falsch bewegt: kein Kauf zu viel, kein falscher Betrag, keine Order, von der er nichts weiss.
+Ob die Strategie Gewinn macht, ist nicht Ziel der Tests.
+
+### Testobjekte
+
+Die Bausteine aus der [Architektur](#architektur), je eine Datei in `src/bollinger_bot/`. Wo die
+Dateien gerade liegen, steht in der Code-Übersicht.
+
+| Baustein | Datei | Art | Tests |
+|---|---|---|---|
+| Bollinger-Berechnung | `bollinger.py` | reine Funktion | Unit |
+| Kauf- und Verkaufsregeln | `regeln.py` | reine Funktion | Unit |
+| Risiko-Check | `risiko.py` | reine Funktion | Unit |
+| Port zur Börse | `port.py` | Schnittstelle (`Protocol`) | Unit (Mock nach Vorbild des Ports) |
+| Bitget-Client | `bitget_client.py` | Adapter zu Bitget | Unit (Signatur, Konstruktor), Integration (respx) |
+| SQLite-Speicher | `speicher.py` | Adapter zur Datenbank | Integration (echte temporäre Datei) |
+| Polling | `polling.py` | Zeitlogik und Schleife | Unit (Fake-Uhr) |
+| `tick()` | `tick.py` | setzt alles zusammen | Unit und Integration (Port gemockt, echte DB) |
+| Backtest | `backtest.py` | `tick()` auf aufgezeichneten Kursen | Unit und Integration (echte Kurse als CSV) |
+| Dashboard | `dashboard.py` | Streamlit | Unit (reine Funktionen), Integration (Streamlit `AppTest` mit Testdaten) |
+
+### Zu testende Funktionen
+
+- **Rechnen:** Bänder mit σ geteilt durch n. Kaufbetrag in USDT und Verkaufsmenge in BTC, immer
+  abgerundet auf die Stellen von Bitget, unter dem Mindestbetrag keine Order.
+- **Entscheiden:** Kauf unter dem unteren Band, Verkauf über dem Mittelband oder beim Stop-Loss
+  (3 %), höchstens eine offene Position.
+- **Mit Bitget sprechen:** Signatur, Header `paptrading: 1`, nur abgeschlossene Kerzen (nach der
+  Uhr von Bitget). Kauf mit Betrag in USDT, Verkauf mit Menge in BTC, als Market-Order, warten
+  bis zur Ausführung, gekaufte Menge ohne Gebühr. Fehler von Bitget und Netzfehler als
+  `BitgetFehler`. Ist eine Order platziert, aber ihr Ergebnis unklar, als `OrderFehler` mit
+  Order-ID. Keys und Timeout werden beim Start geprüft.
+- **Speichern:** Signale, Trades und Kontostände, jede Kerze nur einmal, offene Position nach
+  einem Neustart, Zeiten immer in UTC. Die Datenbank prüft ihre Regeln selbst (`CHECK`) und
+  lässt höchstens eine offene Position zu.
+- **Ablauf:** Eine neue Kerze wird genau einmal ausgewertet, auch über die Zeitumstellung. Das
+  Intervall wird geprüft. Ein Fehler in `tick()` beendet den Bot nicht, `KeyboardInterrupt`
+  (Stoppen des Containers) schon.
+- **Anzeigen:** Kerzen, Bänder, Trades und Gesamtwert im Dashboard, Warnung, wenn die letzte
+  Kerze zu alt ist.
+
+### Nicht getestet
+
+- **Echte Bitget-API in der Pipeline.** Die Pipeline hat keine API-Keys. Ob Bitget die Anfragen
+  wirklich annimmt, prüft der Rauchtest von Hand (siehe Testaufgaben).
+- **Gewinn der Strategie.** Der Backtest zeigt, was die Strategie auf echten Kursen gemacht
+  hätte, aber kein Test verlangt einen Gewinn.
+- **Performance und Last.** Der Bot macht eine Anfrage pro Minute.
+- **Docker-Image und VM** automatisch. Dass der Container läuft, prüfen wir einmal von Hand
+  (Testaufgabe zu AP 8b).
+
+### Vorgehen
+
+- **Kein TDD als Regel:** Das Team hat in der Projektfindung (23.09.2026) entschieden, TDD nicht
+  als Regel zu verwenden: Der Zeitplan war knapp, und wegen einiger Ausfälle im Team war es
+  einfacher, die Tests zusammen mit dem Code zu schreiben statt vorher. Die Tests entstehen darum
+  mit dem Code im selben PR.
+  Ausnahme: Lucas hat `tick()`, den Einstiegspunkt und den Backtest test-first gebaut (Commits
+  «TDD rot», «TDD grün», «TDD refactor»), mehr dazu in der [Reflexion](#reflexion).
+- **Grenzwerte:** Jede Grenze wird genau auf der Grenze und knapp daneben getestet, z.B. Kurs
+  genau auf dem Band, Mindestbetrag genau erreicht und um einen Rappen verfehlt, Kerze genau
+  beim Schluss und 1 ms davor.
+- **Soll-Werte unabhängig berechnet:** von Hand (Rechnung als Kommentar im Test) oder mit einem
+  anderen Werkzeug, z.B. die Signaturen mit `openssl`.
+- **Abhängigkeiten ersetzt:** Bitget mit respx (HTTP) oder einem Autospec-Mock des Ports, die
+  Uhr mit einer Fake-Uhr, das Warten mit einer Fake-Funktion. Die Datenbank ist echt, aber eine
+  temporäre Datei pro Test.
+- **Testdaten nah an der Wirklichkeit:** Die Bitget-Antworten in den Tests haben die Form echter
+  Antworten der Demo-API, eine stammt direkt aus dem Rauchtest. Der Backtest läuft auf echten
+  BTCUSDT-Kursen.
+- **Tests prüfen:** Im Review bauen wir absichtlich Fehler in den Code ein (Mutationstest von
+  Hand). Bleiben die Tests grün, fehlt ein Test.
+
+### Bestanden, wenn
+
+- alle Tests in der Pipeline grün sind. `main` hat keine Pflicht-Checks: Mit roter Pipeline
+  mergen wir nicht, das ist eine Abmachung im Team. Der Testreport auf GitHub Pages und (mit
+  AP 8b) der Deploy laufen dagegen technisch nur bei grünen Tests.
+- der Quality Gate «Sonar way» in SonarQube Cloud grün ist (unter anderem 80 % Coverage auf neuem
+  Code, keine neuen Sicherheitsprobleme).
+- der Reviewer im PR die Soll-Werte mindestens eines Tests selbst nachgerechnet hat.
+
+Gefundene Fehler halten wir im PR als Kommentar fest und ordnen sie einer von drei Klassen zu:
+
+| Klasse | Bedeutung | Beispiel | Folge |
+|---|---|---|---|
+| Schwerwiegend | Bot stürzt ab oder bewegt Geld falsch | doppelter Kauf, falscher Betrag, Order ohne Eintrag in der Datenbank | blockiert den Merge |
+| Mittelschwer | Bot läuft, aber offensichtlich falsch | falscher Gesamtwert im Dashboard, fehlende Warnung | vor der Abgabe beheben |
+| Geringfügig | Bot läuft, kleiner Mangel | Text, Logmeldung, Kommentar | darf in einem Folge-PR kommen |
+
+### Ergebnisse
+
+- **JUnit-XML** aus pytest: Testresultate als Check und Kommentar im PR
+- **HTML-Testreport** und gemeinsame Coverage auf [GitHub Pages](https://nicolashunger.github.io/bollinger-bot/)
+- **`coverage.xml`** aus pytest-cov für [SonarQube Cloud](https://sonarcloud.io/project/overview?id=NicolasHunger_bollinger-bot)
+- **Rauchtest und Backtest:** Ergebnis unten unter Testaufgaben
+
+### Testaufgaben
+
+| Ebene | Befehl | Wann |
+|---|---|---|
+| Unit | `pytest tests/unit` | lokal vor jedem Push, in der Pipeline bei jedem PR |
+| Integration (inkl. Dashboard mit `AppTest`) | `pytest tests/integration` | lokal vor jedem Push, in der Pipeline bei jedem PR |
+| Rauchtest Bitget | `python scripts/rauchtest.py`, mit `--order` zusätzlich Kauf und Verkauf für 5 USDT | von Hand mit Demo-Key, vor dem ersten Deploy |
+| Backtest | `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db` | von Hand, nach Änderungen an Strategie oder `tick()` |
+| Container | `docker compose up -d`, dann Log und Dashboard ansehen | von Hand, einmal nach dem Deploy (AP 8b, Nicolas) |
+
+**Ergebnis Rauchtest** (21.10.2026, Valentin, Demo-Konto): Bitget nimmt die Signatur an, das
+Demo-Konto verwendet die Classic-Endpunkte `/api/v2/spot/…`. Kauf und Verkauf für 5 USDT sind
+ausgeführt worden. Die Gebühr beträgt 0.1 % und steht in `feeDetail` unter `newFees.r`, in BTC
+abgezogen. Die gekaufte Menge ohne Gebühr (0.000058941 BTC) stimmte genau mit dem Kontostand bei
+Bitget überein. Vorher, mit leerem Spot-Konto, kam der Fehler 43012 «Insufficient balance» als
+`BitgetFehler`. Die echte Antwort ist heute ein Testfall in
+`tests/integration/test_bitget_orders.py`. Der Rauchtest hat damit gefunden, was die Mocks nicht
+finden konnten: Die Gebühr ist 0.1 %, nicht 0.2 % wie in der Symbol-Info von Bitget.
+
+**Ergebnis Backtest** (Branch `backtest`, Stand 24.10.2026): das echte `tick()` auf 2000
+BTCUSDT-Kerzen vom 03.10. bis 24.10.2026. 40 Käufe, 39 Verkäufe, aus 1000 USDT werden 993.07 USDT
+(−0.69 %). Den Verlust machen die Gebühren (7.87 USDT), der Stop-Loss hat nie ausgelöst.
+
+### Testumgebung
+
+- **Werkzeuge:** pytest, pytest-mock (Autospec-Mock des Ports), respx (Bitget-HTTP), pytest-cov
+  (Coverage mit Zweigen), pytest-html (HTML-Report), Streamlit `AppTest` (Dashboard), GitHub
+  Actions (Pipeline), SonarQube Cloud (Coverage und Codequalität)
+- Python 3.12, Installation mit `pip install -e ".[dev]"` (siehe [Entwicklung](#entwicklung))
+- lokal: Windows und macOS, in der Pipeline: Ubuntu auf GitHub Actions
+- kein Netzwerk nötig, keine API-Keys, keine echte Datenbank ausser temporären Dateien. Nur der
+  Rauchtest braucht den Demo-Key in einer lokalen `.env`.
+
+### Zeitplan und Verantwortung
+
+- Wer einen Baustein schreibt, schreibt seine Tests im selben PR (siehe
+  [Arbeitspakete](#arbeitspakete)).
+- Wer reviewt, führt die Tests lokal aus, rechnet mindestens einen Soll-Wert nach und baut wenn
+  möglich einen Fehler ein, um die Tests zu prüfen.
+- Rauchtest: Valentin (erledigt am 21.10.). Backtest: Lucas. Container nach dem Deploy: Nicolas.
+- Bis Mi 21.10.: Unit- und Integrationstests aller Bausteine ausser `tick()` und Dashboard.
+  Bis Mi 28.10.: `tick()`, Dashboard, Backtest, Reports in der Pipeline, Container nach dem
+  Deploy.
 
 ## Reflexion
 
@@ -409,8 +600,9 @@ nachgeführt.
 - **Als Nachschlagewerk:** Claude Code (Anthropic) für die Projektfindung per Interview, für
   Recherchen (Bitget-Demo-API, Test-Werkzeuge für COBOL) und zur Erklärung der Bollinger-Bänder.
 - **Für die Dokumentation:** Den ersten Entwurf dieses READMEs hat Claude Code aus unserem
-  Interview erstellt. Planung, Architektur und Entscheide hat Claude Code am 27.10.2026 nach
-  Nicolas' Vorgaben nachgeführt.
+  Interview erstellt. Den Entwurf des Testkonzepts hat Claude Code nach der Vorlage aus den
+  Kursunterlagen geschrieben. Planung, Architektur und Entscheide hat Claude Code am 27.10.2026
+  nach Nicolas' Vorgaben nachgeführt.
 - **Zum Schreiben von Code:** _noch offen_
 - **Zum automatischen Erstellen von Code durch einen Agenten:** Den Code und die Tests von Lucas
   (Grundgerüst, Bollinger-Berechnung, Kauf- und Verkaufsregeln, Port-Schnittstelle,
