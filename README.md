@@ -25,8 +25,8 @@ Der Bot läuft rund um die Uhr in einem Container auf einer Cloud-VM:
 3. Schliesst eine Kerze unter dem unteren Band, kauft er. Er verkauft, sobald eine Kerze über dem
    Mittelband schliesst (der Kurs ist zur Mitte zurückgekehrt) oder mehr als 3 % unter dem
    Kaufpreis (Stop-Loss, begrenzt den Verlust). Es ist höchstens eine Position gleichzeitig offen.
-4. Ein Risiko-Check begrenzt die Positionsgrösse und rundet Menge und Preis auf die Stellen, die
-   Bitget erlaubt.
+4. Ein Risiko-Check begrenzt die Positionsgrösse (10 % des freien Guthabens) und rundet den
+   Kaufbetrag in USDT und die Verkaufsmenge in BTC ab, auf die Stellen, die Bitget erlaubt.
 5. Signale, Trades und Kontostand speichert er in SQLite. Ein Streamlit-Dashboard zeigt den Kurs
    mit den Bändern, die Käufe und Verkäufe und den Kontostand.
 
@@ -124,7 +124,7 @@ noch in offenen PRs oder Branches (Spalte «Stand»).
 | `bollinger.py` | Berechnet aus den letzten n Schlusskursen das Mittelband (Durchschnitt) und das obere und untere Band (± k · σ, σ geteilt durch n) | `tests/unit/test_bollinger.py` | `main` |
 | `regeln.py` | Entscheidet nach jeder Kerze: kaufen (Schluss unter dem unteren Band), verkaufen (über dem Mittelband oder 3 % unter dem Kaufpreis, Stop-Loss) oder halten | `tests/unit/test_regeln.py` | `main` |
 | `port.py` | Die Schnittstelle zur Börse (`Boerse` mit vier Methoden) und die Datenklassen `Kerze` und `Order`. `tick()` kennt nur diesen Port, nicht Bitget selbst | `tests/unit/test_port.py` | `main` |
-| `risiko.py` | Rechnet den Kaufbetrag in USDT und die Verkaufsmenge in BTC, immer abgerundet auf die Stellen von Bitget, unter 1 USDT keine Order | `tests/unit/test_risiko.py` | `main` |
+| `risiko.py` | Rechnet den Kaufbetrag in USDT und die Verkaufsmenge in BTC, immer abgerundet auf die Stellen von Bitget. Kauf erst ab 2 USDT (doppelter Mindestbetrag), Verkauf ab 1 USDT | `tests/unit/test_risiko.py` | `main`, Nachtrag in PR offen |
 | `speicher.py` | Speichert Signale, Trades und Kontostände in SQLite, prüft die Werte selbst und weiss nach einem Neustart, ob eine Position offen ist | `tests/integration/test_speicher.py` | `main` |
 | `polling.py` | Erkennt, ob eine neue Kerze fertig ist, und ruft in einer Schleife jede Minute `tick()` auf | `tests/unit/test_polling.py` | `main` |
 | `bitget_client.py` | Spricht mit Bitget im Demo-Modus: signierte Anfragen, Kerzen, Kontostand, Market-Orders. Erfüllt den Port | `tests/unit/test_signatur.py`, `tests/integration/test_bitget_*.py` | PR #9, #10 |
