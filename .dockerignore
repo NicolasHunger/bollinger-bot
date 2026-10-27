@@ -1,0 +1,17 @@
+# Was nie ins Image gehört: Geheimnisse, lokale Daten, Werkzeuge und Reports. Das Dockerfile
+# kopiert ohnehin nur pyproject.toml, README.md und src/, das hier ist die zweite Sicherung.
+.env
+.env.*
+data/
+*.db
+*.db-*
+.git/
+.github/
+.claude/
+.venv/
+venv/
+reports/
+htmlcov/
+.coverage
+**/__pycache__/
+tests/
