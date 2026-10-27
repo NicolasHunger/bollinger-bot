@@ -426,12 +426,13 @@ nachgeführt.
   eingerichtet. Das Dashboard (AP 7, `dashboard.py` mit seinen Tests) ist genauso entstanden: Die
   Vorgaben stammen aus Nicolas' Reviews von PR #6 und #7 (Kerzen, Gesamtwert, Warnung, Schweizer
   Zeit), die Entscheide hat Nicolas getroffen und das Ergebnis mit den Daten aus dem Backtest
-  geprüft. Die Soll-Werte der Tests sind von Hand gerechnet.
-- **Zum Reviewen oder Optimieren:** Die Reviews von PR #6 und PR #7 hat Nicolas mit Claude Code
-  vorbereitet: Claude Code hat die PRs lokal getestet, Randfälle nachgeprüft und die Kommentare
-  formuliert. Die inhaltlichen Entscheide (z.B. Kerzen im Dashboard, Kontostand als Gesamtwert,
-  `stop_signal: SIGINT`) und den Review-Status hat Nicolas getroffen, gepostet wurde erst nach
-  Durchsicht.
+  geprüft. Die Soll-Werte der Tests sind von Hand gerechnet. Den Deploy (PR #17: Dockerfile,
+  Docker Compose, Job für das Docker-Image) hat Claude Code nach Nicolas' Vorgaben gebaut.
+- **Zum Reviewen oder Optimieren:** Die Reviews von PR #6, #7 und #11 hat Nicolas mit Claude Code
+  vorbereitet: Claude Code hat die PRs lokal getestet oder gegen den Code geprüft, Randfälle
+  nachgeprüft und die Kommentare formuliert. Die inhaltlichen Entscheide (z.B. Kerzen im
+  Dashboard, Kontostand als Gesamtwert, `stop_signal: SIGINT`) und den Review-Status hat Nicolas
+  getroffen, gepostet wurde erst nach Durchsicht.
 
 ## Kursunterlagen
 
