@@ -66,24 +66,47 @@ def test_kaufbetrag_mit_ganzem_guthaben():
     assert kaufbetrag(guthaben=50.999, anteil_prozent=100, regeln=BTCUSDT_SPOT) == 50.99
 
 
-def test_kaufbetrag_genau_auf_dem_mindestbetrag():
-    # Grenzwert: 10 USDT · 10 / 100 = 1.00 USDT, genau der Mindestbetrag, reicht noch
-    assert kaufbetrag(guthaben=10, anteil_prozent=10, regeln=BTCUSDT_SPOT) == 1.0
+def test_kaufbetrag_genau_auf_dem_doppelten_mindestbetrag():
+    # Grenzwert: 20 USDT · 10 / 100 = 2.00 USDT = 2 · 1 USDT Mindestbetrag, reicht noch
+    assert kaufbetrag(guthaben=20, anteil_prozent=10, regeln=BTCUSDT_SPOT) == 2.0
 
 
-def test_kaufbetrag_knapp_unter_dem_mindestbetrag_ist_null():
-    # Grenzwert: 9.99 USDT · 10 / 100 = 0.999, abgerundet 0.99 < 1: keine Order
-    assert kaufbetrag(guthaben=9.99, anteil_prozent=10, regeln=BTCUSDT_SPOT) == 0.0
+def test_kaufbetrag_knapp_unter_dem_doppelten_mindestbetrag_ist_null():
+    # Grenzwert: 19.99 USDT · 10 / 100 = 1.999, abgerundet 1.99 < 2: keine Order
+    assert kaufbetrag(guthaben=19.99, anteil_prozent=10, regeln=BTCUSDT_SPOT) == 0.0
+
+
+def test_kauf_von_genau_dem_mindestbetrag_ist_zu_klein():
+    # 1.00 USDT wäre bei Bitget erlaubt, liesse sich nach der Gebühr aber nicht mehr verkaufen
+    # (Beispiel von Lucas im Review zu PR #8, siehe KAUF_PUFFER_FAKTOR)
+    assert kaufbetrag(guthaben=1, anteil_prozent=100, regeln=BTCUSDT_SPOT) == 0.0
+
+
+def test_kleinster_kauf_laesst_sich_nach_gebuehr_und_stop_loss_verkaufen():
+    # Kleinster Kauf 2.00 USDT zu 100 000 USDT/BTC: 2 / 100 000 = 0.00002 BTC, nach 0.1 % Gebühr
+    # 0.00001998 BTC. Kurs fällt um 3 % auf 97 000 (Stop-Loss): abgerundet 0.000019 BTC,
+    # Wert 0.000019 · 97 000 = 1.843 USDT >= 1, der Verkauf geht noch.
+    betrag = kaufbetrag(guthaben=20, anteil_prozent=10, regeln=BTCUSDT_SPOT)
+    menge_nach_gebuehr = betrag / 100_000 * 0.999
+
+    assert betrag == 2.0
+    assert verkaufsmenge(bestand=menge_nach_gebuehr, kurs=97_000, regeln=BTCUSDT_SPOT) == 0.000019
 
 
 def test_mindestbetrag_gilt_fuer_den_abgerundeten_betrag():
-    # Mindestbetrag 1.01 USDT: 1.019 liegt vor dem Runden darüber, abgerundet 1.01 genau darauf.
-    # 1.009 liegt vor dem Runden auch darüber, abgerundet 1.00 aber darunter: keine Order.
-    # Wer zuerst prüft und danach rundet, würde 1.00 USDT an Bitget schicken.
-    regeln = Handelsregeln(mengen_stellen=6, betrag_stellen=2, mindestbetrag=1.01)
+    # Mindestbetrag 1.0025 USDT, Kauf also erst ab 2.005 USDT. 2.009 liegt vor dem Runden
+    # darüber, abgerundet 2.00 aber darunter: keine Order. Wer zuerst prüft und danach rundet,
+    # würde 2.00 USDT an Bitget schicken. 2.019 wird zu 2.01 und reicht.
+    regeln = Handelsregeln(mengen_stellen=6, betrag_stellen=2, mindestbetrag=1.0025)
 
-    assert kaufbetrag(guthaben=1.019, anteil_prozent=100, regeln=regeln) == 1.01
-    assert kaufbetrag(guthaben=1.009, anteil_prozent=100, regeln=regeln) == 0.0
+    assert kaufbetrag(guthaben=2.019, anteil_prozent=100, regeln=regeln) == 2.01
+    assert kaufbetrag(guthaben=2.009, anteil_prozent=100, regeln=regeln) == 0.0
+
+
+def test_kaufbetrag_ohne_float_fehler():
+    # In float ergibt 16.4 · 15 / 100 = 2.4599999999999995, abgerundet 2.45. Richtig ist 2.46.
+    # (Lucas' Beispiel 8.2 · 15 % = 1.23 liegt unter dem Puffer, darum das Doppelte.)
+    assert kaufbetrag(guthaben=16.4, anteil_prozent=15, regeln=BTCUSDT_SPOT) == 2.46
 
 
 def test_kaufbetrag_ohne_guthaben_ist_null():
