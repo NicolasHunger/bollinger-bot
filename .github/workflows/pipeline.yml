@@ -105,6 +105,23 @@ jobs:
           files: reports/**/junit.xml
           check_name: Testresultate
 
+  sonar:
+    name: SonarQube Cloud
+    needs: test   # nur wenn alle Tests grün sind
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0   # ganze Git-Historie: Sonar erkennt damit, welcher Code neu ist
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: testreport-*
+          merge-multiple: true
+          path: reports
+      - uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}   # GitHub Secret aus SonarQube Cloud
+
   pages:
     name: Testreport auf GitHub Pages
     needs: test
