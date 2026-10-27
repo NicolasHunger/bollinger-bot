@@ -155,9 +155,9 @@ bisher nur #12.
       Image.
 - [x] **Deploy (AP 8b)** als PR #17, gemergt am 27.10. (ohne Review auf GitHub): Dockerfile,
       `docker-compose.yml`, Image in GHCR. Deployt wird nur von Hand (Entscheid 27.10.).
-- [ ] **Dashboard auf dem VPS starten:** das Paket in GHCR öffentlich stellen, auf dem VPS die
-      `.env` mit `DASHBOARD_DB=backtest.db` anlegen, dann `docker compose pull && docker compose
-      up -d`. Der Bot kommt mit `einstiegspunkt` dazu. Details unter «Pipeline und Deploy».
+- [ ] **Dashboard auf dem VPS starten:** auf dem VPS die `.env` mit `DASHBOARD_DB=backtest.db`
+      anlegen, dann `docker compose pull && docker compose up -d`. Das Paket in GHCR ist schon
+      öffentlich. Der Bot kommt mit `einstiegspunkt` dazu. Details unter «Pipeline und Deploy».
 - [x] **#11** reviewt (Approve mit vier Vorschlägen) und gemergt (27.10.).
 - [ ] **Den `tick()`-PR von Lucas reviewen.**
 - [ ] **README nachführen:** Planung, Architektur und Entscheide stehen in PR #15 und warten auf
@@ -650,8 +650,8 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
 - **Image:** `Dockerfile` mit `python:3.12-slim`, `pip install --only-binary :all: .` (ohne
   `.[dev]`), Benutzer `bot` mit UID 1000, ohne Befehl startet das Dashboard. Der Job
   «Docker-Image» baut es in jedem PR und schiebt es nur auf `main` nach
-  `ghcr.io/nicolashunger/bollinger-bot` (Tags `latest` und Commit-SHA). Das Paket in GHCR stellt
-  nur Nicolas öffentlich (Package settings).
+  `ghcr.io/nicolashunger/bollinger-bot` (Tags `latest` und Commit-SHA). Das Paket in GHCR ist
+  öffentlich, der VPS braucht kein `docker login`. Die Sichtbarkeit ändert nur Nicolas.
 - **Compose:** `docker-compose.yml`. Das Dashboard ist nur auf `127.0.0.1:8501` veröffentlicht
   (Docker umgeht sonst die Firewall, Streamlit hat keine Anmeldung), Zugriff per SSH-Tunnel.
   Der Bot startet nur mit `--profile bot`, bis der Branch `einstiegspunkt` auf `main` ist. Beide
