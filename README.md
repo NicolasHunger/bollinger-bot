@@ -18,7 +18,7 @@ Bitget handelt, also mit Spielgeld. Projektarbeit im Modul 450 «Applikationen t
 
 ## Idee
 
-Der Bot läuft rund um die Uhr in einem Container auf einer Cloud-VM:
+Der Bot läuft rund um die Uhr in einem Docker-Container auf einem VPS:
 
 1. Einmal pro Minute fragt er über die REST-API von Bitget nach, ob eine neue Kerze abgeschlossen ist.
 2. Wenn ja, berechnet er die Bollinger-Bänder aus den letzten Schlusskursen.
@@ -55,13 +55,18 @@ bewusst so, denn das Projekt soll das Testen zeigen, nicht Gewinn erzielen.
 
 ```mermaid
 flowchart LR
-    subgraph vm["Cloud-VM (Docker Compose)"]
-        poll["Polling-Schleife<br/>1× pro Minute"] --> tick["tick()"]
-        tick --> strategie["Bollinger-Strategie<br/>(reine Logik)"]
-        tick --> risiko["Risiko-Check<br/>(reine Logik)"]
-        tick -->|Port| client["BitgetClient<br/>(Adapter)"]
-        tick --> db[("SQLite")]
-        db --> dash["Streamlit-Dashboard"]
+    subgraph compose["VPS mit Docker Compose, Image aus der GitHub Container Registry"]
+        subgraph botc["Container bot"]
+            poll["Polling-Schleife<br/>1× pro Minute"] --> tick["tick()"]
+            tick --> strategie["Bollinger-Strategie<br/>(reine Logik)"]
+            tick --> risiko["Risiko-Check<br/>(reine Logik)"]
+            tick -->|Port| client["BitgetClient<br/>(Adapter)"]
+        end
+        db[("SQLite<br/>gemeinsames Volume")]
+        subgraph dashc["Container dashboard"]
+            dash["Streamlit-Dashboard"]
+        end
+        tick --> db --> dash
     end
     client <-->|"REST, HMAC-Signatur,<br/>Header paptrading: 1"| bitget["Bitget Demo-API"]
 ```
@@ -70,7 +75,12 @@ flowchart LR
   eventuell eine Order platzieren, speichern. Die Polling-Schleife ruft nur `tick()` auf.
 - **Port:** `tick()` kennt die Börse nur über eine Schnittstelle (`Boerse` in
   `src/bollinger_bot/port.py`: Kerzen holen, Kontostand abfragen, kaufen, verkaufen). In den
-  Tests ersetzt ein Mock den echten `BitgetClient`.
+  Tests ersetzt ein Mock den echten `BitgetClient`, im Backtest eine simulierte Börse mit
+  aufgezeichneten Kursen.
+- **Betrieb:** Bot und Dashboard laufen auf einem VPS als zwei Container aus demselben Image und
+  teilen die SQLite-Datei über ein Volume. Das Dashboard liest nur. Auf den VPS kommt man über
+  SSH und Tailscale. Wie das Image entsteht und auf den VPS kommt, steht unter
+  [Pipeline](#pipeline).
 - **Strategie und Risiko-Check** sind reine Funktionen ohne I/O und darum einfach zu testen.
 
 ### Datenbank
@@ -112,7 +122,7 @@ Mikrosekunden genau (z.B. `2026-10-17T12:00:00.000000+00:00`).
 | Dashboard | Streamlit |
 | Tests | pytest, pytest-mock, respx, pytest-cov, pytest-html |
 | CI/CD | GitHub Actions, SonarQube Cloud, GitHub Pages, GitHub Container Registry |
-| Betrieb | Docker Compose auf einer Cloud-VM |
+| Betrieb | Docker Compose auf einem VPS (Zugriff über SSH und Tailscale), Image in der GitHub Container Registry |
 
 ## Code-Übersicht
 
@@ -280,38 +290,50 @@ pytest tests/unit --html=reports/unit.html --self-contained-html --cov=bollinger
 
 ## Planung
 
-_Entwurf, wird im Projekt verfeinert._
+Geplant am 23.09.2026, nachgeführt am 27.10.2026.
 
-| Wann | Ziel |
-|---|---|
-| bis Mi 30.09. | Grundgerüst, Pipeline mit Build und Test, SonarQube Cloud angebunden, erste Bausteine |
-| Mi 30.09. (Unterricht CI/CD und Deployment) | Deploy-Stage auf die Cloud-VM |
-| Herbstferien | Bitget-Client, Risiko-Check, `tick()` mit Polling, SQLite, Dashboard. Der Bot läuft spätestens Mitte Ferien auf der VM. |
-| Mi 21.10. (Unterricht Code Reviews) | Offene PRs abschliessen, Reflexion schreiben |
-| Mi 28.10. | Doku fertig, Präsentation (10 Minuten) |
+| Wann | Geplant | Wie es lief |
+|---|---|---|
+| bis Mi 30.09. | Grundgerüst, Pipeline mit Build und Test, SonarQube Cloud angebunden, erste Bausteine | Grundgerüst gemergt (PR #1, 30.09.). Die Pipeline kam als PR #12 ab 21.10. (gemergt 26.10.), SonarQube Cloud am 27.10. (PR #13) |
+| Mi 30.09. (Unterricht CI/CD und Deployment) | Deploy-Stage auf die Cloud-VM | Deploy auf den VPS von Nicolas statt auf eine neue Cloud-VM, ab 27.10. |
+| Herbstferien | Bitget-Client, Risiko-Check, `tick()` mit Polling, SQLite, Dashboard. Der Bot läuft spätestens Mitte Ferien auf der VM. | Lucas: Versionsgrenzen, Bollinger-Berechnung, Regeln, Port, SQLite und Polling (PR #2 bis #7, eröffnet 16. und 17.10.). Valentin: Bitget-Client und Risiko-Check (PR #8 bis #10, eröffnet 21.10.). Der Bot lief in den Ferien noch nicht |
+| Mi 21.10. (Unterricht Code Reviews) | Offene PRs abschliessen, Reflexion schreiben | Reviews zu PR #6 bis #12. Danach `tick()`, Einstiegspunkt und Backtest test-first gebaut (24.10.) |
+| 24. bis 27.10. | | PR #2 bis #8 und #12 bis #14 gemergt: Bausteine, Pipeline, SonarQube Cloud, Dashboard |
+| Mi 28.10. | Doku fertig, Präsentation (10 Minuten) | |
+
+Was anders lief als geplant:
+
+- **Pipeline erst in der letzten Woche:** Nicolas fiel bis am 21.10. aus. Bis dahin liefen die
+  Tests nur lokal vor jedem Merge.
+- **TDD doch ausprobiert:** Geplant war kein TDD. `tick()`, Einstiegspunkt und Backtest sind dann
+  doch test-first entstanden, siehe [Reflexion](#reflexion).
+- **VPS statt Cloud-VM:** siehe [Offene Entscheide](#offene-entscheide).
 
 ### Arbeitspakete
 
 Jedes Paket bekommt einen eigenen Branch und Pull Request. Ziel: mindestens 3 aktiv diskutierte
 PRs pro Person.
 
-| # | Paket | Wer | Review |
-|---|---|---|---|
-| 1 | Bollinger-Berechnung | Lucas | Valentin |
-| 2 | Kauf- und Verkaufsregeln | Lucas | Valentin |
-| 3 | Bitget-Client: Signatur und Kerzen | Valentin | Lucas |
-| 4 | Bitget-Client: Orders und Kontostand | Valentin | Lucas |
-| 5 | Risiko-Check | Valentin | Lucas |
-| 6 | `tick()`, Polling-Schleife und SQLite | Lucas | Nicolas |
-| 7 | Dashboard | Nicolas | Valentin |
-| 8a.1 | Grundgerüst (Projektstruktur, `pyproject.toml`, pytest läuft lokal) | Lucas | Valentin |
-| 8a.2 | Pipeline (Build, Test, SonarQube Cloud) | Nicolas | Valentin |
-| 8b | Deploy auf die VM | Nicolas | Valentin |
+| # | Paket | Wer | Review | PR |
+|---|---|---|---|---|
+| 1 | Bollinger-Berechnung | Lucas | Valentin | #3 |
+| 2 | Kauf- und Verkaufsregeln | Lucas | Valentin | #4 |
+| 3 | Bitget-Client: Signatur und Kerzen | Valentin | Lucas | #9 |
+| 4 | Bitget-Client: Orders und Kontostand | Valentin | Lucas | #10 |
+| 5 | Risiko-Check | Valentin | Lucas | #8 |
+| 6 | `tick()`, Polling-Schleife und SQLite | Lucas | Nicolas | #5 (Port), #6, #7, Branch `tick` |
+| 7 | Dashboard | Nicolas | Valentin | #14 |
+| 8a.1 | Grundgerüst (Projektstruktur, `pyproject.toml`, pytest läuft lokal) | Lucas | Valentin | #1, #2 |
+| 8a.2 | Pipeline (Build, Test, SonarQube Cloud) | Nicolas | Valentin | #12, #13 |
+| 8b | Deploy auf den VPS | Nicolas | Valentin | folgt |
+| – | Einstiegspunkt `python -m bollinger_bot` | Lucas | Nicolas | Branch `einstiegspunkt` |
+| – | Backtest | Lucas | Nicolas | Branch `backtest` |
+| – | Testkonzept | Valentin | Lucas, Nicolas | #11 |
 
 - **Reviews im Ring, entlang der Abhängigkeiten:** Lucas reviewt Valentin (`tick()` benutzt den
   Client), Nicolas reviewt Lucas (das Dashboard liest die SQLite-Tabellen), Valentin reviewt
   Nicolas. Ausnahme: Die ersten PRs von Lucas (8a.1, 1 und 2) reviewt Valentin, weil Nicolas
-  zum Projektstart ausfällt.
+  zum Projektstart ausfiel.
 - **Zuerst 8a.1:** Das Grundgerüst muss gemergt sein, bevor die anderen Pakete starten. Bis die
   Pipeline (8a.2) steht, lassen wir `pytest` vor jedem Merge lokal laufen.
 - **Gemeinsam festlegen:** die Port-Schnittstelle zwischen `tick()` und dem Client sowie das
@@ -321,10 +343,17 @@ PRs pro Person.
 
 ### Offene Entscheide
 
-- Spot oder USDT-M-Futures? Im Demo-Modus von Bitget prüfen, ob Spot angeboten wird. Sonst
-  Futures mit Hebel 1 und nur Long-Positionen.
+- **Entschieden: Spot statt USDT-M-Futures.** Bitget bietet Spot im Demo-Modus an (geprüft am
+  30.09.2026). Spot heisst: Der Bot kauft echte (Spiel-)Bitcoin und verkauft sie wieder, ohne
+  Hebel und ohne Positionsmodi. Endpunkte: Classic-Konto, `/api/v2/spot/…`.
 - Handelspaar (z.B. BTCUSDT) und Kerzen-Intervall (z.B. 15 Minuten)
-- Anbieter der Cloud-VM (z.B. Hetzner oder Infomaniak)
+  - **Entschieden:** BTCUSDT mit 15-Minuten-Kerzen (27.10.2026), so stehen sie in den
+    Einstellungen von `tick()` und im Backtest.
+- **Entschieden: der VPS von Nicolas statt einer neuen Cloud-VM** (27.10.2026). Zugriff über
+  SSH und Tailscale. Bot und Dashboard laufen dort mit Docker Compose, das Image kommt aus der
+  GitHub Container Registry.
+- **Entschieden: Streamlit ist eine Pflicht-Abhängigkeit** (PR #14). Bot und Dashboard laufen im
+  selben Image, ein eigenes Extra `dashboard` bringt darum nichts.
 - **Entschieden: Reports nur in der Pipeline** (21.10.2026). Coverage, JUnit-XML und HTML-Report
   erzeugt der Workflow, `addopts` in der `pyproject.toml` bleibt ohne Report-Optionen.
 
@@ -380,7 +409,8 @@ nachgeführt.
 - **Als Nachschlagewerk:** Claude Code (Anthropic) für die Projektfindung per Interview, für
   Recherchen (Bitget-Demo-API, Test-Werkzeuge für COBOL) und zur Erklärung der Bollinger-Bänder.
 - **Für die Dokumentation:** Den ersten Entwurf dieses READMEs hat Claude Code aus unserem
-  Interview erstellt.
+  Interview erstellt. Planung, Architektur und Entscheide hat Claude Code am 27.10.2026 nach
+  Nicolas' Vorgaben nachgeführt.
 - **Zum Schreiben von Code:** _noch offen_
 - **Zum automatischen Erstellen von Code durch einen Agenten:** Den Code und die Tests von Lucas
   (Grundgerüst, Bollinger-Berechnung, Kauf- und Verkaufsregeln, Port-Schnittstelle,
