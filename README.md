@@ -310,8 +310,9 @@ docker compose pull && docker compose up -d
   Anmeldung. Darum ist Port 8501 nur auf dem VPS selbst offen. Von aussen geht es über einen
   SSH-Tunnel, zum Beispiel über Tailscale: `ssh -L 8501:127.0.0.1:8501 <vps>`, danach
   http://localhost:8501 öffnen.
-- **Neue Version:** `docker compose pull && docker compose up -d` holt das neueste Image von `main`
-  und startet nur die Dienste neu, deren Image sich geändert hat.
+- **Neue Version:** Nach einem Merge auf `main` von Hand: `docker compose pull && docker compose
+  up -d` holt das neueste Image von `main` und startet nur die Dienste neu, deren Image sich
+  geändert hat. Ins Image kommt nur, was alle Tests bestanden hat.
 - **Stopp:** `docker compose stop` schickt dem Bot `SIGINT` statt `SIGTERM`. Die Polling-Schleife
   endet dann sofort mit Exit-Code 0.
 - **Rechte:** Der Container schreibt als Benutzer mit der UID 1000 in `data/`. Auf Linux muss der
@@ -323,14 +324,13 @@ docker compose pull && docker compose up -d
 ## Geheimnisse
 
 - **Bitget-Demo-Keys** liegen nur auf dem VPS, in der `.env` neben der `docker-compose.yml`
-  (Vorlage `.env.example`, per `.gitignore` ausgeschlossen). Nicolas und Valentin tragen sie
-  direkt auf dem VPS ein, nie per Chat. Ins Image kommt keine `.env` (`.dockerignore`).
+  (Vorlage `.env.example`, per `.gitignore` ausgeschlossen). Nicolas trägt sie selbst auf dem
+  VPS ein, nie per Chat. Ins Image kommt keine `.env` (`.dockerignore`).
 - **Pipeline:** braucht keine Bitget-Keys. SonarQube Cloud liest das Secret `SONAR_TOKEN`. Das
   Image schiebt der Job mit dem automatischen `GITHUB_TOKEN`, ohne eigenes Secret.
-- **Automatischer Deploy (nächster Schritt):** Bis dahin deployt Nicolas von Hand. Die Secrets
-  für den Job (Tailscale-Zugang für einen kurzlebigen CI-Knoten mit `tag:ci`, Host und Benutzer,
-  je nach Lösung ein eigener SSH-Schlüssel nur für den Deploy) kommen in ein GitHub-Environment
-  `vps`, das nur `main` benutzen darf.
+- **Kein automatischer Deploy** (Entscheid Nicolas, 27.10.2026): Nicolas deployt von Hand mit
+  `docker compose pull && docker compose up -d`. So braucht die Pipeline keine Secrets für den
+  VPS, und niemand sonst bekommt Zugriff darauf.
 
 ## Planung
 
@@ -395,7 +395,8 @@ PRs pro Person.
     Einstellungen von `tick()` und im Backtest.
 - **Entschieden: der VPS von Nicolas statt einer neuen Cloud-VM** (27.10.2026). Zugriff über
   SSH und Tailscale. Bot und Dashboard laufen dort mit Docker Compose, das Image kommt aus der
-  GitHub Container Registry.
+  GitHub Container Registry. Deployt wird von Hand: So braucht weder die Pipeline noch sonst
+  jemand Zugriff auf den VPS. Bot und Dashboard öffnen keinen Port nach aussen.
 - **Entschieden: Streamlit ist eine Pflicht-Abhängigkeit** (PR #14). Bot und Dashboard laufen im
   selben Image, ein eigenes Extra `dashboard` bringt darum nichts.
 - **Entschieden: Reports nur in der Pipeline** (21.10.2026). Coverage, JUnit-XML und HTML-Report
