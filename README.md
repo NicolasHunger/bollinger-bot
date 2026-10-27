@@ -416,8 +416,8 @@ Dateien gerade liegen, steht in der Code-Übersicht.
   `BitgetFehler`. Ist eine Order platziert, aber ihr Ergebnis unklar, als `OrderFehler` mit
   Order-ID. Keys und Timeout werden beim Start geprüft.
 - **Speichern:** Signale, Trades und Kontostände, jede Kerze nur einmal, offene Position nach
-  einem Neustart, Zeiten immer in UTC. Die Datenbank prüft ihre Regeln selbst (`CHECK`) und
-  lässt höchstens eine offene Position zu.
+  einem Neustart, Zeiten immer in UTC. Die Datenbank prüft ihre Regeln selbst (`CHECK`), der
+  Speicher lässt höchstens eine offene Position zu.
 - **Ablauf:** Eine neue Kerze wird genau einmal ausgewertet, auch über die Zeitumstellung. Das
   Intervall wird geprüft. Ein Fehler in `tick()` beendet den Bot nicht, `KeyboardInterrupt`
   (Stoppen des Containers) schon.
@@ -433,6 +433,9 @@ Dateien gerade liegen, steht in der Code-Übersicht.
 - **Performance und Last.** Der Bot macht eine Anfrage pro Minute.
 - **Docker-Image und VM** automatisch. Dass der Container läuft, prüfen wir einmal von Hand
   (Testaufgabe zu AP 8b).
+- **Aussehen des Dashboards.** `AppTest` läuft ohne Browser: Die Tests prüfen Texte, Kennzahlen,
+  Tabellen und die Daten der Charts, aber nicht, wie die Seite aussieht. Das prüfen wir von Hand
+  mit der Datei aus dem Backtest.
 
 ### Vorgehen
 
@@ -462,7 +465,9 @@ Dateien gerade liegen, steht in der Code-Übersicht.
   mergen wir nicht, das ist eine Abmachung im Team. Der Testreport auf GitHub Pages und (mit
   AP 8b) der Deploy laufen dagegen technisch nur bei grünen Tests.
 - der Quality Gate «Sonar way» in SonarQube Cloud grün ist (unter anderem 80 % Coverage auf neuem
-  Code, keine neuen Sicherheitsprobleme).
+  Code, keine neuen Sicherheitsprobleme). Er erscheint im PR als eigener Check «SonarCloud Code
+  Analysis» und macht die Pipeline nicht rot. Auch hier gilt die Abmachung: Mit rotem Quality
+  Gate mergen wir nicht.
 - der Reviewer im PR die Soll-Werte mindestens eines Tests selbst nachgerechnet hat.
 
 Gefundene Fehler halten wir im PR als Kommentar fest und ordnen sie einer von drei Klassen zu:
@@ -488,7 +493,7 @@ Gefundene Fehler halten wir im PR als Kommentar fest und ordnen sie einer von dr
 | Integration (inkl. Dashboard mit `AppTest`) | `pytest tests/integration` | lokal vor jedem Push, in der Pipeline bei jedem PR |
 | Rauchtest Bitget | `python scripts/rauchtest.py`, mit `--order` zusätzlich Kauf und Verkauf für 5 USDT | von Hand mit Demo-Key, vor dem ersten Deploy |
 | Backtest | `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db` | von Hand, nach Änderungen an Strategie oder `tick()` |
-| Container | `docker compose up -d`, dann Log und Dashboard ansehen | von Hand, einmal nach dem Deploy (AP 8b, Nicolas) |
+| Container | `docker compose up -d` auf der VM, dann prüfen: beide Container laufen, im Log «Bot startet» ohne Fehler, das Dashboard zeigt eine ausgewertete Kerze ohne Warnung | von Hand, einmal nach dem Deploy (AP 8b, Nicolas) |
 
 **Ergebnis Rauchtest** (21.10.2026, Valentin, Demo-Konto): Bitget nimmt die Signatur an, das
 Demo-Konto verwendet die Classic-Endpunkte `/api/v2/spot/…`. Kauf und Verkauf für 5 USDT sind
