@@ -50,6 +50,10 @@ MAX_KERZEN = 1000  # mehr liefert Bitget pro Anfrage nicht
 ORDER_ABFRAGEN = 10
 ORDER_PAUSE_SEKUNDEN = 0.5
 
+# Gebühr im Spot-Demo, gemessen im Rauchtest vom 21.10.2026. Nur der Ersatz, wenn Bitget die
+# Gebühr nicht lesbar oder unplausibel meldet, sonst gilt der Wert aus der Antwort.
+GEBUEHR_SATZ = 0.001
+
 
 class BitgetFehler(Exception):
     """Bitget hat eine Anfrage abgelehnt, war nicht erreichbar oder hat Unerwartetes geliefert.
@@ -60,6 +64,19 @@ class BitgetFehler(Exception):
     def __init__(self, meldung: str, *, code: str | None = None):
         super().__init__(meldung if code is None else f"{meldung} (Bitget-Code {code})")
         self.code = code
+
+
+class OrderFehler(BitgetFehler):
+    """Eine Order ist bei Bitget platziert, ihr Ergebnis aber nicht bekannt.
+
+    Vielleicht wurde sie trotzdem ausgeführt. `order_id` sagt, welche Order es war, damit man sie
+    im Log findet und auf Bitget nachschauen kann. Wer den Fehler fängt (z.B. `tick()`), weiss so
+    auch, dass er nicht einfach noch einmal kaufen darf.
+    """
+
+    def __init__(self, meldung: str, *, order_id: str, code: str | None = None):
+        super().__init__(meldung, code=code)
+        self.order_id = order_id
 
 
 def signatur(
@@ -204,15 +221,21 @@ class BitgetClient:
             raise ValueError(f"betrag muss grösser als 0 sein, erhalten: {betrag}")
         order_id = self._platziere(symbol, seite="buy", groesse=betrag)
         info = self._warte_auf_ausfuehrung(order_id)
-        gekauft = float(info["baseVolume"])
+        gekauft, preis = self._menge_und_preis(order_id, info)
         gebuehr = self._gebuehr(info)
-        # Bitget verlangt im Spot-Demo 0.1 % Gebühr (Rauchtest vom 21.10.2026). Ist der Abzug
-        # 1 % oder mehr, stimmt etwas mit `feeDetail` nicht: Dann lieber ohne Gebühr rechnen
-        # als eine viel zu kleine Menge melden.
-        if gebuehr >= gekauft * 0.01:
-            log.warning("Gebühr %s bei %s gekauft unplausibel, rechne ohne", gebuehr, gekauft)
-            gebuehr = 0.0
-        return Order(order_id=order_id, menge=gekauft - gebuehr, preis=float(info["priceAvg"]))
+        # Bitget verlangt im Spot-Demo 0.1 % Gebühr. Ist `feeDetail` nicht lesbar oder der Abzug
+        # 1 % oder mehr, stimmt etwas nicht. Dann die bekannten 0.1 % abziehen: Ohne Abzug wäre
+        # die gemeldete Menge zu gross, und jeder Verkauf scheiterte mit 43012 «Insufficient
+        # balance», auch der Stop-Loss. Lieber ein kleiner BTC-Rest auf dem Konto.
+        if gebuehr is None or gebuehr >= gekauft * 0.01:
+            log.warning(
+                "Gebühr %s bei %s gekauft nicht lesbar oder unplausibel, rechne mit %s %%",
+                gebuehr,
+                gekauft,
+                GEBUEHR_SATZ * 100,
+            )
+            gebuehr = gekauft * GEBUEHR_SATZ
+        return Order(order_id=order_id, menge=gekauft - gebuehr, preis=preis)
 
     def verkaufe(self, symbol: str, menge: float) -> Order:
         """Market-Order: verkauft sofort `menge` BTC.
@@ -225,9 +248,10 @@ class BitgetClient:
             raise ValueError(f"menge muss grösser als 0 sein, erhalten: {menge}")
         order_id = self._platziere(symbol, seite="sell", groesse=menge)
         info = self._warte_auf_ausfuehrung(order_id)
-        return Order(
-            order_id=order_id, menge=float(info["baseVolume"]), preis=float(info["priceAvg"])
-        )
+        # Im dünnen Demo-Markt kann auch ein Verkauf nur teilweise ausgeführt werden. Gemeldet
+        # wird die tatsächlich verkaufte Menge (`baseVolume`), nicht die verlangte.
+        verkauft, preis = self._menge_und_preis(order_id, info)
+        return Order(order_id=order_id, menge=verkauft, preis=preis)
 
     # --- Hilfsfunktionen ---
 
@@ -255,26 +279,62 @@ class BitgetClient:
         Bitget bestätigt beim Platzieren nur die Order-ID. Preis, Menge und Gebühr stehen erst in
         `orderInfo`. Eine Market-Order endet als `filled` (ganz ausgeführt) oder `cancelled` (im
         dünnen Demo-Markt nur teilweise ausgeführt, der Rest verfällt).
+
+        Fällt eine einzelne Abfrage aus (Netzfehler, HTTP 429, Fehlercode), fragt der Client beim
+        nächsten Versuch weiter. Die Order ist ja schon platziert: Bräche er sofort ab, wüsste
+        `tick()` nichts vom Kauf und kaufte eine Minute später noch einmal.
+
+        Wirft `OrderFehler` mit `order_id`, wenn das Ergebnis am Ende nicht feststeht.
         """
+        letzter_fehler: BitgetFehler | None = None
         for versuch in range(ORDER_ABFRAGEN):
-            antwort = self._anfrage(
-                "GET", "/api/v2/spot/trade/orderInfo", params={"orderId": order_id}
-            )
-            infos = antwort["data"] or []  # kurz nach dem Platzieren manchmal noch leer
-            if infos and infos[0].get("status") in ("filled", "cancelled"):
-                info = infos[0]
-                if float(info.get("baseVolume") or 0) <= 0:
-                    raise BitgetFehler(f"Order {order_id} wurde nicht ausgeführt")
-                return info
+            try:
+                antwort = self._anfrage(
+                    "GET", "/api/v2/spot/trade/orderInfo", params={"orderId": order_id}
+                )
+            except BitgetFehler as fehler:
+                log.warning(
+                    "Abfrage %s von Order %s fehlgeschlagen: %s", versuch + 1, order_id, fehler
+                )
+                letzter_fehler = fehler
+            else:
+                infos = antwort["data"] or []  # kurz nach dem Platzieren manchmal noch leer
+                # "live" und "partially_filled" sind Zwischenstände, also weiter abfragen
+                if infos and infos[0].get("status") in ("filled", "cancelled"):
+                    info = infos[0]
+                    if float(info.get("baseVolume") or 0) <= 0:
+                        raise OrderFehler(
+                            f"Order {order_id} wurde nicht ausgeführt", order_id=order_id
+                        )
+                    return info
             if versuch < ORDER_ABFRAGEN - 1:
                 self._schlafen(ORDER_PAUSE_SEKUNDEN)
-        # Die Order kann danach trotzdem noch ausgeführt werden. Die Order-ID steht in der Meldung,
-        # damit man sie im Log findet und auf Bitget nachschauen kann.
-        raise BitgetFehler(f"Order {order_id} nach {ORDER_ABFRAGEN} Abfragen nicht ausgeführt")
+        # Die Order kann danach trotzdem noch ausgeführt werden.
+        meldung = f"Order {order_id} nach {ORDER_ABFRAGEN} Abfragen nicht bestätigt"
+        if letzter_fehler is not None:
+            meldung += f", zuletzt: {letzter_fehler}"
+        raise OrderFehler(meldung, order_id=order_id) from letzter_fehler
 
     @staticmethod
-    def _gebuehr(info: dict[str, Any]) -> float:
+    def _menge_und_preis(order_id: str, info: dict[str, Any]) -> tuple[float, float]:
+        """Ausgeführte Menge in BTC und Durchschnittspreis aus `orderInfo`.
+
+        Die Order ist zu diesem Zeitpunkt schon ausgeführt. Fehlt ein Feld, kommt darum ein
+        `OrderFehler` mit der Order-ID, kein gewöhnlicher Fehler.
+        """
+        try:
+            return float(info["baseVolume"]), float(info["priceAvg"])
+        except (KeyError, TypeError, ValueError) as fehler:
+            raise OrderFehler(
+                f"Order {order_id} ausgeführt, aber Menge oder Preis nicht lesbar: {fehler!r}",
+                order_id=order_id,
+            ) from fehler
+
+    @staticmethod
+    def _gebuehr(info: dict[str, Any]) -> float | None:
         """Gebühr, die Bitget von der gekauften Währung abgezogen hat, als positive Zahl.
+
+        None, wenn `feeDetail` nicht lesbar ist.
 
         `feeDetail` ist JSON als Text. Unter `newFees.r` steht, was von der erhaltenen Währung
         abgezogen wurde (negativ). Wer die Gebühr mit BGB-Rabatt bezahlt, hat dort 0.
@@ -284,9 +344,9 @@ class BitgetClient:
             return abs(float(details.get("newFees", {}).get("r", 0)))
         except (ValueError, TypeError, AttributeError):
             # Die Order ist zu diesem Zeitpunkt schon ausgeführt. Ein Fehler hier darf den Trade
-            # nicht verschwinden lassen: lieber ohne Gebühr weiterrechnen und es protokollieren.
-            log.warning("Gebühr nicht lesbar, rechne ohne Gebühr: %r", info.get("feeDetail"))
-            return 0.0
+            # nicht verschwinden lassen: `kaufe` rechnet dann mit den bekannten 0.1 %.
+            log.warning("Gebühr nicht lesbar: %r", info.get("feeDetail"))
+            return None
 
     @staticmethod
     def _als_kerze(zeile: list[str]) -> Kerze:

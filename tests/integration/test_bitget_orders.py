@@ -12,10 +12,11 @@ der Gebühr (`feeDetail`) ist mit einer echten Demo-Order geprüft, siehe
 import json
 import logging
 
+import httpx
 import pytest
 import respx
 
-from bollinger_bot.bitget_client import BitgetClient, BitgetFehler
+from bollinger_bot.bitget_client import BitgetClient, BitgetFehler, OrderFehler
 from bollinger_bot.port import Order
 
 BASIS = "https://api.bitget.com"
@@ -188,11 +189,90 @@ def test_kauf_gibt_nach_10_abfragen_auf(client, schlaf):
     respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
     info = respx.get(INFO_URL).respond(json=erfolg([order_info(status="live", base_volume="0")]))
 
-    with pytest.raises(BitgetFehler, match="Order 1001 nach 10 Abfragen nicht ausgeführt"):
+    with pytest.raises(OrderFehler, match="Order 1001 nach 10 Abfragen nicht bestätigt") as f:
         client.kaufe("BTCUSDT", 100.0)
 
+    assert f.value.order_id == "1001"
     assert info.call_count == 10
     assert len(schlaf.pausen) == 9
+
+
+@respx.mock
+def test_einzelner_netzfehler_beim_abfragen_wird_ueberbrueckt(client, schlaf, caplog):
+    # Die Order ist schon platziert. Fällt die erste Abfrage aus, muss der Client weiter fragen,
+    # sonst wüsste tick() nichts vom Kauf und kaufte eine Minute später noch einmal.
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    info = respx.get(INFO_URL)
+    info.side_effect = [
+        httpx.ConnectTimeout("Zeitüberschreitung"),
+        respx.MockResponse(json=erfolg([order_info()])),
+    ]
+
+    with caplog.at_level(logging.WARNING):
+        ergebnis = client.kaufe("BTCUSDT", 100.0)
+
+    assert ergebnis.order_id == "1001"
+    assert info.call_count == 2
+    assert schlaf.pausen == [0.5]
+    assert "Abfrage 1 von Order 1001 fehlgeschlagen" in caplog.text
+
+
+@respx.mock
+def test_zu_viele_anfragen_beim_abfragen_werden_ueberbrueckt(client):
+    # HTTP 429: Bitget bremst, weil zu viele Anfragen kamen. Beim nächsten Versuch geht es wieder.
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    info = respx.get(INFO_URL)
+    info.side_effect = [
+        respx.MockResponse(429, json={"code": "429", "msg": "Too Many Requests"}),
+        respx.MockResponse(json=erfolg([order_info()])),
+    ]
+
+    assert client.kaufe("BTCUSDT", 100.0).preis == 85000.0
+
+
+@respx.mock
+def test_dauernder_netzfehler_nennt_order_id_und_ursache(client, schlaf):
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    info = respx.get(INFO_URL).mock(side_effect=httpx.ConnectTimeout("Zeitüberschreitung"))
+
+    with pytest.raises(OrderFehler, match="zuletzt: Bitget nicht erreichbar") as f:
+        client.kaufe("BTCUSDT", 100.0)
+
+    assert f.value.order_id == "1001"
+    assert isinstance(f.value, BitgetFehler)  # die Polling-Schleife fängt ihn wie jeden anderen
+    assert info.call_count == 10
+
+
+@respx.mock
+def test_teilweise_ausgefuehrt_ist_ein_zwischenstand(client, schlaf):
+    # "partially_filled" heisst: Die Order läuft noch. Erst "filled" ist das Ergebnis.
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    info = respx.get(INFO_URL)
+    info.side_effect = [
+        respx.MockResponse(
+            json=erfolg([order_info(status="partially_filled", base_volume="0.0005")])
+        ),
+        respx.MockResponse(json=erfolg([order_info()])),
+    ]
+
+    ergebnis = client.kaufe("BTCUSDT", 100.0)
+
+    # die ganze Menge aus "filled": 0.001176 − 0.000001176 = 0.001174824
+    assert ergebnis.menge == pytest.approx(0.001174824)
+    assert info.call_count == 2
+
+
+@respx.mock
+def test_ausgefuehrte_order_ohne_preis_nennt_order_id(client):
+    # Bitget hat ausgeführt, aber die Antwort ist unvollständig: Das muss tick() erfahren.
+    ohne_preis = {k: v for k, v in order_info().items() if k != "priceAvg"}
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    respx.get(INFO_URL).respond(json=erfolg([ohne_preis]))
+
+    with pytest.raises(OrderFehler, match="Menge oder Preis nicht lesbar") as f:
+        client.kaufe("BTCUSDT", 100.0)
+
+    assert f.value.order_id == "1001"
 
 
 @respx.mock
@@ -215,8 +295,10 @@ def test_abgebrochene_order_ohne_ausfuehrung_ist_ein_fehler(client):
         json=erfolg([order_info(status="cancelled", base_volume="0", gebuehr_r=0)])
     )
 
-    with pytest.raises(BitgetFehler, match="Order 1001 wurde nicht ausgeführt"):
+    with pytest.raises(OrderFehler, match="Order 1001 wurde nicht ausgeführt") as f:
         client.kaufe("BTCUSDT", 100.0)
+
+    assert f.value.order_id == "1001"
 
 
 @respx.mock
@@ -242,20 +324,23 @@ def test_unlesbare_gebuehr_laesst_den_kauf_nicht_scheitern(client, caplog):
     with caplog.at_level(logging.WARNING):
         ergebnis = client.kaufe("BTCUSDT", 100.0)
 
-    assert ergebnis.menge == 0.001176
+    # Ersatz: die bekannten 0.1 %, 0.001176 − 0.000001176 = 0.001174824. Ohne Abzug meldete der
+    # Client mehr, als auf dem Konto liegt, und jeder Verkauf scheiterte.
+    assert ergebnis.menge == pytest.approx(0.001174824)
     assert "Gebühr nicht lesbar" in caplog.text
 
 
 @respx.mock
-def test_unplausible_gebuehr_wird_nicht_abgezogen(client, caplog):
-    # Grenzwert 1 %: 0.00001176 BTC sind genau 1 % von 0.001176, also schon unplausibel
+def test_unplausible_gebuehr_wird_durch_die_bekannten_0_1_prozent_ersetzt(client, caplog):
+    # Grenzwert 1 %: 0.00001176 BTC sind genau 1 % von 0.001176, also schon unplausibel.
+    # Ersatz: 0.1 %, 0.001176 − 0.000001176 = 0.001174824
     respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
     respx.get(INFO_URL).respond(json=erfolg([order_info(gebuehr_r=-0.00001176)]))
 
     with caplog.at_level(logging.WARNING):
         ergebnis = client.kaufe("BTCUSDT", 100.0)
 
-    assert ergebnis.menge == 0.001176
+    assert ergebnis.menge == pytest.approx(0.001174824)
     assert "unplausibel" in caplog.text
 
 
@@ -302,6 +387,20 @@ def test_verkauf_liefert_verkaufte_menge_ohne_gebuehrenabzug(client):
     ergebnis = client.verkaufe("BTCUSDT", 0.001173)
 
     assert ergebnis == Order(order_id="2002", menge=0.001173, preis=86000.0)
+
+
+@respx.mock
+def test_teilweise_ausgefuehrter_verkauf_meldet_die_verkaufte_menge(client):
+    # Verlangt 0.001173 BTC, im dünnen Demo-Markt wurden nur 0.0005 verkauft, der Rest verfällt
+    # ("cancelled"). Gemeldet wird, was wirklich verkauft ist, nicht was verlangt war.
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "2002"}))
+    respx.get(INFO_URL).respond(
+        json=erfolg([{**order_info(status="cancelled", base_volume="0.0005"), "orderId": "2002"}])
+    )
+
+    ergebnis = client.verkaufe("BTCUSDT", 0.001173)
+
+    assert ergebnis.menge == 0.0005
 
 
 @pytest.mark.parametrize("menge", [0, -0.001])
