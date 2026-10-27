@@ -577,12 +577,16 @@ jeder, was der andere ungefähr macht. Für den Berufsalltag nehme ich mit: klei
 kurzer Zeit reviewen kann, feste Zeiten fürs Reviewen und ein Schutz auf `main`, damit niemand
 ohne Approve mergen kann.
 
-**TDD.** Bei `tick()`, dem Herzstück des Bots, haben wir TDD verwendet. Für jedes Verhalten kam
-zuerst ein Test, der rot war, zum Beispiel «ohne neue Kerze wird Bitget nicht gefragt» oder «nach
-einem Absturz wird nicht doppelt gekauft». Danach nur so viel Code, bis er grün war, und wo nötig
-ein Schritt zum Aufräumen. In der Git-Historie des Branches `tick` sieht man das an 41 Commits,
-davon 16 mit «TDD rot». Nach demselben Muster sind danach auch der Einstiegspunkt und der Backtest
-entstanden.
+**TDD.** Bei `tick()`, dem Herzstück des Bots, haben wir TDD verwendet. Für die meisten Verhalten
+kam zuerst ein Test, der rot war, zum Beispiel «ohne neue Kerze wird Bitget nicht gefragt». Danach
+nur so viel Code, bis er grün war, und wo nötig ein Schritt zum Aufräumen. Einige Tests waren
+sofort grün, weil das Verhalten schon da war, zum Beispiel «nach einem Absturz wird nicht doppelt
+gekauft». Das steht jeweils in der Commit-Nachricht. In der Git-Historie des Branches `tick` sieht
+man das an 41 Commits, davon 16 mit «TDD rot». Die Zyklen hat Claude Code ausgeführt, ich habe
+vorgegeben, welches Verhalten als Nächstes kommt, und das Ergebnis geprüft. Nach demselben Muster
+sind danach auch der Einstiegspunkt und der Backtest entstanden. Gemerkt habe ich: TDD führt zu
+vielen Tests, aber nicht automatisch zu vollständigen. Eine Lücke im Verkaufsweg ist trotz 100 %
+Coverage durchgerutscht.
 
 **Fazit.** Schlussendlich war es ein tolles Projekt, an dem wir hier gearbeitet haben. Das Einzige,
 was man vielleicht «negativ» bemängeln kann, ist, dass das Projekt ein bisschen zu gross oder zu
