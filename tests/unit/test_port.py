@@ -39,12 +39,15 @@ def test_mock_liefert_vorgegebene_kerzen(boerse):
 
 
 def test_mock_liefert_vorgegebene_order(boerse):
-    boerse.kaufe.return_value = Order(order_id="1", menge=0.001, preis=60_000)
+    # Für 60 USDT bei 60 000 USDT/BTC: 60 / 60 000 = 0.001 BTC. Bitget zieht 0.1 % Gebühr von
+    # den gekauften BTC ab: 0.001 · 0.999 = 0.000999 BTC.
+    boerse.kaufe.return_value = Order(order_id="1", menge=0.000999, preis=60_000)
 
-    order = boerse.kaufe("BTCUSDT", 0.001)
+    order = boerse.kaufe("BTCUSDT", 60.0)
 
+    assert order.menge == 0.000999
     assert order.preis == 60_000
-    boerse.kaufe.assert_called_once_with("BTCUSDT", 0.001)
+    boerse.kaufe.assert_called_once_with("BTCUSDT", 60.0)
 
 
 def test_mock_kennt_keine_methoden_ausserhalb_des_ports(boerse):
@@ -54,7 +57,30 @@ def test_mock_kennt_keine_methoden_ausserhalb_des_ports(boerse):
 
 def test_mock_lehnt_fehlende_argumente_ab(boerse):
     with pytest.raises(TypeError):
-        boerse.kaufe("BTCUSDT")  # menge fehlt
+        boerse.kaufe("BTCUSDT")  # betrag fehlt
+
+
+def test_mock_kauft_mit_betrag_in_usdt(boerse):
+    boerse.kaufe(symbol="BTCUSDT", betrag=60.0)
+
+    boerse.kaufe.assert_called_once_with(symbol="BTCUSDT", betrag=60.0)
+
+
+def test_mock_lehnt_kauf_mit_menge_ab(boerse):
+    # Bitget will beim Market-Kauf den Betrag in USDT, darum gilt der alte Name `menge` nicht mehr
+    with pytest.raises(TypeError):
+        boerse.kaufe(symbol="BTCUSDT", menge=0.001)
+
+
+def test_mock_verkauft_mit_menge_in_btc(boerse):
+    boerse.verkaufe(symbol="BTCUSDT", menge=0.000999)
+
+    boerse.verkaufe.assert_called_once_with(symbol="BTCUSDT", menge=0.000999)
+
+
+def test_mock_lehnt_verkauf_mit_betrag_ab(boerse):
+    with pytest.raises(TypeError):
+        boerse.verkaufe(symbol="BTCUSDT", betrag=60.0)
 
 
 def test_kerze_ist_unveraenderlich():
