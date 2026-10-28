@@ -28,6 +28,12 @@ class Handelsregeln:
 # quantityPrecision 6, minTradeUSDT 1. Beträge in USDT runden wir auf Rappen (2 Stellen).
 BTCUSDT_SPOT = Handelsregeln(mengen_stellen=6, betrag_stellen=2, mindestbetrag=1.0)
 
+# Gekauft wird erst ab dem Doppelten des Mindestbetrags (bei BTCUSDT 2 USDT). Ein Kauf von genau
+# 1.00 USDT liesse sich nicht mehr verkaufen: 1 / 50 000 = 0.00002 BTC, nach 0.1 % Gebühr
+# 0.00001998 BTC, abgerundet 0.000019 BTC = 0.95 USDT. Der Bot hinge mit offener Position fest.
+# Mit dem Doppelten bleibt Platz für Gebühr, Abrunden und einen Kursrückgang bis zum Stop-Loss.
+KAUF_PUFFER_FAKTOR = 2
+
 
 def abrunden(wert: float, stellen: int) -> float:
     """Rundet `wert` auf `stellen` Nachkommastellen ab, z.B. `abrunden(0.1239, 2)` ergibt 0.12.
@@ -49,7 +55,10 @@ def kaufbetrag(
     regeln: Handelsregeln,
     hoechstbetrag: float | None = None,
 ) -> float:
-    """Betrag in USDT für eine Market-Kauforder, 0.0 wenn er unter dem Mindestbetrag liegt.
+    """Betrag in USDT für eine Market-Kauforder, 0.0 wenn er zu klein ist.
+
+    Zu klein heisst: unter dem Doppelten des Mindestbetrags (`KAUF_PUFFER_FAKTOR`), damit sich
+    die gekaufte Menge später auch nach Gebühr und Kursrückgang noch verkaufen lässt.
 
     - `guthaben`: frei verfügbares Guthaben in USDT (`Boerse.hole_kontostand("USDT")`)
     - `anteil_prozent`: welcher Anteil davon pro Kauf eingesetzt wird, z.B. 10 für 10 %
@@ -64,15 +73,17 @@ def kaufbetrag(
     if hoechstbetrag is not None and hoechstbetrag <= 0:
         raise ValueError(f"hoechstbetrag muss grösser als 0 sein, erhalten: {hoechstbetrag}")
 
-    # Erst multiplizieren, dann teilen, wie in regeln.py: 1000 · 10 / 100 ergibt genau 100.0.
-    betrag = guthaben * anteil_prozent / 100
+    # Ganz in Decimal rechnen: In float ergibt 16.4 · 15 / 100 = 2.4599999999999995, abgerundet
+    # 2.45 statt 2.46. str() liefert dabei die kürzeste Schreibweise (16.4, nicht 16.39999…).
+    betrag = Decimal(str(guthaben)) * Decimal(str(anteil_prozent)) / 100
     if hoechstbetrag is not None:
-        betrag = min(betrag, hoechstbetrag)
-    betrag = abrunden(betrag, regeln.betrag_stellen)
+        betrag = min(betrag, Decimal(str(hoechstbetrag)))
+    schritt = Decimal(1).scaleb(-regeln.betrag_stellen)  # z.B. 0.01 bei 2 Stellen
+    betrag = betrag.quantize(schritt, rounding=ROUND_DOWN)
 
-    if betrag < regeln.mindestbetrag:
+    if betrag < Decimal(str(regeln.mindestbetrag)) * KAUF_PUFFER_FAKTOR:
         return 0.0
-    return betrag
+    return float(betrag)
 
 
 def verkaufsmenge(*, bestand: float, kurs: float, regeln: Handelsregeln) -> float:
