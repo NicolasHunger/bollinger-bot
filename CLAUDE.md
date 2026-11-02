@@ -127,11 +127,10 @@ fehlen noch, Nicolas antwortet darauf.
 **Valentin** (Börse). Hat 5 PRs (#8 bis #11, #16), die Rubrik ist erfüllt.
 
 - [x] **PR #8 (Risiko-Check)** gemergt (26.10.).
-- [ ] **#16 mergen** (Merge-Commit): von Lucas approved (27.10.). Danach die drei Stellen
-      nachführen, die beim Kauf nur den Mindestbetrag nennen statt den Puffer: Docstring oben in
-      `risiko.py`, «Zu testende Funktionen» im Testkonzept, `kaufbetrag` unter «Öffentliche
-      Schnittstellen» in dieser Datei.
-- [ ] **Review-Kommentar in #13, #14 und #17 nachtragen**, mit einer Frage oder einem Einwand.
+- [x] **#16** gemergt (02.11.), der Puffer steht im Docstring, im Testkonzept und unter
+      «Öffentliche Schnittstellen».
+- [x] **Review-Kommentare in #13, #14 und #17** nachgetragen (02.11.), je mit einer Frage an
+      Nicolas.
 - [x] **#15** reviewt und approved (27.10.).
 - [x] **PR #10:** die Bedingung aus Lucas' Review umgesetzt (27.10.): Nach einem Netzfehler geht
       keine Order mehr verloren. Von Lucas approved (27.10.).
@@ -142,15 +141,11 @@ fehlen noch, Nicolas antwortet darauf.
       Demo-Konto gehören alle BTC dem Bot.
 - [ ] **Bei Änderungen an PR #9 oder #10 Lucas Bescheid geben.** Der Branch `einstiegspunkt` baut
       darauf auf, nutzt aber nur den Konstruktor, `schliessen()` und `INTERVALLE`.
-- [ ] **Jetzt mergen:** zuerst in #9 `main` holen und den Konflikt in der Code-Übersicht lösen
-      (beide Zeilen behalten). Dann #9 mit Merge-Commit mergen, den Branch `bitget-kerzen` dabei
-      **nicht** löschen. Dann #10 auf `main` umstellen (`gh pr edit 10 --base main`) und mergen.
-      Erst danach `bitget-kerzen` löschen. Beide sind von Lucas approved.
-- [ ] **Vorschläge aus Lucas' Reviews vom 27.10.** (kein Muss, gern als kleiner Folge-PR): in #9
-      `isascii()` bei Key und Passphrase wie in `start.py`, ein Leerzeichen am Ende im Test und die
-      Dauer der Intervalle im Test von Hand eintragen. In #10 den Docstring von `OrderFehler`
-      (gilt auch bei sicher nicht ausgeführter Order), Formatfehler nach dem Platzieren als
-      fehlgeschlagene Abfrage behandeln und eine fehlende Gebühr wie eine unlesbare.
+- [ ] **Jetzt mergen:** #9 und #10 warten auf ein erneutes Approve von Lucas, weil nach seinem
+      Approve noch seine Vorschläge dazukamen (02.11.). Dann #9 mit Merge-Commit mergen, den
+      Branch `bitget-kerzen` dabei **nicht** löschen. Dann #10 auf `main` umstellen
+      (`gh pr edit 10 --base main`) und mergen. Erst danach `bitget-kerzen` löschen.
+- [x] **Vorschläge aus Lucas' Reviews vom 27.10.** in #9 und #10 umgesetzt (02.11.).
 - [x] **PR #11 (Testkonzept):** die vier Punkte aus Lucas' Review und die Begründung zu «kein
       TDD» umgesetzt, von Nicolas approved und gemergt (27.10.).
 - [ ] **KI-Nutzung im README** für seine PRs nachtragen.
@@ -158,9 +153,7 @@ fehlen noch, Nicolas antwortet darauf.
       auf dem VPS ein, Valentin bekommt keinen Zugang zum VPS. Solange der Bot läuft, mit diesem
       Key keine Rauchtests mit `--order` mehr: BTC auf dem Konto, von denen die Datenbank nichts
       weiss, blockieren jeden Kauf (Sicherheitsnetz in `tick()`).
-- [ ] **#19 (`tick`) und #20 (`backtest`) von Lucas mitlesen**, sie nutzen Client und
-      Risiko-Check. In beiden steht eine Frage an ihn (`OrderFehler` in #19, zwei Stellen bei USDT
-      in #20).
+- [x] **#19 und #20** mitgelesen, die Fragen an ihn beantwortet (02.11.).
 - [ ] **Eigene Reflexion** und sein Teil der Präsentation.
 
 **Nicolas** (Infra und Dashboard). Hat 5 PRs (#12 bis #15, #17). Auf GitHub sichtbar reviewt ist
