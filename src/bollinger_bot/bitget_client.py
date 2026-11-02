@@ -104,10 +104,17 @@ class BitgetClient:
             ("api_secret", api_secret),
             ("passphrase", passphrase),
         ):
-            if not wert or wert != wert.strip() or not wert.isprintable():
+            # isascii(): httpx schickt Header nur in ASCII, mit «ä» scheiterte jede private
+            # Anfrage mit einem UnicodeEncodeError. Dieselben Regeln wie in start.py.
+            if (
+                not wert
+                or wert != wert.strip()
+                or not wert.isprintable()
+                or not wert.isascii()
+            ):
                 raise ValueError(
-                    f"{name} ist leer oder enthält Leerzeichen am Rand bzw. Steuerzeichen "
-                    "(z.B. einen Zeilenumbruch). Bitte in der .env prüfen."
+                    f"{name} ist leer oder enthält Leerzeichen am Rand, Steuerzeichen (z.B. einen "
+                    "Zeilenumbruch) oder Zeichen ausserhalb von ASCII. Bitte in der .env prüfen."
                 )
         # Ohne Timeout liesse ein hängender Request den Bot ohne Fehlermeldung stillstehen.
         if timeout_sekunden is None or timeout_sekunden <= 0:
