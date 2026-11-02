@@ -67,11 +67,11 @@ class BitgetFehler(Exception):
 
 
 class OrderFehler(BitgetFehler):
-    """Eine Order ist bei Bitget platziert, ihr Ergebnis aber nicht bekannt.
+    """Eine Order ist bei Bitget platziert, aber es gibt kein brauchbares Ergebnis.
 
-    Vielleicht wurde sie trotzdem ausgeführt. `order_id` sagt, welche Order es war, damit man sie
-    im Log findet und auf Bitget nachschauen kann. Wer den Fehler fängt (z.B. `tick()`), weiss so
-    auch, dass er nicht einfach noch einmal kaufen darf.
+    Zwei Fälle: Das Ergebnis ist unklar, die Order kann also trotzdem ausgeführt sein. Oder sie
+    wurde sicher nicht ausgeführt (`cancelled` ohne Menge). `order_id` sagt in beiden Fällen,
+    welche Order es war, damit man sie im Log findet und auf Bitget nachschauen kann.
     """
 
     def __init__(self, meldung: str, *, order_id: str, code: str | None = None):
@@ -293,26 +293,29 @@ class BitgetClient:
 
         Wirft `OrderFehler` mit `order_id`, wenn das Ergebnis am Ende nicht feststeht.
         """
-        letzter_fehler: BitgetFehler | None = None
+        letzter_fehler: Exception | None = None
         for versuch in range(ORDER_ABFRAGEN):
             try:
                 antwort = self._anfrage(
                     "GET", "/api/v2/spot/trade/orderInfo", params={"orderId": order_id}
                 )
-            except BitgetFehler as fehler:
+                infos = antwort["data"] or []  # kurz nach dem Platzieren manchmal noch leer
+                info = infos[0] if infos else None
+                # "live" und "partially_filled" sind Zwischenstände, also weiter abfragen
+                fertig = info is not None and info.get("status") in ("filled", "cancelled")
+                ausgefuehrt = float(info.get("baseVolume") or 0) if fertig else 0.0
+            except (BitgetFehler, AttributeError, KeyError, TypeError, ValueError) as fehler:
+                # Auch eine Antwort in unerwartetem Format zählt als fehlgeschlagene Abfrage.
                 log.warning(
-                    "Abfrage %s von Order %s fehlgeschlagen: %s", versuch + 1, order_id, fehler
+                    "Abfrage %s von Order %s fehlgeschlagen: %r", versuch + 1, order_id, fehler
                 )
                 letzter_fehler = fehler
             else:
-                infos = antwort["data"] or []  # kurz nach dem Platzieren manchmal noch leer
-                # "live" und "partially_filled" sind Zwischenstände, also weiter abfragen
-                if infos and infos[0].get("status") in ("filled", "cancelled"):
-                    info = infos[0]
-                    if float(info.get("baseVolume") or 0) <= 0:
-                        raise OrderFehler(
-                            f"Order {order_id} wurde nicht ausgeführt", order_id=order_id
-                        )
+                if fertig and ausgefuehrt <= 0:
+                    raise OrderFehler(
+                        f"Order {order_id} wurde nicht ausgeführt", order_id=order_id
+                    )
+                if fertig:
                     return info
             if versuch < ORDER_ABFRAGEN - 1:
                 self._schlafen(ORDER_PAUSE_SEKUNDEN)
@@ -341,15 +344,15 @@ class BitgetClient:
     def _gebuehr(info: dict[str, Any]) -> float | None:
         """Gebühr, die Bitget von der gekauften Währung abgezogen hat, als positive Zahl.
 
-        None, wenn `feeDetail` nicht lesbar ist.
+        None, wenn `feeDetail` fehlt, leer oder nicht lesbar ist.
 
         `feeDetail` ist JSON als Text. Unter `newFees.r` steht, was von der erhaltenen Währung
         abgezogen wurde (negativ). Wer die Gebühr mit BGB-Rabatt bezahlt, hat dort 0.
         """
         try:
             details = json.loads(info.get("feeDetail") or "{}")
-            return abs(float(details.get("newFees", {}).get("r", 0)))
-        except (ValueError, TypeError, AttributeError):
+            return abs(float(details["newFees"]["r"]))
+        except (KeyError, ValueError, TypeError):
             # Die Order ist zu diesem Zeitpunkt schon ausgeführt. Ein Fehler hier darf den Trade
             # nicht verschwinden lassen: `kaufe` rechnet dann mit den bekannten 0.1 %.
             log.warning("Gebühr nicht lesbar: %r", info.get("feeDetail"))

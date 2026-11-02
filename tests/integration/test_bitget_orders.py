@@ -217,6 +217,39 @@ def test_einzelner_netzfehler_beim_abfragen_wird_ueberbrueckt(client, schlaf, ca
     assert "Abfrage 1 von Order 1001 fehlgeschlagen" in caplog.text
 
 
+@pytest.mark.parametrize(
+    "kaputt",
+    [
+        {"code": "00000", "msg": "success"},  # `data` fehlt
+        erfolg([{**order_info(), "baseVolume": "abc"}]),  # Menge ist keine Zahl
+        erfolg(["keine Order"]),  # Eintrag ist kein Objekt
+    ],
+)
+@respx.mock
+def test_unerwartetes_format_beim_abfragen_wird_ueberbrueckt(client, kaputt):
+    # Die Order ist schon platziert. Auch eine unbrauchbare Antwort darf den Kauf nicht beenden.
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    info = respx.get(INFO_URL)
+    info.side_effect = [
+        respx.MockResponse(json=kaputt),
+        respx.MockResponse(json=erfolg([order_info()])),
+    ]
+
+    assert client.kaufe("BTCUSDT", 100.0).preis == 85000.0
+    assert info.call_count == 2
+
+
+@respx.mock
+def test_dauernd_unerwartetes_format_nennt_die_order_id(client):
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    respx.get(INFO_URL).respond(json=erfolg([{**order_info(), "baseVolume": "abc"}]))
+
+    with pytest.raises(OrderFehler, match="nach 10 Abfragen nicht bestätigt") as f:
+        client.kaufe("BTCUSDT", 100.0)
+
+    assert f.value.order_id == "1001"
+
+
 @respx.mock
 def test_zu_viele_anfragen_beim_abfragen_werden_ueberbrueckt(client):
     # HTTP 429: Bitget bremst, weil zu viele Anfragen kamen. Beim nächsten Versuch geht es wieder.
@@ -326,6 +359,21 @@ def test_unlesbare_gebuehr_laesst_den_kauf_nicht_scheitern(client, caplog):
 
     # Ersatz: die bekannten 0.1 %, 0.001176 − 0.000001176 = 0.001174824. Ohne Abzug meldete der
     # Client mehr, als auf dem Konto liegt, und jeder Verkauf scheiterte.
+    assert ergebnis.menge == pytest.approx(0.001174824)
+    assert "Gebühr nicht lesbar" in caplog.text
+
+
+@pytest.mark.parametrize("fee_detail", [None, "", "{}", '{"newFees":{}}', '{"newFees":null}'])
+@respx.mock
+def test_fehlende_gebuehr_wird_durch_die_bekannten_0_1_prozent_ersetzt(client, caplog, fee_detail):
+    # Fehlt die Angabe, ist das nicht dasselbe wie «keine Gebühr» (r: 0 beim BGB-Rabatt).
+    # 0.001176 − 0.000001176 = 0.001174824
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    respx.get(INFO_URL).respond(json=erfolg([{**order_info(), "feeDetail": fee_detail}]))
+
+    with caplog.at_level(logging.WARNING):
+        ergebnis = client.kaufe("BTCUSDT", 100.0)
+
     assert ergebnis.menge == pytest.approx(0.001174824)
     assert "Gebühr nicht lesbar" in caplog.text
 
