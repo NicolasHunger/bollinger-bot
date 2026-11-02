@@ -14,7 +14,7 @@ Bitget handelt, also mit Spielgeld. Projektarbeit im Modul 450 «Applikationen t
 
 - **Team:** Nicolas Hunger, Lucas Weisshaar und Valentin Ernst
 - **Modul:** M450 «Applikationen testen», TBZ, Klasse WUP25
-- **Abgabe und Präsentation:** Mi 28.10.2026
+- **Abgabe und Präsentation:** Mi 04.11.2026
 
 ## Idee
 
@@ -194,7 +194,7 @@ streamlit run src/bollinger_bot/dashboard.py    # danach http://localhost:8501 �
   API-Key).
 - Alle Zeiten erscheinen in Schweizer Zeit, mit Sommer- und Winterzeit. In der Datenbank bleiben
   sie in UTC.
-- Zum Ausprobieren ohne laufenden Bot liefert der Backtest (Branch `backtest`) eine Datei mit
+- Zum Ausprobieren ohne laufenden Bot liefert der [Backtest](#backtest) eine Datei mit
   echten Kursen. Das Dashboard zeigt dann den Hinweis «Demo-Daten» (die Order-IDs beginnen mit
   `sim-`) und die Warnung, weil die letzte Kerze vom 24.10.2026 ist:
 
@@ -250,7 +250,7 @@ von der Kerze bis zur Datenbank über drei Wochen echter Kurse, in unter einer S
   Bot.
 - **Fürs Dashboard:** Die Datei hat dasselbe Schema wie die des Bots. Zeigt `BOT_DB_PFAD` auf
   sie, liest das Dashboard (AP 7) sie wie die des Bots: auch als Notfall-Demo, falls der Bot
-  nicht auf der VM läuft. Am einfachsten startet man das Dashboard dafür lokal mit
+  nicht auf dem VPS läuft. Am einfachsten startet man das Dashboard dafür lokal mit
   `BOT_DB_PFAD=data/backtest.db`. Die Warnung «letzte Kerze älter als zwei Intervalle» ist bei
   dieser Datei zu erwarten, denn die letzte Kerze ist vom 24.10.2026. Die Order-IDs beginnen mit
   `sim-`.
@@ -382,7 +382,7 @@ docker compose pull && docker compose up -d
 
 ## Planung
 
-Geplant am 23.09.2026, nachgeführt am 27.10.2026.
+Geplant am 23.09.2026, nachgeführt am 02.11.2026.
 
 | Wann | Geplant | Wie es lief |
 |---|---|---|
@@ -390,8 +390,8 @@ Geplant am 23.09.2026, nachgeführt am 27.10.2026.
 | Mi 30.09. (Unterricht CI/CD und Deployment) | Deploy-Stage auf die Cloud-VM | Deploy auf den VPS von Nicolas statt auf eine neue Cloud-VM, ab 27.10. |
 | Herbstferien | Bitget-Client, Risiko-Check, `tick()` mit Polling, SQLite, Dashboard. Der Bot läuft spätestens Mitte Ferien auf der VM. | Lucas: Versionsgrenzen, Bollinger-Berechnung, Regeln, Port, SQLite und Polling (PR #2 bis #7, eröffnet 16. und 17.10.). Valentin: Bitget-Client und Risiko-Check (PR #8 bis #10, eröffnet 21.10.). Der Bot lief in den Ferien noch nicht |
 | Mi 21.10. (Unterricht Code Reviews) | Offene PRs abschliessen, Reflexion schreiben | Reviews zu PR #2 bis #12. Danach `tick()`, Einstiegspunkt und Backtest test-first gebaut (24.10.) |
-| 24. bis 27.10. | | PR #2 bis #8 und #12 bis #14 gemergt: Bausteine, Pipeline, SonarQube Cloud, Dashboard |
-| Mi 28.10. | Doku fertig, Präsentation (10 Minuten) | |
+| 24.10. bis 02.11. | | PR #2 bis #8, #11 bis #15 und #17 bis #20 gemergt: Bausteine, Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Deploy, `tick()` und Backtest |
+| Mi 04.11. (verschoben vom 28.10.) | Doku fertig, Präsentation (10 Minuten) | |
 
 Was anders lief als geplant:
 
@@ -413,13 +413,13 @@ PRs pro Person.
 | 3 | Bitget-Client: Signatur und Kerzen | Valentin | Lucas | #9 |
 | 4 | Bitget-Client: Orders und Kontostand | Valentin | Lucas | #10 |
 | 5 | Risiko-Check | Valentin | Lucas | #8, #16 |
-| 6 | `tick()`, Polling-Schleife und SQLite | Lucas | Nicolas | #5 (Port), #6, #7, Branch `tick` |
+| 6 | `tick()`, Polling-Schleife und SQLite | Lucas | Nicolas | #5 (Port), #6, #7, #19 |
 | 7 | Dashboard | Nicolas | Valentin | #14 |
 | 8a.1 | Grundgerüst (Projektstruktur, `pyproject.toml`, pytest läuft lokal) | Lucas | Valentin | #1, #2 |
 | 8a.2 | Pipeline (Build, Test, SonarQube Cloud) | Nicolas | Valentin | #12, #13 |
 | 8b | Deploy auf den VPS | Nicolas | Valentin | #17 |
 | – | Einstiegspunkt `python -m bollinger_bot` | Lucas | Nicolas | Branch `einstiegspunkt` |
-| – | Backtest | Lucas | Nicolas | Branch `backtest` |
+| – | Backtest | Lucas | Nicolas | #20 |
 | – | Testkonzept | Valentin | Lucas, Nicolas | #11, #18 |
 
 - **Reviews im Ring, entlang der Abhängigkeiten:** Lucas reviewt Valentin (`tick()` benutzt den
@@ -571,7 +571,7 @@ Gefundene Fehler halten wir im PR als Kommentar fest und ordnen sie einer von dr
 | Integration (inkl. Dashboard mit `AppTest`) | `pytest tests/integration` | lokal vor jedem Push, in der Pipeline bei jedem PR |
 | Rauchtest Bitget | `python scripts/rauchtest.py`, mit `--order` zusätzlich Kauf und Verkauf für 5 USDT | von Hand mit Demo-Key, vor dem ersten Deploy |
 | Backtest | `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db` | von Hand, nach Änderungen an Strategie oder `tick()` |
-| Container | `docker compose up -d` auf der VM, dann prüfen: beide Container laufen, im Log «Bot startet» ohne Fehler, das Dashboard zeigt eine ausgewertete Kerze ohne Warnung | von Hand, einmal nach dem Deploy (AP 8b, Nicolas) |
+| Container | `docker compose up -d` auf dem VPS, dann prüfen: beide Container laufen, im Log «Bot startet» ohne Fehler, das Dashboard zeigt eine ausgewertete Kerze ohne Warnung | von Hand, einmal nach dem Deploy (AP 8b, Nicolas) |
 
 **Ergebnis Rauchtest** (21.10.2026, Valentin, Demo-Konto): Bitget nimmt die Signatur an, das
 Demo-Konto verwendet die Classic-Endpunkte `/api/v2/spot/…`. Kauf und Verkauf für 5 USDT sind
@@ -582,7 +582,7 @@ Bitget überein. Vorher, mit leerem Spot-Konto, kam der Fehler 43012 «Insuffici
 `tests/integration/test_bitget_orders.py`. Der Rauchtest hat damit gefunden, was die Mocks nicht
 finden konnten: Die Gebühr ist 0.1 %, nicht 0.2 % wie in der Symbol-Info von Bitget.
 
-**Ergebnis Backtest** (Branch `backtest`, Stand 24.10.2026): das echte `tick()` auf 2000
+**Ergebnis Backtest** (PR #20, Stand 24.10.2026): das echte `tick()` auf 2000
 BTCUSDT-Kerzen vom 03.10. bis 24.10.2026. 40 Käufe, 39 Verkäufe, aus 1000 USDT werden 993.07 USDT
 (−0.69 %). Den Verlust machen die Gebühren (7.87 USDT), der Stop-Loss hat nie ausgelöst.
 
@@ -604,7 +604,7 @@ BTCUSDT-Kerzen vom 03.10. bis 24.10.2026. 40 Käufe, 39 Verkäufe, aus 1000 USDT
   möglich einen Fehler ein, um die Tests zu prüfen.
 - Rauchtest: Valentin (erledigt am 21.10.). Backtest: Lucas. Container nach dem Deploy: Nicolas.
 - Bis Mi 21.10.: Unit- und Integrationstests aller Bausteine ausser `tick()` und Dashboard.
-  Bis Mi 28.10.: `tick()`, Dashboard, Backtest, Reports in der Pipeline, Container nach dem
+  Bis Mi 04.11.: `tick()`, Dashboard, Backtest, Reports in der Pipeline, Container nach dem
   Deploy.
 
 ## Reflexion
@@ -725,9 +725,9 @@ nachgeführt.
   Zeit), die Entscheide hat Nicolas getroffen und das Ergebnis mit den Daten aus dem Backtest
   geprüft. Die Soll-Werte der Tests sind von Hand gerechnet. Den Deploy (PR #17: Dockerfile,
   Docker Compose, Job für das Docker-Image) hat Claude Code nach Nicolas' Vorgaben gebaut.
-- **Zum Reviewen oder Optimieren:** Die Reviews von PR #6, #7 und #11 hat Nicolas mit Claude Code
-  vorbereitet: Claude Code hat die PRs lokal getestet oder gegen den Code geprüft, Randfälle
-  nachgeprüft und die Kommentare formuliert. Die inhaltlichen Entscheide (z.B. Kerzen im
+- **Zum Reviewen oder Optimieren:** Die Reviews von PR #6, #7, #11, #19 und #20 hat Nicolas mit
+  Claude Code vorbereitet: Claude Code hat die PRs lokal getestet oder gegen den Code geprüft,
+  Randfälle nachgeprüft und die Kommentare formuliert. Die inhaltlichen Entscheide (z.B. Kerzen im
   Dashboard, Kontostand als Gesamtwert, `stop_signal: SIGINT`) und den Review-Status hat Nicolas
   getroffen, gepostet wurde erst nach Durchsicht.
 
