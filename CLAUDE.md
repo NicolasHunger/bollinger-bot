@@ -520,7 +520,7 @@ def polling_schleife(tick: Callable[[], None], *, pause_sekunden: float = 60,
 class Handelsregeln: mengen_stellen: int; betrag_stellen: int; mindestbetrag: float
 BTCUSDT_SPOT = Handelsregeln(mengen_stellen=6, betrag_stellen=2, mindestbetrag=1.0)
 def kaufbetrag(*, guthaben: float, anteil_prozent: float, regeln: Handelsregeln,
-               hoechstbetrag: float | None = None) -> float   # USDT, 0.0 unter dem Mindestbetrag
+               hoechstbetrag: float | None = None) -> float   # USDT, 0.0 unter 2 · Mindestbetrag (KAUF_PUFFER_FAKTOR)
 def verkaufsmenge(*, bestand: float, kurs: float, regeln: Handelsregeln) -> float  # BTC, 0.0 wenn Wert < Mindestbetrag
 
 # bitget_client.py (PR #9, #10, Valentin): erfüllt Boerse
