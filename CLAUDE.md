@@ -85,7 +85,8 @@ hat Nicolas am 02.11. reviewt, approved und gemergt. Offen:
 
 **#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
 Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Kommentar mit einer Frage
-nach. Lucas' Kommentare stehen seit dem 27.10., Valentins fehlen noch, Nicolas antwortet darauf.
+nach. Lucas' Kommentare stehen seit dem 27.10., Nicolas hat sie am 02.11. beantwortet. Valentins
+fehlen noch, Nicolas antwortet darauf.
 
 **Lucas** (Strategie und Ablauf)
 
@@ -185,8 +186,11 @@ bisher nur #12.
       dem `kaufe()` einen `BitgetFehler` wirft, und einer mit weniger als `n` Kerzen.
 - [x] **SonarQube in #20:** S8707 («Path Traversal», `backtest.py:34`) als «Accept» markiert, mit
       Begründung (lokales Werkzeug, den Pfad gibt man selbst an). Quality Gate grün.
-- [ ] **Lucas' Fragen in #13, #14 und #17 beantworten:** `sonar.qualitygate.wait`, das Intervall
-      im Dashboard, `--profile bot` beim Aktualisieren auf dem VPS.
+- [x] **Lucas' Fragen in #13, #14 und #17 beantwortet** (02.11.): `sonar.qualitygate.wait` bleibt
+      weg, der Quality Gate ist im PR ein eigener Check. Das Intervall im Dashboard kommt aus
+      derselben `.env` wie beim Bot, ein Abgleich mit den Kerzen in `signale` ist eine Idee für
+      einen Folge-PR. Für den Bot kommt `COMPOSE_PROFILES=bot` in die `.env` auf dem VPS. Im
+      README nachgeführt: Teststrategie (Dashboard unter Unit und Integration) und «Mit Bot».
 - [ ] **Seine unsachlichen Kommentare in #6 und #7 löschen.** Die Lehrperson liest die PRs mit,
       und die Rubrik verlangt «konstruktiv».
 - [x] **README nachführen:** Planung, Architektur und Entscheide mit #15 gemergt (27.10.).
@@ -685,8 +689,10 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
   öffentlich, der VPS braucht kein `docker login`. Die Sichtbarkeit ändert nur Nicolas.
 - **Compose:** `docker-compose.yml`. Das Dashboard ist nur auf `127.0.0.1:8501` veröffentlicht
   (Docker umgeht sonst die Firewall, Streamlit hat keine Anmeldung), Zugriff per SSH-Tunnel.
-  Der Bot startet nur mit `--profile bot`, bis der Branch `einstiegspunkt` auf `main` ist. Beide
-  teilen `./data:/data`. Für die Demo zeigt `DASHBOARD_DB=backtest.db` die Datei aus dem Backtest.
+  Der Bot startet nur mit `--profile bot`, bis der Branch `einstiegspunkt` auf `main` ist. Danach
+  steht `COMPOSE_PROFILES=bot` in der `.env` auf dem VPS, sonst erstellt `docker compose up -d` den
+  Bot mit dem neuen Image nicht neu (Hinweis von Lucas in #17). Beide teilen `./data:/data`. Für
+  die Demo zeigt `DASHBOARD_DB=backtest.db` die Datei aus dem Backtest.
 - **Deploy:** auf Nicolas' VPS (SSH über Tailscale), von Hand mit
   `docker compose pull && docker compose up -d`. Befehle auf dem VPS nur nach Nicolas' OK. Der
   VPS nimmt SSH über Tailscale SSH mit «check» an (Anmeldung im Browser). Einen automatischen
