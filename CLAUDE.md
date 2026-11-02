@@ -3,7 +3,7 @@
 ## Was dieses Repo ist
 
 Projektarbeit von Nicolas Hunger, Lucas Weisshaar und Valentin Ernst im **Modul 450 «Applikationen testen»**
-(TBZ, Klasse WUP25), Abgabe und Präsentation Mi 28.10.2026: ein Python-Trading-Bot, der mit der
+(TBZ, Klasse WUP25), Abgabe und Präsentation Mi 04.11.2026: ein Python-Trading-Bot, der mit der
 Bollinger-Strategie auf dem Bitget-Demo-Konto handelt. Idee, Architektur, Teststrategie, Planung
 und offene Entscheide stehen im `README.md`.
 
@@ -68,20 +68,19 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
   statt selbst ändern. **Ausnahme:** Lucas' Code dürfen Valentin und Nicolas ändern, siehe «Auf
   Lucas' Arbeit aufbauen und sie ändern» weiter unten.
 
-### Offene Aufgaben pro Person (Stand Di 27.10.2026)
+### Offene Aufgaben pro Person (Stand Mo 02.11.2026)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
-Abgabe und Präsentation: Mi 28.10.2026.
+Abgabe und Präsentation: Mi 04.11.2026 (verschoben vom 28.10.).
 
-Stand auf GitHub (Di 27.10., abends): PR #1 bis #8, #11 bis #15, #17 und #18 gemergt
+Stand auf GitHub (Mo 02.11.): PR #1 bis #8, #11 bis #15 und #17 bis #20 gemergt
 (Grundgerüst, Versionsgrenzen, Bollinger, Regeln, Port, Speicher, Polling, Risiko-Check,
-Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Doku, Deploy). Auf `main` laufen 198 Tests,
-SonarQube Cloud meldet 100 % Coverage und einen bestandenen Quality Gate. Offen:
+Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Doku, Deploy, `tick()`, Backtest). #19 und #20
+hat Nicolas am 02.11. reviewt, approved und gemergt. Offen:
 
-- #9, #10 und #16 (Valentin): von Lucas am 27.10. approved, **bereit zum Merge** (Reihenfolge unter
-  «Mergen»).
-- #19 `tick` und #20 `backtest` (Lucas): **warten auf das Review von Nicolas**. #20 zeigt bis zum
-  Merge von #19 auch dessen drei Dateien.
+- #9, #10 und #16 (Valentin): von Lucas am 27.10. approved (Reihenfolge unter «Mergen»). **#9 hat
+  seit dem 01.11. einen Konflikt** in der Code-Übersicht im README: `main` in `bitget-kerzen`
+  holen und beide Zeilen behalten (`bitget_client.py` aus #9, `tick.py` von `main`).
 - Noch ohne PR: `einstiegspunkt` (Lucas), folgt nach #9 und #10.
 
 **#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
@@ -142,9 +141,10 @@ nach. Lucas' Kommentare stehen seit dem 27.10., Valentins fehlen noch, Nicolas a
       Demo-Konto gehören alle BTC dem Bot.
 - [ ] **Bei Änderungen an PR #9 oder #10 Lucas Bescheid geben.** Der Branch `einstiegspunkt` baut
       darauf auf, nutzt aber nur den Konstruktor, `schliessen()` und `INTERVALLE`.
-- [ ] **Jetzt mergen:** zuerst #9 mit Merge-Commit, den Branch `bitget-kerzen` dabei **nicht**
-      löschen. Dann #10 auf `main` umstellen (`gh pr edit 10 --base main`) und mergen. Erst danach
-      `bitget-kerzen` löschen. Beide sind von Lucas approved.
+- [ ] **Jetzt mergen:** zuerst in #9 `main` holen und den Konflikt in der Code-Übersicht lösen
+      (beide Zeilen behalten). Dann #9 mit Merge-Commit mergen, den Branch `bitget-kerzen` dabei
+      **nicht** löschen. Dann #10 auf `main` umstellen (`gh pr edit 10 --base main`) und mergen.
+      Erst danach `bitget-kerzen` löschen. Beide sind von Lucas approved.
 - [ ] **Vorschläge aus Lucas' Reviews vom 27.10.** (kein Muss, gern als kleiner Folge-PR): in #9
       `isascii()` bei Key und Passphrase wie in `start.py`, ein Leerzeichen am Ende im Test und die
       Dauer der Intervalle im Test von Hand eintragen. In #10 den Docstring von `OrderFehler`
@@ -180,14 +180,11 @@ bisher nur #12.
       anlegen, dann `docker compose pull && docker compose up -d`. Das Paket in GHCR ist schon
       öffentlich. Der Bot kommt mit `einstiegspunkt` dazu. Details unter «Pipeline und Deploy».
 - [x] **#11** reviewt (Approve mit vier Vorschlägen) und gemergt (27.10.).
-- [ ] **#19 (`tick`) und danach #20 (`backtest`) reviewen**, schriftlich auf GitHub, und mit
-      Merge-Commit mergen. #20 zeigt bis zum Merge von #19 auch dessen drei Dateien. In beiden
-      stehen Fragen an ihn (Lücke zwischen `kaufe()` und Speichern, Marken im Dashboard, Datei aus
-      dem Backtest).
-- [ ] **SonarQube in #20:** Der Quality Gate ist rot wegen S8707 («Path Traversal») in
-      `backtest.py:34`: `lies_kerzen()` öffnet die CSV, deren Pfad man auf der Kommandozeile
-      angibt. Bei einem lokalen Werkzeug ist das gewollt. Vorschlag von Lucas: im Sonar-Projekt als
-      «Accept» markieren, mit dieser Begründung. Das kann nur er als Admin.
+- [x] **#19 (`tick`) und #20 (`backtest`)** schriftlich reviewt (Approve, Lucas' Fragen
+      beantwortet), mit Merge-Commit gemergt (02.11.). Vorschläge für einen Folge-PR: ein Test, in
+      dem `kaufe()` einen `BitgetFehler` wirft, und einer mit weniger als `n` Kerzen.
+- [x] **SonarQube in #20:** S8707 («Path Traversal», `backtest.py:34`) als «Accept» markiert, mit
+      Begründung (lokales Werkzeug, den Pfad gibt man selbst an). Quality Gate grün.
 - [ ] **Lucas' Fragen in #13, #14 und #17 beantworten:** `sonar.qualitygate.wait`, das Intervall
       im Dashboard, `--profile bot` beim Aktualisieren auf dem VPS.
 - [ ] **Seine unsachlichen Kommentare in #6 und #7 löschen.** Die Lehrperson liest die PRs mit,
@@ -207,7 +204,7 @@ bisher nur #12.
       mit Gliederung und Beispielen aus den PRs, den Text schreibt jede Person selbst.
 - [ ] **Präsentation** (siehe unten)
 
-**Präsentation** (Mi 28.10., 10 Minuten, ohne Folien)
+**Präsentation** (Mi 04.11., 10 Minuten, ohne Folien)
 
 - Jede Person zeigt, was sie gemacht hat, rund 3 Minuten, live statt PowerPoint: GitHub (PRs,
   Reviews, Pipeline), Terminal (Tests, Backtest), Dashboard. Die Rubrik verlangt Endprodukt,
@@ -227,8 +224,8 @@ bisher nur #12.
 **Auf Lucas' Arbeit aufbauen und sie ändern**
 
 Lucas' Bausteine sind fertig und dafür da, dass Valentin und Nicolas darauf aufbauen:
-`bollinger.py`, `regeln.py`, `port.py`, `speicher.py` und `polling.py` auf `main`, `tick.py` in
-PR #19, `backtest.py` in PR #20 und `start.py` auf dem Branch `einstiegspunkt`. Was sie können und wie sie zusammenhängen, steht unter «Stand der PRs und
+`bollinger.py`, `regeln.py`, `port.py`, `speicher.py`, `polling.py`, `tick.py` und `backtest.py`
+auf `main` und `start.py` auf dem Branch `einstiegspunkt`. Was sie können und wie sie zusammenhängen, steht unter «Stand der PRs und
 Schnittstellen» und «Ablauf von `tick()`», dazu die «Code-Übersicht» im README.
 
 - **Darauf aufbauen:** Zum Beispiel baut Nicolas das Docker-Image gegen den Branch
@@ -251,11 +248,11 @@ Schnittstellen» und «Ablauf von `tick()`», dazu die «Code-Übersicht» im RE
 
 **Vertretung, wenn Lucas nicht erreichbar ist**
 
-Betrifft Lucas' offene PRs #19 und #20 und den Branch `einstiegspunkt`.
+Betrifft Lucas' Branch `einstiegspunkt` (#19 und #20 sind seit dem 02.11. gemergt).
 Antwortet Lucas im Gruppenchat nicht innerhalb von etwa drei Stunden und hängt etwas daran, dürfen
 Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
 
-1. **PR #19 und #20 mergen**, sobald sie approved sind (Merge-Commit, zuerst #19).
+1. **PR #19 und #20 mergen:** erledigt (02.11.).
 2. **PR für `einstiegspunkt` öffnen**, sobald #19, #9 und #10 auf `main` sind. Basis immer
    `main` (nie einen anderen Branch, siehe «Mergen»). Inhalt der Beschreibung: was der Branch
    bringt (siehe «Stand der PRs und Schnittstellen»), dass er test-first entstanden ist, wie man
@@ -280,9 +277,9 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
   wiederhergestellt). Darum beim Merge von PR #9 den Branch `bitget-kerzen` **nicht** löschen.
   Zuerst PR #10 umstellen (`gh pr edit 10 --base main` oder auf GitHub «Edit» neben dem Titel),
   erst danach `bitget-kerzen` löschen.
-- Reihenfolge ab jetzt: #19 (`tick`), dann #20 (`backtest`). Unabhängig davon #9, dann #10.
-  #16 hängt von nichts davon ab. Danach der PR für `einstiegspunkt` (baut auf `tick`, #9 und #10
-  auf). Konflikt möglich im README:
+- Reihenfolge ab jetzt: #9 (nach dem Lösen des Konflikts), dann #10. #16 hängt von nichts davon
+  ab. Danach der PR für `einstiegspunkt` (baut auf `tick`, #9 und #10 auf, `tick` ist seit dem
+  02.11. auf `main`). Konflikt möglich im README:
   `einstiegspunkt` und `main` bei «Bot starten» und «Dashboard starten» (beide Abschnitte
   behalten).
 
@@ -454,8 +451,8 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #16 | `risiko-nachtrag` | Valentin | Risiko-Check: Puffer beim Kauf, `kaufbetrag` in `Decimal` | approved (Lucas, 27.10.), bereit zum Merge |
 | #17 | `deploy` | Nicolas | AP 8b: Dockerfile, Docker Compose, Image in GHCR | ✅ gemergt (ohne Review auf GitHub) |
 | #18 | `testkonzept-nachtrag` | Valentin | Testkonzept: Vorschläge aus dem Review von Nicolas | ✅ gemergt |
-| #19 | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | wartet auf Review (Nicolas) |
-| #20 | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | wartet auf Review (Nicolas), nach #19, Sonar rot (S8707) |
+| #19 | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | ✅ gemergt (02.11.) |
+| #20 | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | ✅ gemergt (02.11.) |
 | – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR nach #9, #10 |
 
 PR #10 baut auf PR #9 auf (Basis `bitget-kerzen`). Beim Merge von PR #9 den Branch nicht löschen,
