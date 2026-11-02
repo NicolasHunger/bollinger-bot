@@ -205,13 +205,13 @@ BOT_DB_PFAD=data/backtest.db streamlit run src/bollinger_bot/dashboard.py
 
 ## Teststrategie
 
-_Entwurf, wird im Projekt verfeinert._
+Kurz pro Ebene, was wir testen und womit. Die Einzelheiten stehen im [Testkonzept](#testkonzept).
 
 | Ebene | Was wird getestet | Werkzeug |
 |---|---|---|
-| Unit | Bollinger-Berechnung, Kauf- und Verkaufsregeln, Risiko-Check (Rundung und Mindestbetrag, also Grenzwerte), Request-Signatur | pytest |
-| Integration | `BitgetClient` gegen gemockte HTTP-Antworten, Speichern in einer echten temporären SQLite-DB, `tick()` von der Kerze bis zur DB, Backtest auf aufgezeichneten Kursen | pytest, respx |
-| E2E | Dashboard mit Testdaten | Streamlit `AppTest` oder Playwright |
+| Unit | Bollinger-Berechnung, Kauf- und Verkaufsregeln, Risiko-Check (Rundung und Mindestbetrag, also Grenzwerte), Request-Signatur, Polling mit Fake-Uhr, Rechnungen des Dashboards (Gesamtwert, «veraltet?», Schweizer Zeit) | pytest |
+| Integration | `BitgetClient` gegen gemockte HTTP-Antworten, Speichern in einer echten temporären SQLite-DB, `tick()` von der Kerze bis zur DB, Backtest auf aufgezeichneten Kursen, Dashboard mit Testdaten in einer echten SQLite-Datei | pytest, respx, Streamlit `AppTest` |
+| E2E | Nicht automatisiert: Nach dem Deploy prüfen wir von Hand, ob die Container auf dem VPS laufen und das Dashboard im Browser die Daten zeigt | – |
 
 ### Was wird gemockt?
 
@@ -362,6 +362,9 @@ docker compose pull && docker compose up -d
 - **Neue Version:** Nach einem Merge auf `main` von Hand: `docker compose pull && docker compose
   up -d` holt das neueste Image von `main` und startet nur die Dienste neu, deren Image sich
   geändert hat. Ins Image kommt nur, was alle Tests bestanden hat.
+- **Mit Bot:** Sobald der Einstiegspunkt auf `main` ist, kommt zusätzlich `COMPOSE_PROFILES=bot`
+  in die `.env` auf dem VPS. Dann gilt das Profil für jeden Befehl, und «Neue Version»
+  aktualisiert auch den Bot. Ohne die Zeile liefe er mit dem alten Image weiter.
 - **Stopp:** `docker compose stop` schickt dem Bot `SIGINT` statt `SIGTERM`. Die Polling-Schleife
   endet dann sofort mit Exit-Code 0.
 - **Rechte:** Der Container schreibt als Benutzer mit der UID 1000 in `data/`. Auf Linux muss der
@@ -509,7 +512,7 @@ Dateien gerade liegen, steht in der Code-Übersicht.
 - **Gewinn der Strategie.** Der Backtest zeigt, was die Strategie auf echten Kursen gemacht
   hätte, aber kein Test verlangt einen Gewinn.
 - **Performance und Last.** Der Bot macht eine Anfrage pro Minute.
-- **Docker-Image und VM** automatisch. Dass der Container läuft, prüfen wir einmal von Hand
+- **Docker-Image und VPS** automatisch. Dass der Container läuft, prüfen wir einmal von Hand
   (Testaufgabe zu AP 8b).
 - **Aussehen des Dashboards.** `AppTest` läuft ohne Browser: Die Tests prüfen Texte, Kennzahlen,
   Tabellen und die Daten der Charts, aber nicht, wie die Seite aussieht. Das prüfen wir von Hand
