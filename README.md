@@ -649,7 +649,19 @@ gemacht hat, die Komponenten einzeln zu bauen und zu schauen, ob sie miteinander
 
 ### Valentin
 
-_Folgt._
+**Code Reviews.** Vier Augen sehen mehr als zwei, das habe ich in diesem Projekt selbst erlebt.
+Lucas hat in PR #10 einen Fehler gefunden, bei dem der Bot nach einem einzigen Netzfehler ein
+zweites Mal hätte kaufen können. In meinen Tests war das nicht drin, und ich bin dankbar, dass er
+es gefunden hat. Umgekehrt ist mir im Review von PR #5 aufgefallen, dass Bitget beim Market-Kauf
+einen Betrag in USDT will und keine Menge in BTC. PR #1 habe ich dagegen fast sofort gemergt, ohne
+gross zu überlegen. Das Review kam erst danach, und so sollte es nicht laufen.
+
+**TDD.** Ich habe den Bitget-Client und den Risiko-Check ohne TDD gebaut. Der Grund ist der hohe
+Zeitaufwand am Anfang: Tests vor dem Code zu schreiben, macht die Entwicklung in der ersten Phase
+spürbar langsamer, und die Einstiegskosten sind hoch. Lucas hat `tick()` test-first gebaut, darum
+sieht man im Projekt beide Wege.
+
+**Fazit.** Mitnehmen werde ich vor allem das Testing.
 
 ### Nicolas
 
