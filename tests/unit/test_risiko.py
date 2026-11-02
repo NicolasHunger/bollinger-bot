@@ -8,6 +8,7 @@ import pytest
 
 from bollinger_bot.risiko import (
     BTCUSDT_SPOT,
+    KAUF_PUFFER_FAKTOR,
     Handelsregeln,
     abrunden,
     kaufbetrag,
@@ -91,6 +92,19 @@ def test_kleinster_kauf_laesst_sich_nach_gebuehr_und_stop_loss_verkaufen():
 
     assert betrag == 2.0
     assert verkaufsmenge(bestand=menge_nach_gebuehr, kurs=97_000, regeln=BTCUSDT_SPOT) == 0.000019
+
+
+@pytest.mark.parametrize("kurs", [20_000, 83_435.92, 181_818.25, 200_000])
+def test_kleinster_erlaubter_kauf_bleibt_nach_stop_loss_verkaeuflich(kurs):
+    # Mit beiden Rundungen: Bitget rundet schon die gekaufte Menge ab, danach verkaufsmenge. Bei
+    # 181 818.25 fällt die gekaufte Menge gerade von 0.000011 auf 0.00001 BTC (2 / 0.000011 =
+    # 181 818.18), nach Gebühr und −3 % bleiben 0.000009 · 176 363.70 = 1.59 USDT. Mit
+    # KAUF_PUFFER_FAKTOR = 1 scheitern alle vier Kurse.
+    kleinster = BTCUSDT_SPOT.mindestbetrag * KAUF_PUFFER_FAKTOR
+    assert kaufbetrag(guthaben=kleinster, anteil_prozent=100, regeln=BTCUSDT_SPOT) == kleinster
+    gekauft = abrunden(kleinster / kurs, 6)
+    bestand = gekauft * 0.999  # 0.1 % Gebühr in BTC
+    assert verkaufsmenge(bestand=bestand, kurs=kurs * 0.97, regeln=BTCUSDT_SPOT) > 0
 
 
 def test_mindestbetrag_gilt_fuer_den_abgerundeten_betrag():

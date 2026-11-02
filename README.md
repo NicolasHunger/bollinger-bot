@@ -134,7 +134,7 @@ noch in offenen PRs oder Branches (Spalte «Stand»).
 | `bollinger.py` | Berechnet aus den letzten n Schlusskursen das Mittelband (Durchschnitt) und das obere und untere Band (± k · σ, σ geteilt durch n) | `tests/unit/test_bollinger.py` | `main` |
 | `regeln.py` | Entscheidet nach jeder Kerze: kaufen (Schluss unter dem unteren Band), verkaufen (über dem Mittelband oder 3 % unter dem Kaufpreis, Stop-Loss) oder halten | `tests/unit/test_regeln.py` | `main` |
 | `port.py` | Die Schnittstelle zur Börse (`Boerse` mit vier Methoden) und die Datenklassen `Kerze` und `Order`. `tick()` kennt nur diesen Port, nicht Bitget selbst | `tests/unit/test_port.py` | `main` |
-| `risiko.py` | Rechnet den Kaufbetrag in USDT und die Verkaufsmenge in BTC, immer abgerundet auf die Stellen von Bitget. Kauf erst ab 2 USDT (doppelter Mindestbetrag), Verkauf ab 1 USDT | `tests/unit/test_risiko.py` | `main`, Nachtrag in PR offen |
+| `risiko.py` | Rechnet den Kaufbetrag in USDT und die Verkaufsmenge in BTC, immer abgerundet auf die Stellen von Bitget. Kauf erst ab 2 USDT (doppelter Mindestbetrag), Verkauf ab 1 USDT | `tests/unit/test_risiko.py` | `main` |
 | `speicher.py` | Speichert Signale, Trades und Kontostände in SQLite, prüft die Werte selbst und weiss nach einem Neustart, ob eine Position offen ist | `tests/integration/test_speicher.py` | `main` |
 | `polling.py` | Erkennt, ob eine neue Kerze fertig ist, und ruft in einer Schleife jede Minute `tick()` auf | `tests/unit/test_polling.py` | `main` |
 | `bitget_client.py` | Spricht mit Bitget im Demo-Modus: signierte Anfragen, Kerzen, Kontostand, Market-Orders. Erfüllt den Port | `tests/unit/test_signatur.py`, `tests/integration/test_bitget_*.py` | PR #9, #10 |
@@ -488,7 +488,9 @@ Dateien gerade liegen, steht in der Code-Übersicht.
 ### Zu testende Funktionen
 
 - **Rechnen:** Bänder mit σ geteilt durch n. Kaufbetrag in USDT und Verkaufsmenge in BTC, immer
-  abgerundet auf die Stellen von Bitget, unter dem Mindestbetrag keine Order.
+  abgerundet auf die Stellen von Bitget. Kauf erst ab dem doppelten Mindestbetrag (2 USDT),
+  damit er sich nach Gebühr und Stop-Loss noch verkaufen lässt, Verkauf ab dem Mindestbetrag.
+  Darunter keine Order.
 - **Entscheiden:** Kauf unter dem unteren Band, Verkauf über dem Mittelband oder beim Stop-Loss
   (3 %), höchstens eine offene Position.
 - **Mit Bitget sprechen:** Signatur, Header `paptrading: 1`, nur abgeschlossene Kerzen (nach der

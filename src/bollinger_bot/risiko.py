@@ -6,9 +6,10 @@ Reine Rechenlogik ohne I/O. `tick()` ruft sie auf, bevor eine Order an die Börs
   einer Market-Kauforder den Betrag in USDT, nicht die Menge in BTC.
 - **Verkaufen:** Die Menge in BTC wird auf die Stellen abgerundet, die Bitget annimmt.
 
-Liegt der Betrag unter dem Mindestbetrag von Bitget, ist das Ergebnis 0.0: `tick()` schickt dann
-keine Order. Gerundet wird nur hier und immer abgerundet, damit der Bot nie mehr ausgibt oder
-verkauft, als auf dem Konto liegt.
+Ist ein Kauf kleiner als das Doppelte des Mindestbetrags von Bitget (`KAUF_PUFFER_FAKTOR`) oder
+ein Verkauf weniger wert als der Mindestbetrag, ist das Ergebnis 0.0: `tick()` schickt dann keine
+Order. Gerundet wird nur hier und immer abgerundet, damit der Bot nie mehr ausgibt oder verkauft,
+als auf dem Konto liegt.
 """
 
 from dataclasses import dataclass
@@ -31,7 +32,8 @@ BTCUSDT_SPOT = Handelsregeln(mengen_stellen=6, betrag_stellen=2, mindestbetrag=1
 # Gekauft wird erst ab dem Doppelten des Mindestbetrags (bei BTCUSDT 2 USDT). Ein Kauf von genau
 # 1.00 USDT liesse sich nicht mehr verkaufen: 1 / 50 000 = 0.00002 BTC, nach 0.1 % Gebühr
 # 0.00001998 BTC, abgerundet 0.000019 BTC = 0.95 USDT. Der Bot hinge mit offener Position fest.
-# Mit dem Doppelten bleibt Platz für Gebühr, Abrunden und einen Kursrückgang bis zum Stop-Loss.
+# Bitget rundet schon die gekaufte Menge auf 6 Stellen ab, es wird also zweimal abgerundet. Mit dem
+# Doppelten bleibt Platz für Gebühr, beide Rundungen und einen Kursrückgang bis zum Stop-Loss.
 KAUF_PUFFER_FAKTOR = 2
 
 
