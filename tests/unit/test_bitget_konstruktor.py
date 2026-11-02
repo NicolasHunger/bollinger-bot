@@ -22,6 +22,8 @@ def test_gueltige_keys_werden_angenommen():
         "GEHEIM-wert\n",  # .env mit Zeilenumbruch am Ende
         "GEHEIM-wert\r",  # .env mit Windows-Zeilenenden
         " GEHEIM-wert",  # Leerzeichen am Anfang
+        "GEHEIM-wert ",  # Leerzeichen am Ende
+        "GEHEIM-wärt",  # Umlaut: httpx schickt Header nur in ASCII
         "GEHEIM\twert",  # Tabulator in der Mitte
     ],
 )

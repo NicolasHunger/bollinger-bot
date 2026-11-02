@@ -17,7 +17,7 @@ import httpx
 import pytest
 import respx
 
-from bollinger_bot.bitget_client import INTERVALLE, BitgetClient, BitgetFehler
+from bollinger_bot.bitget_client import BitgetClient, BitgetFehler
 from bollinger_bot.port import Kerze
 
 KERZEN_URL = "https://api.bitget.com/api/v2/spot/market/candles"
@@ -140,19 +140,30 @@ def test_in_der_luecke_nach_dem_schluss_kommen_die_neuesten_kerzen(client):
     assert [k.startzeit.minute for k in kerzen] == [30, 45]
 
 
-@pytest.mark.parametrize(("intervall", "dauer"), list(INTERVALLE.items()))
+# Die Dauer steht hier von Hand und nicht aus INTERVALLE: So fällt auch ein falscher Wert in der
+# Tabelle auf. Ist er zu kurz, hielte der Client die laufende Kerze für abgeschlossen.
+@pytest.mark.parametrize(
+    ("intervall", "dauer_ms"),
+    [
+        ("1min", 60_000),
+        ("5min", 300_000),
+        ("15min", 900_000),
+        ("30min", 1_800_000),
+        ("1h", 3_600_000),
+    ],
+)
 @pytest.mark.parametrize(
     ("abstand_ms", "abgeschlossen"),
     [(0, True), (-1, False)],  # genau beim Schluss / 1 ms davor
 )
 @respx.mock
 def test_grenze_beim_schluss_gilt_fuer_alle_intervalle(
-    client, intervall, dauer, abstand_ms, abgeschlossen
+    client, intervall, dauer_ms, abstand_ms, abgeschlossen
 ):
-    # Kerze ab 13:00 UTC (1790773200000 ms), sie endet nach `dauer`. Die Serverzeit liegt genau
+    # Kerze ab 13:00 UTC (1790773200000 ms), sie endet nach `dauer_ms`. Die Serverzeit liegt genau
     # auf diesem Ende oder 1 ms davor.
     start_ms = 1790773200000
-    ende_ms = start_ms + int(dauer.total_seconds() * 1000)
+    ende_ms = start_ms + dauer_ms
     zeile = [str(start_ms), "83000", "83100", "82900", "83050", "0.1", "8305", "8305"]
     respx.get(KERZEN_URL).respond(
         json={**ANTWORT, "requestTime": ende_ms + abstand_ms, "data": [zeile]}
