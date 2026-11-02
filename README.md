@@ -126,7 +126,7 @@ Mikrosekunden genau (z.B. `2026-10-17T12:00:00.000000+00:00`).
 
 ## Code-Übersicht
 
-Der Code liegt in `src/bollinger_bot/`, eine Datei pro Baustein. Stand 27.10.2026: Ein Teil liegt
+Der Code liegt in `src/bollinger_bot/`, eine Datei pro Baustein. Stand 02.11.2026: Ein Teil liegt
 noch in offenen PRs oder Branches (Spalte «Stand»).
 
 | Datei | Was sie macht | Tests | Stand |
@@ -138,16 +138,16 @@ noch in offenen PRs oder Branches (Spalte «Stand»).
 | `speicher.py` | Speichert Signale, Trades und Kontostände in SQLite, prüft die Werte selbst und weiss nach einem Neustart, ob eine Position offen ist | `tests/integration/test_speicher.py` | `main` |
 | `polling.py` | Erkennt, ob eine neue Kerze fertig ist, und ruft in einer Schleife jede Minute `tick()` auf | `tests/unit/test_polling.py` | `main` |
 | `bitget_client.py` | Spricht mit Bitget im Demo-Modus: signierte Anfragen, Kerzen, Kontostand, Market-Orders. Erfüllt den Port | `tests/unit/test_signatur.py`, `tests/integration/test_bitget_*.py` | PR #9, #10 |
-| `tick.py` | Ein Durchgang des Bots: Kerzen holen, Bänder berechnen, entscheiden, kaufen oder verkaufen, alles speichern | `tests/unit/test_tick.py`, `tests/integration/test_tick.py` | PR #19 |
+| `tick.py` | Ein Durchgang des Bots: Kerzen holen, Bänder berechnen, entscheiden, kaufen oder verkaufen, alles speichern | `tests/unit/test_tick.py`, `tests/integration/test_tick.py` | `main` |
 | `start.py`, `__main__.py` | Einstiegspunkt `python -m bollinger_bot`: liest die Umgebungsvariablen und startet Client, Speicher und Polling-Schleife | `tests/unit/test_start.py`, `tests/integration/test_start.py` | Branch `einstiegspunkt` |
-| `backtest.py` | Spielt `tick()` mit einer simulierten Börse auf aufgezeichneten Kursen ab und schreibt alles in eine SQLite-Datei (Demo, Testdaten fürs Dashboard) | `tests/unit/test_backtest.py`, `tests/integration/test_backtest.py` | PR #20 |
+| `backtest.py` | Spielt `tick()` mit einer simulierten Börse auf aufgezeichneten Kursen ab und schreibt alles in eine SQLite-Datei (Demo, Testdaten fürs Dashboard) | `tests/unit/test_backtest.py`, `tests/integration/test_backtest.py` | `main` |
 | `dashboard.py` | Streamlit-Seite: Kurs als Kerzen mit den Bollinger-Bändern, Käufe und Verkäufe, Gesamtwert des Kontos und eine Warnung, wenn keine neuen Kerzen kommen. Liest die SQLite-Datei nur | `tests/unit/test_dashboard.py`, `tests/integration/test_dashboard.py` | `main` |
 
 Dazu zwei Skripte ausserhalb des Pakets, die nie in der Pipeline laufen:
 
 - `scripts/rauchtest.py` (PR #10): Rauchtest von Hand gegen das Bitget-Demo-Konto mit echtem
   Demo-Key.
-- `scripts/kerzen_holen.py` (PR #20): holt die Kerzen für den Backtest vom
+- `scripts/kerzen_holen.py` (`main`): holt die Kerzen für den Backtest vom
   öffentlichen Bitget-Endpunkt.
 
 Zusammenspiel: `tick.py` nutzt `bollinger.py`, `regeln.py`, `risiko.py` und `speicher.py` und
