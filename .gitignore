@@ -18,6 +18,8 @@ playwright-report/
 
 # Laufzeitdaten und Geheimnisse
 .env
+.env.*
+!.env.example
 *.db
 *.db-wal
 *.db-shm
