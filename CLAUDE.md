@@ -80,6 +80,8 @@ Nicolas am 02.11. reviewt, approved und gemergt, #16 hat Valentin am 02.11. geme
 hat Nicolas am 03.11. gemergt (#10 in `bitget-kerzen`, dann #9 auf `main`). Offen:
 
 - #21 (Valentin): Reflexion von Valentin, wartet auf das Review von Lucas.
+- #22 (Nicolas): Sonar prüft auch `scripts/`, das Dashboard nimmt `INTERVALLE` aus dem Client.
+  Nachtrag zu Valentins Kommentaren in #13 und #14, wartet auf das Review von Valentin.
 - Noch ohne PR: `einstiegspunkt` (Lucas), **jetzt möglich**, weil #19, #9 und #10 auf `main`
   sind. Probe-Merge mit `main` am 03.11.: nur ein Konflikt im README («Bot starten» und
   «Dashboard starten», beide behalten), danach 431 Tests grün.
@@ -143,6 +145,8 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
 - [x] **#9 und #10 gemergt** (03.11.): Nicolas hat beide anstelle von Lucas erneut approved und
       gemergt, #10 in `bitget-kerzen`, dann #9 auf `main`. Die Branches `bitget-kerzen` und
       `bitget-orders` können weg.
+- [ ] **#22 reviewen** (Nicolas): Nachtrag zu Valentins Kommentaren in #13 und #14, zwei Fragen in
+      der Beschreibung.
 - [x] **Vorschläge aus Lucas' Reviews vom 27.10.** in #9 und #10 umgesetzt (02.11.).
 - [x] **PR #11 (Testkonzept):** die vier Punkte aus Lucas' Review und die Begründung zu «kein
       TDD» umgesetzt, von Nicolas approved und gemergt (27.10.).
@@ -182,11 +186,10 @@ bisher nur #12.
 - [x] **Valentins Fragen in #13, #14 und #17 beantwortet** (03.11.): `restart: unless-stopped`
       bleibt, weil der Bot sonst nach einem Neustart des VPS nicht zurückkommt (er endet beim
       Herunterfahren mit Exit-Code 0). Das Profil `bot` bleibt in der Compose-Datei.
-- [ ] **Kleiner PR nach dem Merge von #9 und #10** (zugesagt in #13 und #14), Reviewer Valentin:
-      `scripts` zu `sonar.sources`, dazu `sonar.coverage.exclusions=scripts/**`. Im Dashboard
-      `INTERVALLE` aus `bitget_client` importieren und `test_intervalle_wie_im_bitget_client`
-      löschen. Meldet Sonar in `kerzen_holen.py` S8707 wie in `backtest.py`, mit derselben
-      Begründung akzeptieren.
+- [ ] **PR #22** (zugesagt in #13 und #14) am 03.11. geöffnet, Reviewer Valentin: `scripts` in
+      `sonar.sources` ohne Coverage, `INTERVALLE` im Dashboard aus `bitget_client`. Meldet Sonar in
+      `kerzen_holen.py` S8707 wie in `backtest.py`, den Fund mit derselben Begründung akzeptieren
+      (kann nur Nicolas als Admin). Nach dem Approve mit Merge-Commit mergen.
 - [x] **Lucas' Fragen in #13, #14 und #17 beantwortet** (02.11.): `sonar.qualitygate.wait` bleibt
       weg, der Quality Gate ist im PR ein eigener Check. Das Intervall im Dashboard kommt aus
       derselben `.env` wie beim Bot, ein Abgleich mit den Kerzen in `signale` ist eine Idee für
@@ -282,7 +285,7 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
   wiederhergestellt).
 - Reihenfolge ab jetzt: der PR für `einstiegspunkt` (baut auf `tick`, #9 und #10 auf, alle seit
   dem 03.11. auf `main`). Konflikt im README bei «Bot starten» und «Dashboard starten» (beide
-  Abschnitte behalten). Unabhängig davon #21 und der kleine PR von Nicolas (Sonar, `INTERVALLE`).
+  Abschnitte behalten). Unabhängig davon #21 und #22.
 
 **Notfallplan:** Läuft der Bot zur Präsentation nicht auf dem VPS, zeigt die Präsentation den
 Backtest (`python -m bollinger_bot.backtest …`, Branch `backtest`): das echte `tick()` auf drei
@@ -455,6 +458,7 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #19 | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | ✅ gemergt (02.11.) |
 | #20 | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | ✅ gemergt (02.11.) |
 | #21 | `reflexion-valentin` | Valentin | Reflexion von Valentin im README | wartet auf Review (Lucas) |
+| #22 | `nachtrag-sonar-intervalle` | Nicolas | Sonar prüft `scripts/`, `INTERVALLE` im Dashboard aus `bitget_client` | wartet auf Review (Valentin) |
 | – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR jetzt möglich |
 
 PR #10 wurde in `bitget-kerzen` gemergt und kam mit PR #9 auf `main` (03.11.).
