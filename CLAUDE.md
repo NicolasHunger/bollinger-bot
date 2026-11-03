@@ -144,12 +144,14 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
 - [x] **Bestätigt** (in #10, 27.10.): `tick()` verkauft den ganzen BTC-Bestand bei Bitget, auf dem
       Demo-Konto gehören alle BTC dem Bot.
 - [x] **#9 und #10 gemergt** (03.11.): Nicolas hat beide anstelle von Lucas erneut approved und
-      gemergt, #10 in `bitget-kerzen`, dann #9 auf `main`. Die Branches `bitget-kerzen` und
-      `bitget-orders` können weg.
-- [ ] **#22 reviewen** (Nicolas): Nachtrag zu Valentins Kommentaren in #13 und #14, zwei Fragen in
-      der Beschreibung.
-- [ ] **#23 reviewen** (Einstiegspunkt von Lucas, geöffnet von Nicolas): zwei Fragen in der
-      Beschreibung. Davon hängt ab, ob der Bot zur Präsentation auf dem VPS läuft.
+      gemergt. Die Branches `bitget-kerzen` und `bitget-orders` sind vollständig in `main` und
+      können weg (Löschen noch offen).
+- [x] **#22 reviewt** (03.11., Approve): S8707 in `kerzen_holen.py` akzeptieren ist ok, Funde
+      in `rauchtest.py` behebt Valentin als Folge-PR. Hinweis: Die PR-Analyse zeigt nur Funde
+      auf geänderten Zeilen, ob Sonar in `scripts/` etwas findet, zeigt erst `main`.
+- [x] **#23 reviewt** (03.11., Approve): lokal 431 Tests grün, Start ohne Keys mit Exit-Code 2.
+      Doppelte Key-Prüfung bleibt, `.env.example` passt zum Rauchtest. Vorschlag:
+      `COMPOSE_PROFILES=bot` und `DASHBOARD_DB` als auskommentierte Zeilen in die Vorlage.
 - [x] **Vorschläge aus Lucas' Reviews vom 27.10.** in #9 und #10 umgesetzt (02.11.).
 - [x] **PR #11 (Testkonzept):** die vier Punkte aus Lucas' Review und die Begründung zu «kein
       TDD» umgesetzt, von Nicolas approved und gemergt (27.10.).
@@ -159,8 +161,12 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
       Key keine Rauchtests mit `--order` mehr: BTC auf dem Konto, von denen die Datenbank nichts
       weiss, blockieren jeden Kauf (Sicherheitsnetz in `tick()`).
 - [x] **#19 und #20** mitgelesen, die Fragen an ihn beantwortet (02.11.).
-- [ ] **Eigene Reflexion** als #21: von Nicolas approved, mergen (gern vorher die zwei Vorschläge
-      aus dem Review: TDD-Absatz und ein konkreteres Fazit). Dazu der eigene Teil der Präsentation.
+- [x] **Eigene Reflexion** mit #21 gemergt (03.11.). Nicolas' sachlicher Hinweis (auch
+      Einstiegspunkt und Backtest test-first) als #25 offen. Seine zwei inhaltlichen Vorschläge
+      (TDD und der Fehler aus #10, was genau am Testing) brauchen Valentins eigene Antwort.
+- [ ] **#24** (Folge-PR zu #10, Hinweis von Nicolas): `filled` ohne Menge gilt nicht mehr als
+      «nicht ausgeführt». Kein Muss für die Abgabe, wartet auf Review.
+- [ ] **Sein Teil der Präsentation.**
 
 **Nicolas** (Infra und Dashboard). Hat 5 PRs (#12 bis #15, #17). Auf GitHub sichtbar reviewt ist
 bisher nur #12.
