@@ -658,8 +658,8 @@ gross zu überlegen. Das Review kam erst danach, und so sollte es nicht laufen.
 
 **TDD.** Ich habe den Bitget-Client und den Risiko-Check ohne TDD gebaut. Der Grund ist der hohe
 Zeitaufwand am Anfang: Tests vor dem Code zu schreiben, macht die Entwicklung in der ersten Phase
-spürbar langsamer, und die Einstiegskosten sind hoch. Lucas hat `tick()` test-first gebaut, darum
-sieht man im Projekt beide Wege.
+spürbar langsamer, und die Einstiegskosten sind hoch. Lucas hat `tick()`, den Einstiegspunkt und
+den Backtest test-first gebaut, darum sieht man im Projekt beide Wege.
 
 **Fazit.** Mitnehmen werde ich vor allem das Testing.
 
