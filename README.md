@@ -126,8 +126,8 @@ Mikrosekunden genau (z.B. `2026-10-17T12:00:00.000000+00:00`).
 
 ## Code-Übersicht
 
-Der Code liegt in `src/bollinger_bot/`, eine Datei pro Baustein. Stand 02.11.2026: Ein Teil liegt
-noch in offenen PRs oder Branches (Spalte «Stand»).
+Der Code liegt in `src/bollinger_bot/`, eine Datei pro Baustein. Stand 03.11.2026: Nur der
+Einstiegspunkt liegt noch auf einem Branch (Spalte «Stand»).
 
 | Datei | Was sie macht | Tests | Stand |
 |---|---|---|---|
@@ -137,7 +137,7 @@ noch in offenen PRs oder Branches (Spalte «Stand»).
 | `risiko.py` | Rechnet den Kaufbetrag in USDT und die Verkaufsmenge in BTC, immer abgerundet auf die Stellen von Bitget. Kauf erst ab 2 USDT (doppelter Mindestbetrag), Verkauf ab 1 USDT | `tests/unit/test_risiko.py` | `main` |
 | `speicher.py` | Speichert Signale, Trades und Kontostände in SQLite, prüft die Werte selbst und weiss nach einem Neustart, ob eine Position offen ist | `tests/integration/test_speicher.py` | `main` |
 | `polling.py` | Erkennt, ob eine neue Kerze fertig ist, und ruft in einer Schleife jede Minute `tick()` auf | `tests/unit/test_polling.py` | `main` |
-| `bitget_client.py` | Spricht mit Bitget im Demo-Modus: signierte Anfragen, Kerzen, Kontostand, Market-Orders. Erfüllt den Port | `tests/unit/test_signatur.py`, `tests/unit/test_bitget_konstruktor.py`, `tests/integration/test_bitget_*.py` | PR #9, #10 |
+| `bitget_client.py` | Spricht mit Bitget im Demo-Modus: signierte Anfragen, Kerzen, Kontostand, Market-Orders. Erfüllt den Port | `tests/unit/test_signatur.py`, `tests/unit/test_bitget_konstruktor.py`, `tests/integration/test_bitget_*.py` | `main` |
 | `tick.py` | Ein Durchgang des Bots: Kerzen holen, Bänder berechnen, entscheiden, kaufen oder verkaufen, alles speichern | `tests/unit/test_tick.py`, `tests/integration/test_tick.py` | `main` |
 | `start.py`, `__main__.py` | Einstiegspunkt `python -m bollinger_bot`: liest die Umgebungsvariablen und startet Client, Speicher und Polling-Schleife | `tests/unit/test_start.py`, `tests/integration/test_start.py` | Branch `einstiegspunkt` |
 | `backtest.py` | Spielt `tick()` mit einer simulierten Börse auf aufgezeichneten Kursen ab und schreibt alles in eine SQLite-Datei (Demo, Testdaten fürs Dashboard) | `tests/unit/test_backtest.py`, `tests/integration/test_backtest.py` | `main` |
@@ -145,7 +145,7 @@ noch in offenen PRs oder Branches (Spalte «Stand»).
 
 Dazu zwei Skripte ausserhalb des Pakets, die nie in der Pipeline laufen:
 
-- `scripts/rauchtest.py` (PR #10): Rauchtest von Hand gegen das Bitget-Demo-Konto mit echtem
+- `scripts/rauchtest.py` (`main`): Rauchtest von Hand gegen das Bitget-Demo-Konto mit echtem
   Demo-Key.
 - `scripts/kerzen_holen.py` (`main`): holt die Kerzen für den Backtest vom
   öffentlichen Bitget-Endpunkt.
@@ -385,7 +385,7 @@ docker compose pull && docker compose up -d
 
 ## Planung
 
-Geplant am 23.09.2026, nachgeführt am 02.11.2026.
+Geplant am 23.09.2026, nachgeführt am 03.11.2026.
 
 | Wann | Geplant | Wie es lief |
 |---|---|---|
@@ -393,7 +393,7 @@ Geplant am 23.09.2026, nachgeführt am 02.11.2026.
 | Mi 30.09. (Unterricht CI/CD und Deployment) | Deploy-Stage auf die Cloud-VM | Deploy auf den VPS von Nicolas statt auf eine neue Cloud-VM, ab 27.10. |
 | Herbstferien | Bitget-Client, Risiko-Check, `tick()` mit Polling, SQLite, Dashboard. Der Bot läuft spätestens Mitte Ferien auf der VM. | Lucas: Versionsgrenzen, Bollinger-Berechnung, Regeln, Port, SQLite und Polling (PR #2 bis #7, eröffnet 16. und 17.10.). Valentin: Bitget-Client und Risiko-Check (PR #8 bis #10, eröffnet 21.10.). Der Bot lief in den Ferien noch nicht |
 | Mi 21.10. (Unterricht Code Reviews) | Offene PRs abschliessen, Reflexion schreiben | Reviews zu PR #2 bis #12. Danach `tick()`, Einstiegspunkt und Backtest test-first gebaut (24.10.) |
-| 24.10. bis 02.11. | | PR #2 bis #8, #11 bis #15 und #17 bis #20 gemergt: Bausteine, Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Deploy, `tick()` und Backtest |
+| 24.10. bis 03.11. | | PR #2 bis #20 gemergt: Bausteine, Bitget-Client, Risiko-Check, Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Deploy, `tick()` und Backtest |
 | Mi 04.11. (verschoben vom 28.10.) | Doku fertig, Präsentation (10 Minuten) | |
 
 Was anders lief als geplant:
