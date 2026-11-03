@@ -31,18 +31,10 @@ from zoneinfo import ZoneInfo
 import altair as alt
 import streamlit as st
 
+# Dauer einer Kerze je Intervall im Bitget-Format. Die Tabelle steht nur im Client, so gelten im
+# Dashboard dieselben Intervalle wie beim Bot.
+from bollinger_bot.bitget_client import INTERVALLE
 from bollinger_bot.speicher import Kontostand, SignalEintrag, Speicher, Trade
-
-# Dauer einer Kerze je Intervall im Bitget-Format. Dieselbe Tabelle steht in
-# `bitget_client.INTERVALLE` (PR #9). Bis PR #9 gemergt ist, steht sie hier ein zweites Mal,
-# danach von dort importieren. Bis dahin prüft ein Unit-Test, dass beide gleich sind.
-INTERVALLE = {
-    "1min": timedelta(minutes=1),
-    "5min": timedelta(minutes=5),
-    "15min": timedelta(minutes=15),
-    "30min": timedelta(minutes=30),
-    "1h": timedelta(hours=1),
-}
 
 SCHWEIZ = ZoneInfo("Europe/Zurich")
 QUOTEWAEHRUNG = "USDT"  # womit der Bot bezahlt, in dieser Währung speichert tick() den Kontostand

@@ -11,7 +11,6 @@ from pathlib import Path
 import pytest
 
 from bollinger_bot.dashboard import (
-    INTERVALLE,
     Wertpunkt,
     als_schweizer_zeit,
     als_zahl,
@@ -88,14 +87,6 @@ def test_ungueltiges_intervall_nennt_die_erlaubten():
     # Futures-Schreibweise "15m" statt "15min"
     with pytest.raises(ValueError, match="'15m' ist ungültig, erlaubt: 1min, 5min, 15min"):
         lies_konfiguration({"BOT_INTERVALL": "15m"})
-
-
-def test_intervalle_wie_im_bitget_client():
-    # Die Tabelle steht bis zum Merge von PR #9 zweimal im Code. Ohne bitget_client.py (noch
-    # nicht auf main) wird der Test übersprungen.
-    bitget_client = pytest.importorskip("bollinger_bot.bitget_client")
-
-    assert INTERVALLE == bitget_client.INTERVALLE
 
 
 # --- Schweizer Zeit ---
