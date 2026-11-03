@@ -73,17 +73,13 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
 Abgabe und Präsentation: Mi 04.11.2026 (verschoben vom 28.10.).
 
-Stand auf GitHub (Di 03.11.): PR #1 bis #23 gemergt (Grundgerüst, Versionsgrenzen, Bollinger,
+Stand auf GitHub (Di 03.11.): PR #1 bis #25 gemergt (Grundgerüst, Versionsgrenzen, Bollinger,
 Regeln, Port, Speicher, Polling, Risiko-Check, Bitget-Client, Testkonzept, Pipeline, SonarQube
 Cloud, Dashboard, Doku, Deploy, Puffer im Risiko-Check, `tick()`, Backtest, Reflexion Valentin,
-Sonar für `scripts/`, Einstiegspunkt). #19 und #20 hat Nicolas am 02.11. reviewt, approved und
-gemergt, #16 hat Valentin am 02.11. gemergt. #9, #10 und #21 bis #23 hat Nicolas am 03.11.
-gemergt (#10 in `bitget-kerzen`, dann #9 auf `main`). Auf `main` laufen 430 Tests. Offen:
-
-- #24 (Valentin): `filled` ohne Menge gilt nicht mehr als «nicht ausgeführt» (Folge-PR zu #10).
-  Von Nicolas am 03.11. approved, **bereit zum Merge**, am besten vor dem Start des Bots.
-- #25 (Valentin): Reflexion, auch Einstiegspunkt und Backtest test-first. Von Nicolas am 03.11.
-  approved, **bereit zum Merge**.
+Sonar für `scripts/`, Einstiegspunkt, Nachträge zum Client und zur Reflexion). #19 und #20 hat
+Nicolas am 02.11. reviewt, approved und gemergt, #16 hat Valentin am 02.11. gemergt. #9, #10 und
+#21 bis #25 hat Nicolas am 03.11. gemergt (#10 in `bitget-kerzen`, dann #9 auf `main`). Auf
+`main` laufen 433 Tests. **Keine offenen PRs.** Als Nächstes startet Nicolas den Bot auf dem VPS.
 
 **#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
 Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Kommentar mit einer Frage
@@ -162,9 +158,9 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
 - [x] **Eigene Reflexion** mit #21 gemergt (03.11.). Nicolas' sachlicher Hinweis (auch
       Einstiegspunkt und Backtest test-first) als #25 offen. Seine zwei inhaltlichen Vorschläge
       (TDD und der Fehler aus #10, was genau am Testing) brauchen Valentins eigene Antwort.
-- [ ] **#24** (Folge-PR zu #10, Hinweis von Nicolas): `filled` ohne Menge gilt nicht mehr als
-      «nicht ausgeführt». Von Nicolas approved (03.11.), mergen, am besten vor dem Start des Bots.
-- [ ] **#25** (Reflexion, Einstiegspunkt und Backtest auch test-first): von Nicolas approved, mergen.
+- [x] **#24** (Folge-PR zu #10, Hinweis von Nicolas): `filled` ohne Menge gilt nicht mehr als
+      «nicht ausgeführt». Von Nicolas approved und gemergt (03.11.).
+- [x] **#25** (Reflexion, Einstiegspunkt und Backtest auch test-first): approved und gemergt (03.11.).
 - [ ] **Sein Teil der Präsentation.**
 
 **Nicolas** (Infra und Dashboard). Hat 5 PRs (#12 bis #15, #17). Auf GitHub sichtbar reviewt ist
@@ -301,8 +297,7 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
 - **Nie den Basis-Branch eines offenen PR löschen.** GitHub stellt den Folge-PR dabei nicht
   automatisch um, sondern **schliesst** ihn (so passiert am 24.10. mit PR #9 beim Merge von PR #5;
   wiederhergestellt).
-- Reihenfolge ab jetzt: #24 und #25 sind approved und hängen von nichts ab. #24 vor dem Start des
-  Bots auf dem VPS mergen (Empfehlung von Nicolas im Review).
+- Reihenfolge ab jetzt: Seit dem 03.11. gibt es keine offenen PRs.
 
 **Notfallplan:** Läuft der Bot zur Präsentation nicht auf dem VPS, zeigt die Präsentation den
 Backtest (`python -m bollinger_bot.backtest …`, Branch `backtest`): das echte `tick()` auf drei
@@ -477,8 +472,8 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #21 | `reflexion-valentin` | Valentin | Reflexion von Valentin im README | ✅ gemergt (03.11.) |
 | #22 | `nachtrag-sonar-intervalle` | Nicolas | Sonar prüft `scripts/`, `INTERVALLE` im Dashboard aus `bitget_client` | ✅ gemergt (03.11.) |
 | #23 | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | ✅ gemergt (03.11., geöffnet von Nicolas in Vertretung) |
-| #24 | `bitget-nachtrag` | Valentin | Client: `filled` ohne Menge gilt nicht als «nicht ausgeführt» | approved (Nicolas, 03.11.), bereit zum Merge |
-| #25 | `reflexion-nachtrag` | Valentin | Reflexion: auch Einstiegspunkt und Backtest test-first | approved (Nicolas, 03.11.), bereit zum Merge |
+| #24 | `bitget-nachtrag` | Valentin | Client: `filled` ohne Menge gilt nicht als «nicht ausgeführt» | ✅ gemergt (03.11.) |
+| #25 | `reflexion-nachtrag` | Valentin | Reflexion: auch Einstiegspunkt und Backtest test-first | ✅ gemergt (03.11.) |
 
 PR #10 wurde in `bitget-kerzen` gemergt und kam mit PR #9 auf `main` (03.11.).
 

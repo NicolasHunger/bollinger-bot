@@ -422,7 +422,7 @@ Geplant am 23.09.2026, nachgeführt am 03.11.2026.
 | Mi 30.09. (Unterricht CI/CD und Deployment) | Deploy-Stage auf die Cloud-VM | Deploy auf den VPS von Nicolas statt auf eine neue Cloud-VM, ab 27.10. |
 | Herbstferien | Bitget-Client, Risiko-Check, `tick()` mit Polling, SQLite, Dashboard. Der Bot läuft spätestens Mitte Ferien auf der VM. | Lucas: Versionsgrenzen, Bollinger-Berechnung, Regeln, Port, SQLite und Polling (PR #2 bis #7, eröffnet 16. und 17.10.). Valentin: Bitget-Client und Risiko-Check (PR #8 bis #10, eröffnet 21.10.). Der Bot lief in den Ferien noch nicht |
 | Mi 21.10. (Unterricht Code Reviews) | Offene PRs abschliessen, Reflexion schreiben | Reviews zu PR #2 bis #12. Danach `tick()`, Einstiegspunkt und Backtest test-first gebaut (24.10.) |
-| 24.10. bis 03.11. | | PR #2 bis #23 gemergt: Bausteine, Bitget-Client, Risiko-Check, Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Deploy, `tick()`, Backtest und Einstiegspunkt |
+| 24.10. bis 03.11. | | PR #2 bis #25 gemergt: Bausteine, Bitget-Client, Risiko-Check, Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Deploy, `tick()`, Backtest und Einstiegspunkt |
 | Mi 04.11. (verschoben vom 28.10.) | Doku fertig, Präsentation (10 Minuten) | |
 
 Was anders lief als geplant:
@@ -443,7 +443,7 @@ PRs pro Person.
 | 1 | Bollinger-Berechnung | Lucas | Valentin | #3 |
 | 2 | Kauf- und Verkaufsregeln | Lucas | Valentin | #4 |
 | 3 | Bitget-Client: Signatur und Kerzen | Valentin | Lucas | #9 |
-| 4 | Bitget-Client: Orders und Kontostand | Valentin | Lucas | #10 |
+| 4 | Bitget-Client: Orders und Kontostand | Valentin | Lucas | #10, #24 |
 | 5 | Risiko-Check | Valentin | Lucas | #8, #16 |
 | 6 | `tick()`, Polling-Schleife und SQLite | Lucas | Nicolas | #5 (Port), #6, #7, #19 |
 | 7 | Dashboard | Nicolas | Valentin | #14, #22 |
