@@ -87,7 +87,7 @@ hat Nicolas am 02.11. reviewt, approved und gemergt, #16 hat Valentin am 02.11. 
 **#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
 Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Kommentar mit einer Frage
 nach. Lucas' Kommentare stehen seit dem 27.10., Nicolas hat sie am 02.11. beantwortet. Valentins
-stehen seit dem 02.11., die Antworten von Nicolas fehlen noch.
+stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
 
 **Lucas** (Strategie und Ablauf)
 
@@ -182,9 +182,14 @@ bisher nur #12.
       Begründung (lokales Werkzeug, den Pfad gibt man selbst an). Quality Gate grün.
 - [x] **#9 und #10** anstelle von Lucas erneut reviewt und approved (03.11.). Hinweis in #10, kein
       Muss: Eine Order mit `filled`, aber ohne `baseVolume` meldet «wurde nicht ausgeführt».
-- [ ] **Valentins Fragen in #13, #14 und #17 beantworten:** `scripts/` in der Analyse von Sonar,
-      `INTERVALLE` doppelt im Dashboard (nach dem Merge von #9 importieren), Neustart-Regel des
-      Bots (`unless-stopped` oder `on-failure`).
+- [x] **Valentins Fragen in #13, #14 und #17 beantwortet** (03.11.): `restart: unless-stopped`
+      bleibt, weil der Bot sonst nach einem Neustart des VPS nicht zurückkommt (er endet beim
+      Herunterfahren mit Exit-Code 0). Das Profil `bot` bleibt in der Compose-Datei.
+- [ ] **Kleiner PR nach dem Merge von #9 und #10** (zugesagt in #13 und #14), Reviewer Valentin:
+      `scripts` zu `sonar.sources`, dazu `sonar.coverage.exclusions=scripts/**`. Im Dashboard
+      `INTERVALLE` aus `bitget_client` importieren und `test_intervalle_wie_im_bitget_client`
+      löschen. Meldet Sonar in `kerzen_holen.py` S8707 wie in `backtest.py`, mit derselben
+      Begründung akzeptieren.
 - [x] **Lucas' Fragen in #13, #14 und #17 beantwortet** (02.11.): `sonar.qualitygate.wait` bleibt
       weg, der Quality Gate ist im PR ein eigener Check. Das Intervall im Dashboard kommt aus
       derselben `.env` wie beim Bot, ein Abgleich mit den Kerzen in `signale` ist eine Idee für
