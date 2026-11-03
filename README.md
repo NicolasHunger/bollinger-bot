@@ -730,11 +730,12 @@ nachgeführt.
   Zeit), die Entscheide hat Nicolas getroffen und das Ergebnis mit den Daten aus dem Backtest
   geprüft. Die Soll-Werte der Tests sind von Hand gerechnet. Den Deploy (PR #17: Dockerfile,
   Docker Compose, Job für das Docker-Image) hat Claude Code nach Nicolas' Vorgaben gebaut.
-- **Zum Reviewen oder Optimieren:** Die Reviews von PR #6, #7, #11, #19 und #20 hat Nicolas mit
-  Claude Code vorbereitet: Claude Code hat die PRs lokal getestet oder gegen den Code geprüft,
-  Randfälle nachgeprüft und die Kommentare formuliert. Die inhaltlichen Entscheide (z.B. Kerzen im
-  Dashboard, Kontostand als Gesamtwert, `stop_signal: SIGINT`) und den Review-Status hat Nicolas
-  getroffen, gepostet wurde erst nach Durchsicht.
+- **Zum Reviewen oder Optimieren:** Die Reviews von PR #6, #7, #9, #10, #11, #19 und #20 und die
+  Antworten auf Lucas' Fragen in #13, #14 und #17 hat Nicolas mit Claude Code vorbereitet: Claude
+  Code hat die PRs lokal getestet oder gegen den Code geprüft, Randfälle nachgeprüft und die
+  Kommentare formuliert. Die inhaltlichen Entscheide (z.B. Kerzen im Dashboard, Kontostand als
+  Gesamtwert, `stop_signal: SIGINT`) und den Review-Status hat Nicolas getroffen, gepostet wurde
+  erst nach Durchsicht.
 
 ## Kursunterlagen
 
