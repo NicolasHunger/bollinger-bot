@@ -79,7 +79,8 @@ Cloud, Dashboard, Doku, Deploy, Puffer im Risiko-Check, `tick()`, Backtest). #19
 Nicolas am 02.11. reviewt, approved und gemergt, #16 hat Valentin am 02.11. gemergt. #9 und #10
 hat Nicolas am 03.11. gemergt (#10 in `bitget-kerzen`, dann #9 auf `main`). Offen:
 
-- #21 (Valentin): Reflexion von Valentin, wartet auf das Review von Lucas.
+- #21 (Valentin): Reflexion von Valentin, am 03.11. von Nicolas anstelle von Lucas approved (zwei
+  Vorschläge, kein Muss), **bereit zum Merge**.
 - #22 (Nicolas): Sonar prüft auch `scripts/`, das Dashboard nimmt `INTERVALLE` aus dem Client.
   Nachtrag zu Valentins Kommentaren in #13 und #14, wartet auf das Review von Valentin.
 - #23 (`einstiegspunkt`, Lucas): am 03.11. von Nicolas nach der Vertretungsregel geöffnet, `main`
@@ -158,7 +159,8 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
       Key keine Rauchtests mit `--order` mehr: BTC auf dem Konto, von denen die Datenbank nichts
       weiss, blockieren jeden Kauf (Sicherheitsnetz in `tick()`).
 - [x] **#19 und #20** mitgelesen, die Fragen an ihn beantwortet (02.11.).
-- [ ] **Eigene Reflexion** und sein Teil der Präsentation.
+- [ ] **Eigene Reflexion** als #21: von Nicolas approved, mergen (gern vorher die zwei Vorschläge
+      aus dem Review: TDD-Absatz und ein konkreteres Fazit). Dazu der eigene Teil der Präsentation.
 
 **Nicolas** (Infra und Dashboard). Hat 5 PRs (#12 bis #15, #17). Auf GitHub sichtbar reviewt ist
 bisher nur #12.
@@ -183,6 +185,8 @@ bisher nur #12.
       dem `kaufe()` einen `BitgetFehler` wirft, und einer mit weniger als `n` Kerzen.
 - [x] **SonarQube in #20:** S8707 («Path Traversal», `backtest.py:34`) als «Accept» markiert, mit
       Begründung (lokales Werkzeug, den Pfad gibt man selbst an). Quality Gate grün.
+- [x] **#21** (Reflexion Valentin) anstelle von Lucas reviewt und approved (03.11.), mit zwei
+      Vorschlägen, die kein Muss sind.
 - [x] **#9 und #10** anstelle von Lucas erneut reviewt und approved (03.11.). Hinweis in #10, kein
       Muss: Eine Order mit `filled`, aber ohne `baseVolume` meldet «wurde nicht ausgeführt».
 - [x] **Valentins Fragen in #13, #14 und #17 beantwortet** (03.11.): `restart: unless-stopped`
@@ -459,7 +463,7 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #18 | `testkonzept-nachtrag` | Valentin | Testkonzept: Vorschläge aus dem Review von Nicolas | ✅ gemergt |
 | #19 | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | ✅ gemergt (02.11.) |
 | #20 | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | ✅ gemergt (02.11.) |
-| #21 | `reflexion-valentin` | Valentin | Reflexion von Valentin im README | wartet auf Review (Lucas) |
+| #21 | `reflexion-valentin` | Valentin | Reflexion von Valentin im README | approved (Nicolas, 03.11.), bereit zum Merge |
 | #22 | `nachtrag-sonar-intervalle` | Nicolas | Sonar prüft `scripts/`, `INTERVALLE` im Dashboard aus `bitget_client` | wartet auf Review (Valentin) |
 | #23 | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | geöffnet von Nicolas (Vertretung, 03.11.), wartet auf Review (Valentin) |
 
