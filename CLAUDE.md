@@ -82,9 +82,9 @@ hat Nicolas am 03.11. gemergt (#10 in `bitget-kerzen`, dann #9 auf `main`). Offe
 - #21 (Valentin): Reflexion von Valentin, wartet auf das Review von Lucas.
 - #22 (Nicolas): Sonar prüft auch `scripts/`, das Dashboard nimmt `INTERVALLE` aus dem Client.
   Nachtrag zu Valentins Kommentaren in #13 und #14, wartet auf das Review von Valentin.
-- Noch ohne PR: `einstiegspunkt` (Lucas), **jetzt möglich**, weil #19, #9 und #10 auf `main`
-  sind. Probe-Merge mit `main` am 03.11.: nur ein Konflikt im README («Bot starten» und
-  «Dashboard starten», beide behalten), danach 431 Tests grün.
+- #23 (`einstiegspunkt`, Lucas): am 03.11. von Nicolas nach der Vertretungsregel geöffnet, `main`
+  eingemergt, der README-Konflikt ist gelöst (beide Abschnitte behalten), 431 Tests grün. Wartet
+  auf das Review von Valentin. Nach dem Merge startet Nicolas den Bot auf dem VPS.
 
 **#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
 Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Kommentar mit einer Frage
@@ -107,8 +107,8 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
 - [x] **#9, #10 und #16 erneut reviewt und approved** (27.10.), mit kleinen Vorschlägen, die kein
       Muss sind.
 - [x] **Kommentar mit Frage in #13, #14 und #17 nachgetragen** (27.10.).
-- [ ] **PR für `einstiegspunkt` öffnen:** #9 und #10 sind seit dem 03.11. auf `main`. Konflikt nur
-      im README («Bot starten» und «Dashboard starten», beide behalten).
+- [x] **PR für `einstiegspunkt`:** als #23 am 03.11. von Nicolas nach der Vertretungsregel geöffnet
+      (`main` eingemergt, README-Konflikt gelöst, am Code nichts geändert).
 - [x] **#15 reviewen:** hat Valentin übernommen, gemergt am 27.10.
 - [x] Die unsachlichen Kommentare in PR #6 sind gelöscht.
 - [x] PR #7: Konflikt mit `main` gelöst (24.10.)
@@ -147,6 +147,8 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
       `bitget-orders` können weg.
 - [ ] **#22 reviewen** (Nicolas): Nachtrag zu Valentins Kommentaren in #13 und #14, zwei Fragen in
       der Beschreibung.
+- [ ] **#23 reviewen** (Einstiegspunkt von Lucas, geöffnet von Nicolas): zwei Fragen in der
+      Beschreibung. Davon hängt ab, ob der Bot zur Präsentation auf dem VPS läuft.
 - [x] **Vorschläge aus Lucas' Reviews vom 27.10.** in #9 und #10 umgesetzt (02.11.).
 - [x] **PR #11 (Testkonzept):** die vier Punkte aus Lucas' Review und die Begründung zu «kein
       TDD» umgesetzt, von Nicolas approved und gemergt (27.10.).
@@ -190,6 +192,10 @@ bisher nur #12.
       `sonar.sources` ohne Coverage, `INTERVALLE` im Dashboard aus `bitget_client`. Meldet Sonar in
       `kerzen_holen.py` S8707 wie in `backtest.py`, den Fund mit derselben Begründung akzeptieren
       (kann nur Nicolas als Admin). Nach dem Approve mit Merge-Commit mergen.
+- [ ] **#23 (`einstiegspunkt`)** am 03.11. nach der Vertretungsregel geöffnet, Reviewer Valentin.
+      Nach dem Approve mergen, in der Code-Übersicht `start.py` und `__main__.py` auf `main` setzen
+      und den Bot auf dem VPS starten: Keys und `COMPOSE_PROFILES=bot` in die `.env`, die Uhr mit
+      `timedatectl` prüfen.
 - [x] **Lucas' Fragen in #13, #14 und #17 beantwortet** (02.11.): `sonar.qualitygate.wait` bleibt
       weg, der Quality Gate ist im PR ein eigener Check. Das Intervall im Dashboard kommt aus
       derselben `.env` wie beim Bot, ein Abgleich mit den Kerzen in `signale` ist eine Idee für
@@ -256,15 +262,12 @@ Schnittstellen» und «Ablauf von `tick()`», dazu die «Code-Übersicht» im RE
 
 **Vertretung, wenn Lucas nicht erreichbar ist**
 
-Betrifft Lucas' Branch `einstiegspunkt` (#19 und #20 sind seit dem 02.11. gemergt).
+Betrifft Lucas' PR #23 (`einstiegspunkt`). #19 und #20 sind seit dem 02.11. gemergt.
 Antwortet Lucas im Gruppenchat nicht innerhalb von etwa drei Stunden und hängt etwas daran, dürfen
 Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
 
 1. **PR #19 und #20 mergen:** erledigt (02.11.).
-2. **PR für `einstiegspunkt` öffnen**, sobald #19, #9 und #10 auf `main` sind. Basis immer
-   `main` (nie einen anderen Branch, siehe «Mergen»). Inhalt der Beschreibung: was der Branch
-   bringt (siehe «Stand der PRs und Schnittstellen»), dass er test-first entstanden ist, wie man
-   testet (`pytest`), Fragen ans Review. Reviewer ist die jeweils andere Person.
+2. **PR für `einstiegspunkt` öffnen:** erledigt (03.11., #23 von Nicolas, Reviewer Valentin).
 3. **Konflikte lösen:** `main` in den Branch mergen, nie rebasen, nie force-pushen. So lösen, dass
    beide Seiten erhalten bleiben: `pyproject.toml` mit den Versionsgrenzen, `pytest-html` und
    `tzdata`; im README beide Abschnitte, danach die Code-Übersicht nachführen; die `CLAUDE.md` mit
@@ -283,9 +286,8 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
 - **Nie den Basis-Branch eines offenen PR löschen.** GitHub stellt den Folge-PR dabei nicht
   automatisch um, sondern **schliesst** ihn (so passiert am 24.10. mit PR #9 beim Merge von PR #5;
   wiederhergestellt).
-- Reihenfolge ab jetzt: der PR für `einstiegspunkt` (baut auf `tick`, #9 und #10 auf, alle seit
-  dem 03.11. auf `main`). Konflikt im README bei «Bot starten» und «Dashboard starten» (beide
-  Abschnitte behalten). Unabhängig davon #21 und #22.
+- Reihenfolge ab jetzt: #23 (`einstiegspunkt`), der README-Konflikt ist schon gelöst. Unabhängig
+  davon #21 und #22.
 
 **Notfallplan:** Läuft der Bot zur Präsentation nicht auf dem VPS, zeigt die Präsentation den
 Backtest (`python -m bollinger_bot.backtest …`, Branch `backtest`): das echte `tick()` auf drei
@@ -459,7 +461,7 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #20 | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | ✅ gemergt (02.11.) |
 | #21 | `reflexion-valentin` | Valentin | Reflexion von Valentin im README | wartet auf Review (Lucas) |
 | #22 | `nachtrag-sonar-intervalle` | Nicolas | Sonar prüft `scripts/`, `INTERVALLE` im Dashboard aus `bitget_client` | wartet auf Review (Valentin) |
-| – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR jetzt möglich |
+| #23 | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | geöffnet von Nicolas (Vertretung, 03.11.), wartet auf Review (Valentin) |
 
 PR #10 wurde in `bitget-kerzen` gemergt und kam mit PR #9 auf `main` (03.11.).
 
