@@ -3,7 +3,7 @@
 ## Was dieses Repo ist
 
 Projektarbeit von Nicolas Hunger, Lucas Weisshaar und Valentin Ernst im **Modul 450 «Applikationen testen»**
-(TBZ, Klasse WUP25), Abgabe und Präsentation Mi 28.10.2026: ein Python-Trading-Bot, der mit der
+(TBZ, Klasse WUP25), Abgabe und Präsentation Mi 04.11.2026: ein Python-Trading-Bot, der mit der
 Bollinger-Strategie auf dem Bitget-Demo-Konto handelt. Idee, Architektur, Teststrategie, Planung
 und offene Entscheide stehen im `README.md`.
 
@@ -24,9 +24,17 @@ und offene Entscheide stehen im `README.md`.
 - **Bitget nur im Demo-Modus** (Demo-API-Key, Header `paptrading: 1`), nie echtes Geld.
 - Streamlit-Dashboard, Daten in SQLite.
 - GitHub Actions (Build → Test → Deploy), SonarQube Cloud, Testreport auf GitHub Pages, Image in
-  GHCR, Deploy per Docker Compose auf eine Cloud-VM.
+  GHCR, Deploy per Docker Compose auf eine Cloud-VM. **Geändert am 27.10.2026:** auf den VPS von
+  Nicolas statt auf eine neue Cloud-VM.
 - **Kein TDD:** bewusster Entscheid des Teams, obwohl die Eckdaten «TDD soll mal ausprobiert
   werden» verlangen und Doku und Präsentation eine Reflexion über TDD fordern.
+  **Ergänzt am 24.10.2026:** TDD wurde doch angewendet, und zwar für `tick()`, den Einstiegspunkt
+  und den Backtest (Branches `tick`, `einstiegspunkt`, `backtest`). Die Git-Historie belegt es mit
+  Commits «TDD rot» (Test zuerst, schlägt fehl), «TDD grün» (minimaler Code) und «TDD refactor».
+  Die Zyklen hat Claude Code ausgeführt, Lucas hat vorgegeben und geprüft. Damit ist die
+  Anforderung «TDD soll mal ausprobiert werden» erfüllt (laut Rubrik «muss aber nicht überall»).
+  Die übrigen Bausteine sind ohne TDD entstanden: Für die Reflexion und die Präsentation lässt
+  sich so Code ohne und mit TDD vergleichen.
 - COBOL als Projektbasis verworfen: COBOL Check ist seit Mai 2026 archiviert und meldet
   Testfehler mit Exit-Code 0, Sonar analysiert COBOL nur in Enterprise-Plänen.
 
@@ -38,7 +46,7 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
 |---|---|---|
 | Lucas | Strategie und Ablauf | #8a.1 Grundgerüst, #1 Bollinger-Berechnung, #2 Kauf- und Verkaufsregeln, #6 `tick()`, Polling-Schleife und SQLite |
 | Valentin | Börse | #3 Bitget-Client: Signatur und Kerzen, #4 Bitget-Client: Orders und Kontostand, #5 Risiko-Check |
-| Nicolas | Infra und Dashboard | #8a.2 Pipeline (Build, Test, SonarQube Cloud), #8b Deploy auf die VM, #7 Dashboard |
+| Nicolas | Infra und Dashboard | #8a.2 Pipeline (Build, Test, SonarQube Cloud), #8b Deploy auf den VPS, #7 Dashboard |
 
 - **Nicolas ist seit dem 21.10.2026 wieder gesund** und übernimmt seine Pakete selbst (AP 8a.2,
   AP 8b, AP 7). Bis dahin hat niemand daran gearbeitet.
@@ -47,7 +55,8 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
   Pages und SonarQube Cloud Admin-Rechte im Repo brauchen, die nur er hat.
 - **#8a.1 ist erledigt** (PR #1, gemergt am 30.09.2026). Alle anderen Pakete bauen auf diesem
   Grundgerüst auf: keine eigene Projektstruktur anlegen, sondern `main` pullen.
-- **Bis #8a.2 steht, gibt es keine Pipeline:** vor jedem Merge `pytest` lokal laufen lassen.
+- **Pipeline (#8a.2):** `.github/workflows/pipeline.yml` prüft jeden PR (Aufbau im README unter
+  «Pipeline»). Mit roter Pipeline wird nicht gemergt.
 - **Reviews im Ring:** Lucas reviewt Valentin, Nicolas reviewt Lucas, Valentin reviewt Nicolas.
   Für die bereits offenen PRs von Lucas gilt: Valentin reviewt PR #2 bis #5 (PR #5 ist die
   Schnittstelle zu seinem Client), Nicolas reviewt PR #6 und #7 (PR #6 ist das Schema für sein
@@ -56,18 +65,31 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
   (Lucas) und dem `BitgetClient` (Valentin) sowie das SQLite-Schema zwischen `tick()` (Lucas) und
   dem Dashboard (Nicolas). Änderungen daran mit der anderen Person absprechen.
 - **Nur im eigenen Paket arbeiten.** Fällt in einem fremden Paket etwas auf, im PR kommentieren
-  statt selbst ändern.
+  statt selbst ändern. **Ausnahme:** Lucas' Code dürfen Valentin und Nicolas ändern, siehe «Auf
+  Lucas' Arbeit aufbauen und sie ändern» weiter unten.
 
-### Offene Aufgaben pro Person (Stand Sa 24.10.2026)
+### Offene Aufgaben pro Person (Stand Di 03.11.2026)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
-Abgabe und Präsentation: Mi 28.10.2026, also noch 4 Tage.
+Abgabe und Präsentation: Mi 04.11.2026 (verschoben vom 28.10.).
 
-Stand auf GitHub: PR #1 bis #5 gemergt (Grundgerüst, Versionsgrenzen, Bollinger, Regeln, Port),
-auf `main` laufen 42 Tests. Offen: PR #6 und #7 (Lucas, warten auf das erneute Review von
-Nicolas), #8 (Valentin, approved), #9 (Draft, Basis jetzt `main`), #10 (Draft, Basis
-`bitget-kerzen`, Änderungen verlangt), #11 (Review mit vier Punkten), #12 (Nicolas, approved, aber
-Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neuen Commits.
+Stand auf GitHub (Di 03.11.): PR #1 bis #20 gemergt (Grundgerüst, Versionsgrenzen, Bollinger,
+Regeln, Port, Speicher, Polling, Risiko-Check, Bitget-Client, Testkonzept, Pipeline, SonarQube
+Cloud, Dashboard, Doku, Deploy, Puffer im Risiko-Check, `tick()`, Backtest). #19 und #20 hat
+Nicolas am 02.11. reviewt, approved und gemergt, #16 hat Valentin am 02.11. gemergt. #9 und #10
+hat Nicolas am 03.11. gemergt (#10 in `bitget-kerzen`, dann #9 auf `main`). Offen:
+
+- #21 (Valentin): Reflexion von Valentin, wartet auf das Review von Lucas.
+- #22 (Nicolas): Sonar prüft auch `scripts/`, das Dashboard nimmt `INTERVALLE` aus dem Client.
+  Nachtrag zu Valentins Kommentaren in #13 und #14, wartet auf das Review von Valentin.
+- Noch ohne PR: `einstiegspunkt` (Lucas), **jetzt möglich**, weil #19, #9 und #10 auf `main`
+  sind. Probe-Merge mit `main` am 03.11.: nur ein Konflikt im README («Bot starten» und
+  «Dashboard starten», beide behalten), danach 431 Tests grün.
+
+**#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
+Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Kommentar mit einer Frage
+nach. Lucas' Kommentare stehen seit dem 27.10., Nicolas hat sie am 02.11. beantwortet. Valentins
+stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
 
 **Lucas** (Strategie und Ablauf)
 
@@ -75,88 +97,184 @@ Konflikt mit `main`). Seit dem 21.10. gab es von Valentin und Nicolas keine neue
 - [x] PR #2 bis #5 gemergt (24.10.)
 - [x] Valentins PRs reviewt (21.10.): #8 approved, #9 kommentiert, #10 Änderungen verlangt
       (Order kann nach einem Netzfehler verloren gehen), #11 kommentiert (Approve nach 4 Punkten)
-- [ ] PR #6 und #7 mergen, sobald Nicolas (oder ersatzweise Valentin) approved hat
+- [x] PR #6 und #7 gemergt (26.10., nach dem Approve von Nicolas)
+- [x] **PR #19 für `tick`** geöffnet (27.10.), Reviewer Nicolas. `main` ist eingemergt, 223 Tests
+      grün. Zwei Vergleiche `== 0.0` stehen jetzt als `<= 0`, weil SonarQube sie als Fehler zählte
+      (Regel S1244, kein Gleichheitsvergleich mit float). Danach war der Quality Gate grün.
+- [x] **PR #20 für `backtest`** geöffnet (27.10.), Reviewer Nicolas. Baut auf `tick` auf,
+      273 Tests grün, Ergebnis des Backtests unverändert. Quality Gate rot wegen S8707 (siehe
+      Nicolas).
+- [x] **#9, #10 und #16 erneut reviewt und approved** (27.10.), mit kleinen Vorschlägen, die kein
+      Muss sind.
+- [x] **Kommentar mit Frage in #13, #14 und #17 nachgetragen** (27.10.).
+- [ ] **PR für `einstiegspunkt` öffnen:** #9 und #10 sind seit dem 03.11. auf `main`. Konflikt nur
+      im README («Bot starten» und «Dashboard starten», beide behalten).
+- [x] **#15 reviewen:** hat Valentin übernommen, gemergt am 27.10.
 - [x] Die unsachlichen Kommentare in PR #6 sind gelöscht.
-- [ ] **`tick()` (AP 6, Teil 3):** wird auf dem lokalen Branch `tick` vorbereitet, der auf PR #6,
-      #7 und #8 aufbaut. Der PR kommt, sobald diese drei gemergt sind.
-- [ ] **Einstiegspunkt** (`python -m bollinger_bot`, mit `logging.basicConfig`): als eigener
-      kleiner PR nach PR #9 und #10, weil er den echten Client braucht.
-- [ ] KI-Nutzung im README nachführen: «Zum Reviewen» (Reviews zu #8 bis #11 mit Claude Code
-      vorbereitet)
-- [ ] Eigene Reflexion (TDD, Code Reviews, KI-Nutzung)
+- [x] PR #7: Konflikt mit `main` gelöst (24.10.)
+- [x] **`tick()` (AP 6, Teil 3)** fertig auf dem Branch `tick`: test-first (TDD) gebaut, 41 Commits
+      rot → grün → refactor. PR #19.
+- [x] **Einstiegspunkt** fertig auf dem Branch `einstiegspunkt` (baut auf `tick` und PR #10 auf):
+      TDD, 46 Commits, 273 Tests. Der PR folgt nach PR #9 und #10.
+- [x] **Backtest und Demo** fertig auf dem Branch `backtest` (baut auf `tick` auf): TDD, 66 Commits,
+      227 Tests. Das echte `tick()` läuft gegen 2000 echte BTCUSDT-Kerzen (03.10. bis 24.10.2026).
+      Ergebnis: 40 Käufe, 39 Verkäufe, aus 1000 USDT werden 993.07 USDT (−0.69 %), die Gebühren
+      (7.87 USDT) machen den Verlust, der Stop-Loss hat nie ausgelöst. PR #20.
+- [x] Eigene Reflexion im README («## Reflexion» → «### Lucas»), Absatz zu TDD am 27.10.
+      präzisiert (nicht jeder Test war zuerst rot, die Zyklen hat Claude Code ausgeführt)
+- [ ] KI-Nutzung im README nachführen: «Zum Reviewen» (Reviews zu #8 bis #11 und am 27.10. zu
+      #9, #10, #16 sowie die Kommentare zu #13, #14, #17 mit Claude Code vorbereitet), `tick()`,
+      Einstiegspunkt und Backtest samt TDD-Zyklen von Claude Code, Entwurf der Reflexion mit
+      Claude Code
 
-**Valentin** (Börse). Hat 4 PRs, die Rubrik ist erfüllt.
+**Valentin** (Börse). Hat 5 PRs (#8 bis #11, #16), die Rubrik ist erfüllt.
 
-*Bis So 25.10.*
-
-- [ ] **PR #8 (Risiko-Check) mergen**, von Lucas approved. Die drei Vorschläge aus dem Review
-      kommen vorher oder in einem kleinen Folge-PR: ein Puffer über dem Mindestbetrag beim Kauf,
-      der Test `test_mindestbetrag_gilt_fuer_den_abgerundeten_betrag`, `kaufbetrag` in `Decimal`
-      rechnen.
-- [ ] **PR #10: die Bedingung aus Lucas' Review umsetzen.** Fällt eine einzelne
-      `orderInfo`-Abfrage aus, den Fehler abfangen und weiter abfragen. Scheitert es am Ende doch,
-      einen Fehler mit `order_id` als Attribut werfen. Bei unplausibler Gebühr 0.1 % abziehen
-      statt 0. Zwei Tests: `partially_filled` → `filled` und ein teilweise ausgeführter Verkauf.
-- [ ] **PR #9: die Vorschläge aus Lucas' Review umsetzen**, dann aus dem Draft holen.
-      Testlücken (Slice, Reihenfolge der Query-Parameter, Prüfung des Fehlercodes, alle
-      Intervalle), Timeout nicht abschaltbar machen, Key und Passphrase im Konstruktor prüfen.
-- [ ] **Ersatz-Reviewer:** Hat Nicolas PR #6 und #7 bis So 25.10. abends nicht erneut reviewt,
-      reviewt Valentin sie.
-
-*Bis Mo 26.10.*
-
-- [ ] **PR #9 mergen**, mit Merge-Commit. Danach PR #10 auf `main` umstellen
-      (`gh pr edit 10 --base main`). Erst dann den Branch `bitget-kerzen` löschen. PR #10 aus dem
-      Draft holen und nach Lucas' Approve mergen.
-- [ ] **PR #11 (Testkonzept): die vier Punkte aus Lucas' Review.** Ergebnis des Rauchtests
-      eintragen, «Zu testende Funktionen» nachführen, «Bestanden» so formulieren, wie es heute
-      gilt, die fehlenden Teile der Vorlage ergänzen (Einleitung, ein Satz zu TDD, Werkzeuge, drei
-      Fehlerklassen).
+- [x] **PR #8 (Risiko-Check)** gemergt (26.10.).
+- [x] **#16** gemergt (02.11.), der Puffer steht im Docstring, im Testkonzept und unter
+      «Öffentliche Schnittstellen».
+- [x] **Review-Kommentare in #13, #14 und #17** nachgetragen (02.11.), je mit einer Frage an
+      Nicolas.
+- [x] **#15** reviewt und approved (27.10.).
+- [x] **PR #10:** die Bedingung aus Lucas' Review umgesetzt (27.10.): Nach einem Netzfehler geht
+      keine Order mehr verloren. Von Lucas approved (27.10.).
+- [x] **PR #9:** die Vorschläge aus Lucas' Review umgesetzt und aus dem Draft geholt (27.10.).
+      Von Lucas approved (27.10.).
+- [x] **Ersatz-Reviewer** für #6 und #7: nicht nötig, Nicolas hat sie reviewt.
+- [x] **Bestätigt** (in #10, 27.10.): `tick()` verkauft den ganzen BTC-Bestand bei Bitget, auf dem
+      Demo-Konto gehören alle BTC dem Bot.
+- [x] **#9 und #10 gemergt** (03.11.): Nicolas hat beide anstelle von Lucas erneut approved und
+      gemergt, #10 in `bitget-kerzen`, dann #9 auf `main`. Die Branches `bitget-kerzen` und
+      `bitget-orders` können weg.
+- [ ] **#22 reviewen** (Nicolas): Nachtrag zu Valentins Kommentaren in #13 und #14, zwei Fragen in
+      der Beschreibung.
+- [x] **Vorschläge aus Lucas' Reviews vom 27.10.** in #9 und #10 umgesetzt (02.11.).
+- [x] **PR #11 (Testkonzept):** die vier Punkte aus Lucas' Review und die Begründung zu «kein
+      TDD» umgesetzt, von Nicolas approved und gemergt (27.10.).
 - [ ] **KI-Nutzung im README** für seine PRs nachtragen.
-
-*Bis Di 27.10.*
-
-- [ ] **Demo-Keys** auf der VM in die `.env` eintragen, zusammen mit Nicolas. Nie per Chat
-      verschicken.
-- [ ] **Den `tick()`-PR von Lucas mitlesen**, er nutzt Client und Risiko-Check.
+- [x] **Demo-Key für den Bot:** Nicolas nutzt Valentins bestehenden Demo-Key und trägt ihn selbst
+      auf dem VPS ein, Valentin bekommt keinen Zugang zum VPS. Solange der Bot läuft, mit diesem
+      Key keine Rauchtests mit `--order` mehr: BTC auf dem Konto, von denen die Datenbank nichts
+      weiss, blockieren jeden Kauf (Sicherheitsnetz in `tick()`).
+- [x] **#19 und #20** mitgelesen, die Fragen an ihn beantwortet (02.11.).
 - [ ] **Eigene Reflexion** und sein Teil der Präsentation.
 
-**Nicolas** (Infra und Dashboard). Hat erst 1 PR, die Rubrik verlangt 3: SonarQube, Dashboard und
-Deploy je als eigenen PR.
+**Nicolas** (Infra und Dashboard). Hat 5 PRs (#12 bis #15, #17). Auf GitHub sichtbar reviewt ist
+bisher nur #12.
 
-*Sofort, spätestens So 25.10.*
-
-- [ ] **PR #6 und #7 erneut reviewen**, die Forderungen sind seit dem 21.10. umgesetzt. Dann
-      approven oder Änderungen verlangen.
-- [ ] **PR #12 mergen:** zuerst `main` in den Branch holen und den Konflikt in der `CLAUDE.md`
-      lösen. Unter Settings → Pages die Quelle «GitHub Actions» setzen, das kann nur er als Admin.
-
-*Bis Mo 26.10.*
-
-- [ ] **SonarQube Cloud** als eigener PR: beide `coverage.xml` angeben
-      (`reports/*/coverage.xml`), Quality Gate einrichten.
-- [ ] **Dashboard (AP 7)** als eigener PR: liest über `Speicher` (pro Durchlauf ein eigenes
-      `with Speicher(pfad)`), zeigt Kerzen mit Eröffnung, Hoch und Tief, die Bänder, Käufe und
-      Verkäufe und den Gesamtwert (freie USDT + offene Menge × Schlusskurs), warnt, wenn die
-      letzte Kerze länger als zwei Intervalle her ist. Getestet mit Streamlit `AppTest` und
-      Testdaten.
-- [ ] **Entscheid:** Streamlit als Pflicht-Abhängigkeit oder als eigenes Extra `dashboard`.
-
-*Bis Di 27.10.*
-
-- [ ] **Deploy (AP 8b)** als eigener PR: VM wählen, Dockerfile mit Python 3.12, Image in GHCR,
-      `docker-compose.yml` mit Bot und Dashboard (gemeinsames Volume für `BOT_DB_PFAD`,
-      `stop_signal: SIGINT`), `.env` nur auf der VM, einmal von Hand prüfen, ob der Container
-      läuft.
-- [ ] **Den `tick()`-PR von Lucas reviewen.**
-- [ ] **README nachführen:** Planung, Architektur und der Link zu GitHub Pages.
-- [ ] **Eigene Reflexion** und sein Teil der Präsentation.
+- [x] **PR #6 und #7** erneut reviewt, approved und gemergt (26.10.).
+- [x] **PR #12** gemergt (26.10.), der Testreport läuft auf GitHub Pages.
+- [x] **SonarQube Cloud** als PR #13, gemergt am 27.10.: beide `coverage.xml`
+      (`reports/*/coverage.xml`), Quality Gate «Sonar way», Automatic Analysis aus.
+- [x] **Dashboard (AP 7)** als PR #14, gemergt am 27.10. Getestet mit Streamlit `AppTest`. Zum
+      Vorführen dient die Datei aus dem Backtest (Branch `backtest`):
+      `python -m bollinger_bot.backtest tests/daten/btcusdt_15min.csv --db data/backtest.db`.
+- [x] **Entscheid:** Streamlit ist eine Pflicht-Abhängigkeit, Bot und Dashboard laufen im selben
+      Image.
+- [x] **Deploy (AP 8b)** als PR #17, gemergt am 27.10. (ohne Review auf GitHub): Dockerfile,
+      `docker-compose.yml`, Image in GHCR. Deployt wird nur von Hand (Entscheid 27.10.).
+- [ ] **Dashboard auf dem VPS starten:** auf dem VPS die `.env` mit `DASHBOARD_DB=backtest.db`
+      anlegen, dann `docker compose pull && docker compose up -d`. Das Paket in GHCR ist schon
+      öffentlich. Der Bot kommt mit `einstiegspunkt` dazu. Details unter «Pipeline und Deploy».
+- [x] **#11** reviewt (Approve mit vier Vorschlägen) und gemergt (27.10.).
+- [x] **#19 (`tick`) und #20 (`backtest`)** schriftlich reviewt (Approve, Lucas' Fragen
+      beantwortet), mit Merge-Commit gemergt (02.11.). Vorschläge für einen Folge-PR: ein Test, in
+      dem `kaufe()` einen `BitgetFehler` wirft, und einer mit weniger als `n` Kerzen.
+- [x] **SonarQube in #20:** S8707 («Path Traversal», `backtest.py:34`) als «Accept» markiert, mit
+      Begründung (lokales Werkzeug, den Pfad gibt man selbst an). Quality Gate grün.
+- [x] **#9 und #10** anstelle von Lucas erneut reviewt und approved (03.11.). Hinweis in #10, kein
+      Muss: Eine Order mit `filled`, aber ohne `baseVolume` meldet «wurde nicht ausgeführt».
+- [x] **Valentins Fragen in #13, #14 und #17 beantwortet** (03.11.): `restart: unless-stopped`
+      bleibt, weil der Bot sonst nach einem Neustart des VPS nicht zurückkommt (er endet beim
+      Herunterfahren mit Exit-Code 0). Das Profil `bot` bleibt in der Compose-Datei.
+- [ ] **PR #22** (zugesagt in #13 und #14) am 03.11. geöffnet, Reviewer Valentin: `scripts` in
+      `sonar.sources` ohne Coverage, `INTERVALLE` im Dashboard aus `bitget_client`. Meldet Sonar in
+      `kerzen_holen.py` S8707 wie in `backtest.py`, den Fund mit derselben Begründung akzeptieren
+      (kann nur Nicolas als Admin). Nach dem Approve mit Merge-Commit mergen.
+- [x] **Lucas' Fragen in #13, #14 und #17 beantwortet** (02.11.): `sonar.qualitygate.wait` bleibt
+      weg, der Quality Gate ist im PR ein eigener Check. Das Intervall im Dashboard kommt aus
+      derselben `.env` wie beim Bot, ein Abgleich mit den Kerzen in `signale` ist eine Idee für
+      einen Folge-PR. Für den Bot kommt `COMPOSE_PROFILES=bot` in die `.env` auf dem VPS. Im
+      README nachgeführt: Teststrategie (Dashboard unter Unit und Integration) und «Mit Bot».
+- [ ] **Seine unsachlichen Kommentare in #6 und #7 löschen.** Die Lehrperson liest die PRs mit,
+      und die Rubrik verlangt «konstruktiv».
+- [x] **README nachführen:** Planung, Architektur und Entscheide mit #15 gemergt (27.10.).
+- [x] **Eigene Reflexion**, mit #15 gemergt.
+- [x] **#18** gemergt (27.10.), mit Kommentar.
+- [ ] **Sein Teil der Präsentation.**
 
 **Alle zusammen**
 
-- [ ] Handelspaar und Kerzen-Intervall festlegen (Vorschlag: BTCUSDT, 15min; README, «Offene
-      Entscheide»)
-- [ ] Präsentation (10 Minuten): Endprodukt, Testing, Reports, Reflexion, Fazit
+- [x] Handelspaar und Kerzen-Intervall: BTCUSDT mit 15min, von Valentin im Review von #15
+      bestätigt.
+- [ ] **Reflexion** (Pflicht in der Doku): im README unter «## Reflexion», jede Person in ihrem
+      Unterabschnitt («### Lucas», «### Valentin», «### Nicolas»). Über Code Reviews und TDD,
+      rund eine halbe Seite, in eigenen Worten, die Leitfragen stehen im Abschnitt. Claude hilft
+      mit Gliederung und Beispielen aus den PRs, den Text schreibt jede Person selbst.
+- [ ] **Präsentation** (siehe unten)
+
+**Präsentation** (Mi 04.11., 10 Minuten, ohne Folien)
+
+- Jede Person zeigt, was sie gemacht hat, rund 3 Minuten, live statt PowerPoint: GitHub (PRs,
+  Reviews, Pipeline), Terminal (Tests, Backtest), Dashboard. Die Rubrik verlangt Endprodukt,
+  Testing, Reports, Reflexion und Fazit. Vorschlag zur Aufteilung:
+  - **Lucas:** die Strategie in zwei Sätzen, `tick()` test-first (rote und grüne Commits in der
+    Git-Historie zeigen), den Backtest live laufen lassen (Endprodukt bzw. Notfall-Demo), eigene
+    Reflexion kurz.
+  - **Valentin:** Bitget-Client und Risiko-Check, Testing mit Mocks und respx, Rauchtest,
+    Testkonzept, eigene Reflexion kurz.
+  - **Nicolas:** Pipeline mit den Testreports auf GitHub Pages und der Coverage in SonarQube,
+    Dashboard, Deploy auf den VPS (zuerst das Dashboard, der Bot sobald `einstiegspunkt` gemergt
+    ist), eigene Reflexion kurz.
+  - **Fazit** gemeinsam, eine halbe Minute.
+- Vor der Präsentation einmal zusammen durchspielen und die Tabs vorbereiten (PR-Liste,
+  Pages-Report, Terminal mit Backtest, Dashboard).
+
+**Auf Lucas' Arbeit aufbauen und sie ändern**
+
+Lucas' Bausteine sind fertig und dafür da, dass Valentin und Nicolas darauf aufbauen:
+`bollinger.py`, `regeln.py`, `port.py`, `speicher.py`, `polling.py`, `tick.py` und `backtest.py`
+auf `main` und `start.py` auf dem Branch `einstiegspunkt`. Was sie können und wie sie zusammenhängen, steht unter «Stand der PRs und
+Schnittstellen» und «Ablauf von `tick()`», dazu die «Code-Übersicht» im README.
+
+- **Darauf aufbauen:** Zum Beispiel baut Nicolas das Docker-Image gegen den Branch
+  `einstiegspunkt` (`python -m bollinger_bot`) und testet das Dashboard mit der Datei aus dem
+  Backtest. Braucht ein eigener Branch Code aus einem offenen PR oder Branch von Lucas, diesen
+  per Merge einbeziehen (`git merge origin/tick`), nicht Dateien kopieren. Im eigenen PR dann
+  erwähnen, dass er bis zum Merge von Lucas' PR auch dessen Änderungen zeigt.
+- **Ändern ist erlaubt, auch wenn Lucas erreichbar ist:** Valentin und Nicolas (und ihre
+  Claude-Sitzungen) dürfen Lucas' Code auf `main`, in seinen PRs und auf seinen Branches ändern,
+  wenn es für ihr Paket nötig ist oder sie einen Fehler finden. Kleine Anpassungen direkt auf
+  seinem Branch, grössere als eigener PR mit Lucas als Reviewer. Dabei gilt:
+  - ein eigener Commit mit kurzer Begründung in der Nachricht
+  - danach `pytest` lokal grün, bei geändertem Verhalten mit angepasstem oder neuem Test
+  - Port-Schnittstelle und SQLite-Schema bleiben gemeinsame Entscheide: eine Änderung daran hier
+    in «Öffentliche Schnittstellen» nachführen und im PR erwähnen
+  - die TDD-Historie in `tick`, `einstiegspunkt` und `backtest` nicht umschreiben: kein rebase,
+    kein amend, kein force-push
+  - Lucas im PR oder Commit-Kommentar mit @LostMyNutsLastXMas informieren und die Code-Übersicht
+    im README nachführen, falls sich Dateien ändern
+
+**Vertretung, wenn Lucas nicht erreichbar ist**
+
+Betrifft Lucas' Branch `einstiegspunkt` (#19 und #20 sind seit dem 02.11. gemergt).
+Antwortet Lucas im Gruppenchat nicht innerhalb von etwa drei Stunden und hängt etwas daran, dürfen
+Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
+
+1. **PR #19 und #20 mergen:** erledigt (02.11.).
+2. **PR für `einstiegspunkt` öffnen**, sobald #19, #9 und #10 auf `main` sind. Basis immer
+   `main` (nie einen anderen Branch, siehe «Mergen»). Inhalt der Beschreibung: was der Branch
+   bringt (siehe «Stand der PRs und Schnittstellen»), dass er test-first entstanden ist, wie man
+   testet (`pytest`), Fragen ans Review. Reviewer ist die jeweils andere Person.
+3. **Konflikte lösen:** `main` in den Branch mergen, nie rebasen, nie force-pushen. So lösen, dass
+   beide Seiten erhalten bleiben: `pyproject.toml` mit den Versionsgrenzen, `pytest-html` und
+   `tzdata`; im README beide Abschnitte, danach die Code-Übersicht nachführen; die `CLAUDE.md` mit
+   dem Stand von `main`. Konflikte im Python-Code löst die eigene Claude-Sitzung: Sie liest beide
+   Seiten, den Ablauf von `tick()` und die Abmachungen in dieser Datei und entscheidet. Lucas
+   muss dafür nicht gefragt werden. Danach `pytest` lokal, erst wenn alles grün ist pushen.
+4. **Code in Lucas' Branches ändern**, wenn es Konflikte gibt oder er nicht mehr zu einem
+   gemergten PR passt (z.B. geänderte Signatur in PR #8 oder #10). Es gelten die Regeln aus «Auf
+   Lucas' Arbeit aufbauen und sie ändern».
+5. **Lucas informieren:** im PR mit @LostMyNutsLastXMas kurz schreiben, was übernommen wurde.
 
 **Mergen: so und in dieser Reihenfolge**
 
@@ -164,25 +282,14 @@ Deploy je als eigenen PR.
   PR #9, ein Squash würde Konflikte erzeugen.
 - **Nie den Basis-Branch eines offenen PR löschen.** GitHub stellt den Folge-PR dabei nicht
   automatisch um, sondern **schliesst** ihn (so passiert am 24.10. mit PR #9 beim Merge von PR #5;
-  wiederhergestellt). Darum beim Merge von PR #9 den Branch `bitget-kerzen` **nicht** löschen.
-  Zuerst PR #10 umstellen (`gh pr edit 10 --base main` oder auf GitHub «Edit» neben dem Titel),
-  erst danach `bitget-kerzen` löschen.
-- Reihenfolge ab jetzt: #8, #6, #7, #12, #9, #10, #11, dann `tick()`. Konflikte möglich: PR #12
-  und #7 ändern die Liste `dev` in der `pyproject.toml` (pytest-html, tzdata; beides behalten,
-  mit den Versionsgrenzen aus PR #2), mehrere PRs ändern das README.
+  wiederhergestellt).
+- Reihenfolge ab jetzt: der PR für `einstiegspunkt` (baut auf `tick`, #9 und #10 auf, alle seit
+  dem 03.11. auf `main`). Konflikt im README bei «Bot starten» und «Dashboard starten» (beide
+  Abschnitte behalten). Unabhängig davon #21 und #22.
 
-**Zeitplan bis zur Abgabe** (Stand 24.10., der alte Plan ist um rund zwei Tage verrutscht)
-
-| Bis | Was |
-|---|---|
-| Sa 24.10. | PR #2 bis #5 gemergt ✅ |
-| So 25.10. | PR #6, #7, #8 und #12 gemergt, PR #9 und #10 aus dem Draft |
-| Mo 26.10. | PR #9 bis #11 gemergt, `tick()` und Dashboard als PR offen |
-| Di 27.10. | `tick()` und Dashboard gemergt, Deploy oder Notfallplan, Reflexion und Präsentation fertig |
-| Mi 28.10. | Abgabe und Präsentation |
-
-**Notfallplan:** Läuft der Bot bis Mo 26.10. abends nicht auf der VM, zeigt die Präsentation
-`tick()` mit gemockter Börse und das Dashboard mit Testdaten. Die Rubrik bewertet vor allem Tests,
+**Notfallplan:** Läuft der Bot zur Präsentation nicht auf dem VPS, zeigt die Präsentation den
+Backtest (`python -m bollinger_bot.backtest …`, Branch `backtest`): das echte `tick()` auf drei
+Wochen echter Kurse, dazu das Dashboard mit der Datei aus dem Backtest. Die Rubrik bewertet vor allem Tests,
 Reports, PRs und Doku, nicht ob der Bot echt handelt.
 
 ## Entwicklung: Einrichten und Regeln
@@ -231,14 +338,35 @@ Danach wie oben aktivieren und `pip install -e ".[dev]"` ausführen.
 
 - **Code nie direkt auf `main` committen.** Pro Arbeitspaket ein Branch, immer von aktuellem
   `main` abgezweigt (`git switch main && git pull && git switch -c <paket>`).
-- **Vor jedem Push und vor jedem Merge `pytest` lokal laufen lassen**, solange es keine Pipeline
-  gibt.
+- **Vor jedem Push `pytest` lokal laufen lassen.** Die Pipeline prüft jeden PR noch einmal,
+  gemergt wird nur mit grüner Pipeline.
 - **PR-Beschreibung:** was der PR macht, wie man ihn testet, und Fragen ans Review.
 - **Nicht selbst mergen, bevor reviewt wurde.** Die Rubrik verlangt aktiv kommentierte und
   gechallengte PRs: Der Reviewer hinterlässt Fragen oder Änderungswünsche, erst nach seinem
   «Approve» wird gemergt. Bei PR #1 kam der Review-Kommentar erst nach dem Merge: künftig zuerst
   kommentieren und antworten, dann mergen.
 - **`.venv/` und `.env` nie committen** (beide stehen in der `.gitignore`).
+
+### README «Code-Übersicht» automatisch aktuell halten (Aufgabe jeder Claude-Sitzung)
+
+Alle im Team arbeiten mit Claude. Darum hält Claude die Tabelle «Code-Übersicht» im README
+fortlaufend aktuell, ohne dass jemand daran erinnern muss. Sie zeigt pro Datei, was sie macht, wo
+die Tests liegen und wo sie steht («`main`», «PR #n» oder «Branch `…`»).
+
+- **Zu Beginn jeder Sitzung prüfen:** `git fetch`, dann die Tabelle mit dem Stand vergleichen:
+  `git ls-tree -r --name-only origin/main src/bollinger_bot scripts` (was auf `main` liegt),
+  `gh pr list --state all --limit 50` (welche PRs offen oder gemergt sind) und die Branches. Weicht
+  etwas ab, die Tabelle in derselben Sitzung nachführen, ohne erst zu fragen.
+- **Bei jeder Code-Änderung im eigenen PR oder Branch:** Wird eine Datei in `src/bollinger_bot/`
+  oder `scripts/` neu angelegt, umbenannt, gelöscht oder bekommt sie eine andere Aufgabe, im
+  selben PR bzw. Branch die Zeile in der Tabelle anlegen oder anpassen (Datei, was sie macht,
+  Tests, Stand).
+- **Nach jedem Merge auf `main`:** In der Spalte «Stand» die Dateien des gemergten PRs auf `main`
+  setzen und das Datum in der Einleitung der Code-Übersicht nachführen. Das ist ein kleiner
+  Doku-Commit direkt auf `main` («README: Code-Übersicht nach Merge von PR #n»), committen und
+  pushen, wie bei dieser Datei. Merged Claude selbst, gehört das zum Merge dazu.
+- Nur die Code-Übersicht anfassen, keine anderen README-Abschnitte, damit es keine
+  Merge-Konflikte mit offenen PRs gibt. Kurz in der Antwort erwähnen, was nachgeführt wurde.
 
 ### Entscheide vor den Paketen
 
@@ -249,8 +377,14 @@ Danach wie oben aktivieren und `pip install -e ".[dev]"` ausführen.
   3 % unter dem Kaufpreis (Stop-Loss). Höchstens eine offene Position, kein Nachkaufen.
 - **Port-Schnittstelle: entschieden** (PR #5, gemergt am 24.10.2026). Siehe «Öffentliche
   Schnittstellen».
-- **SQLite-Schema:** Vorschlag in PR #6, von Nicolas reviewt, Forderungen umgesetzt, wartet auf
-  sein erneutes Review.
+- **SQLite-Schema: entschieden** (PR #6, von Nicolas approved, gemergt am 26.10.2026). Siehe
+  «Öffentliche Schnittstellen».
+- **Deploy: entschieden (27.10.2026, Nicolas):** auf seinen VPS statt auf eine neue Cloud-VM.
+  Zugriff über SSH und Tailscale, Start mit Docker Compose, das Image kommt aus GHCR. Deployt
+  wird nur von Hand, ohne Deploy-Job und ohne Timer: Weder die Pipeline noch sonst jemand bekommt
+  Zugriff auf den VPS.
+- **Handelspaar und Intervall:** BTCUSDT mit 15min, so stehen sie in den Einstellungen von `tick()`
+  und im Backtest. Bestätigt von Valentin im Review von #15.
 
 Aus dem Review von Valentin zu PR #1
 (https://github.com/NicolasHunger/bollinger-bot/pull/1#issuecomment-5912599081):
@@ -264,10 +398,10 @@ Aus dem Review von Valentin zu PR #1
   - **Unit- und Integrationstests nur über die Ordner trennen**, keine pytest-Marker.
     `--strict-markers` bleibt an, damit vertippte Marker auffallen.
   - **`tests/unit/test_grundgeruest.py`** wird mit #1 gelöscht.
-- **Noch offen, entscheidet Nicolas mit der Pipeline (#8a.2):**
-  - **`coverage.xml`** schon in `addopts` oder nur in der Pipeline erzeugen?
-  - **Streamlit** als Pflicht-Abhängigkeit oder als eigenes Extra `dashboard`? Hängt davon ab, ob
-    Bot und Dashboard im selben Image laufen.
+- **Entschieden (21.10.2026, Nicolas):** **`coverage.xml`** und die anderen Reports (JUnit-XML,
+  HTML-Report) entstehen nur in der Pipeline, `addopts` bleibt ohne Report-Optionen.
+- **Entschieden (26.10.2026, Nicolas, PR #14):** **Streamlit** ist eine Pflicht-Abhängigkeit,
+  kein eigenes Extra `dashboard`. Bot und Dashboard laufen im selben Image.
 
 Getroffene Entscheide hier und im README unter «Offene Entscheide» nachführen.
 
@@ -292,7 +426,7 @@ Getroffene Entscheide hier und im README unter «Offene Entscheide» nachführen
   erklären können: Code erklären statt nur liefern und die KI-Nutzung im README nachführen.
 - Alle drei sind Trading-Neulinge: Fachbegriffe (Kerze, Band, σ, Spot/Futures) kurz erklären.
 
-## Stand der PRs und Schnittstellen (Sa 24.10.2026)
+## Stand der PRs und Schnittstellen (Di 03.11.2026)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README. Die Nummern
 stimmen nicht überein. In den älteren Abschnitten weiter oben steht «#n» allein immer für das
@@ -308,17 +442,26 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #3 | `bollinger-berechnung` | Lucas | AP 1: `bollinger.py`, KI-Nutzung im README | ✅ gemergt |
 | #4 | `kauf-verkaufsregeln` | Lucas | AP 2: `regeln.py`, Hinweis «Warum der Bot kaum Geld verdient» | ✅ gemergt |
 | #5 | `port-schnittstelle` | Lucas | Port: `port.py` | ✅ gemergt |
-| #6 | `sqlite-speicher` | Lucas | AP 6, Teil 1: `speicher.py` | Review-Forderungen umgesetzt, wartet auf Nicolas |
-| #7 | `polling-schleife` | Lucas | AP 6, Teil 2: `polling.py` | Review-Wünsche umgesetzt, wartet auf Nicolas |
-| #8 | `risiko-check` | Valentin | AP 5: `risiko.py` | approved (Lucas), 3 Vorschläge |
-| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | Draft, Basis `main`, kommentiert (6 Vorschläge) |
-| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Draft, Basis `bitget-kerzen`, Änderungen verlangt |
-| #11 | `testkonzept` | Valentin | Testkonzept im README | kommentiert (Lucas), wartet auf Nicolas |
-| #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | approved, Konflikt mit `main` |
-| – | – | Lucas | AP 6, Teil 3: `tick()` und Einstiegspunkt | folgt nach den Merges |
+| #6 | `sqlite-speicher` | Lucas | AP 6, Teil 1: `speicher.py` | ✅ gemergt |
+| #7 | `polling-schleife` | Lucas | AP 6, Teil 2: `polling.py` | ✅ gemergt |
+| #8 | `risiko-check` | Valentin | AP 5: `risiko.py` | ✅ gemergt (3 Vorschläge offen) |
+| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | ✅ gemergt (03.11.) |
+| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | ✅ gemergt (03.11., über `bitget-kerzen`) |
+| #11 | `testkonzept` | Valentin | Testkonzept im README | ✅ gemergt |
+| #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | ✅ gemergt |
+| #13 | `pipeline-sonar` | Nicolas | AP 8a.2: SonarQube Cloud | ✅ gemergt (nur mündlich approved) |
+| #14 | `dashboard` | Nicolas | AP 7: `dashboard.py` | ✅ gemergt (nur mündlich approved) |
+| #15 | `doku-nachfuehren` | Nicolas | Doku: Planung, Architektur, Entscheide, Reflexion Nicolas | ✅ gemergt |
+| #16 | `risiko-nachtrag` | Valentin | Risiko-Check: Puffer beim Kauf, `kaufbetrag` in `Decimal` | ✅ gemergt (02.11.) |
+| #17 | `deploy` | Nicolas | AP 8b: Dockerfile, Docker Compose, Image in GHCR | ✅ gemergt (ohne Review auf GitHub) |
+| #18 | `testkonzept-nachtrag` | Valentin | Testkonzept: Vorschläge aus dem Review von Nicolas | ✅ gemergt |
+| #19 | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | ✅ gemergt (02.11.) |
+| #20 | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | ✅ gemergt (02.11.) |
+| #21 | `reflexion-valentin` | Valentin | Reflexion von Valentin im README | wartet auf Review (Lucas) |
+| #22 | `nachtrag-sonar-intervalle` | Nicolas | Sonar prüft `scripts/`, `INTERVALLE` im Dashboard aus `bitget_client` | wartet auf Review (Valentin) |
+| – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR jetzt möglich |
 
-PR #10 baut auf PR #9 auf (Basis `bitget-kerzen`). Beim Merge von PR #9 den Branch nicht löschen,
-bevor PR #10 auf `main` umgestellt ist, sonst schliesst GitHub PR #10 (siehe «Mergen» oben).
+PR #10 wurde in `bitget-kerzen` gemergt und kam mit PR #9 auf `main` (03.11.).
 
 ### Öffentliche Schnittstellen
 
@@ -378,15 +521,41 @@ def polling_schleife(tick: Callable[[], None], *, pause_sekunden: float = 60,
 class Handelsregeln: mengen_stellen: int; betrag_stellen: int; mindestbetrag: float
 BTCUSDT_SPOT = Handelsregeln(mengen_stellen=6, betrag_stellen=2, mindestbetrag=1.0)
 def kaufbetrag(*, guthaben: float, anteil_prozent: float, regeln: Handelsregeln,
-               hoechstbetrag: float | None = None) -> float   # USDT, 0.0 unter dem Mindestbetrag
+               hoechstbetrag: float | None = None) -> float   # USDT, 0.0 unter 2 · Mindestbetrag (KAUF_PUFFER_FAKTOR)
 def verkaufsmenge(*, bestand: float, kurs: float, regeln: Handelsregeln) -> float  # BTC, 0.0 wenn Wert < Mindestbetrag
 
 # bitget_client.py (PR #9, #10, Valentin): erfüllt Boerse
 INTERVALLE = {"1min": timedelta(minutes=1), "5min": …, "15min": …, "30min": …, "1h": timedelta(hours=1)}
 class BitgetFehler(Exception): code: str | None
+class OrderFehler(BitgetFehler): order_id: str   # PR #10: Order platziert, Ergebnis unklar; order_id auch in der Meldung
 class BitgetClient:
     def __init__(self, *, api_key: str, api_secret: str, passphrase: str, basis_url=…,
                  timeout_sekunden: float = 10, uhr=…, schlafen=…)
+
+# tick.py (PR #19)
+@dataclass(frozen=True)
+class Einstellungen: symbol="BTCUSDT"; basiswaehrung="BTC"; quotewaehrung="USDT"; intervall="15min"
+                     intervall_dauer=timedelta(minutes=15); n=20; k=2.0; anteil_prozent=10.0
+                     stop_loss_prozent=3.0; regeln=BTCUSDT_SPOT
+def tick(*, boerse: Boerse, speicher: Speicher, einstellungen: Einstellungen, jetzt: datetime) -> Signal | None
+
+# start.py (Branch einstiegspunkt), Aufruf: python -m bollinger_bot
+@dataclass(frozen=True)
+class Konfiguration: api_key, api_secret, passphrase (alle repr=False); db_pfad: Path; einstellungen: Einstellungen
+def lies_konfiguration(umgebung: Mapping[str, str]) -> Konfiguration   # ValueError, nennt nie einen Key-Wert
+def starte(konfiguration, *, client_fabrik=BitgetClient, uhr=…, schlafen=time.sleep, durchlaeufe=None) -> None
+def main(umgebung=None, *, starte=starte) -> int   # 0 nach Ctrl+C, 2 bei falscher Konfiguration
+
+# backtest.py (PR #20), Aufruf: python -m bollinger_bot.backtest <kerzen.csv> [--db data/backtest.db]
+def lies_kerzen(pfad: str | Path) -> list[Kerze]   # CSV, Zeiten in UTC, älteste zuerst
+class AufgezeichneteBoerse:   # erfüllt Boerse; Kurs = letzter Schlusskurs, 6 Stellen, 0.1 % Gebühr wie Bitget
+    def __init__(self, *, kerzen, intervall_dauer, startguthaben=1000.0, gebuehr_prozent=0.1)
+    jetzt: datetime           # simulierte Zeit, setzt backtest()
+@dataclass(frozen=True)
+class Ergebnis: kerzen_ausgewertet; kaeufe; verkaeufe; startwert; endwert; rendite_prozent; gebuehren; btc_am_ende
+def pruefe_kerzen(kerzen, *, einstellungen) -> None   # ValueError bei Lücken, doppelten Kerzen, falschem Intervall
+def backtest(*, kerzen, speicher, einstellungen, startguthaben=1000.0) -> Ergebnis   # ruft das echte tick() pro Kerze
+def main(argv=None) -> int   # 2, wenn die DB schon existiert oder die CSV fehlt/ungültig ist
 ```
 
 Tabellen der SQLite-Datei (Details im README unter «Datenbank», sobald PR #6 gemergt ist):
@@ -395,31 +564,35 @@ eindeutig), `kontostaende`. Die Datenbank prüft per `CHECK`: `signal` und `seit
 Texte, Kurse, Mengen und Preise grösser als 0, `betrag` mindestens 0, unteres Band ≤ Mittelband ≤
 oberes Band, Tief ≤ Eröffnung und Schluss ≤ Hoch.
 
-### Geplanter Ablauf von `tick()` (Lucas, nach den Merges)
+### Ablauf von `tick()` (PR #19)
 
-So werden die Bausteine zusammengesetzt.
+1. Ist keine neue Kerze fertig, gibt `tick()` `None` zurück und fragt Bitget nicht.
+2. `hole_kerzen(symbol, intervall, n)`. Ist die Liste leer oder die neueste Kerze älter als
+   erwartet, folgt `None` mit einem INFO-Eintrag, und eine Minute später gibt es einen neuen
+   Versuch.
+3. `berechne_baender`, `offene_position()` und `entscheide(…)` mit dem Stop-Loss aus den
+   Einstellungen.
+4. **KAUFEN:**
+   - **Sicherheitsnetz:** Liegt bei Bitget BTC im Wert von mindestens dem Mindestbetrag, ohne
+     dass in der Datenbank eine Position steht, kauft `tick()` nicht und schreibt einen ERROR.
+   - Sonst `kaufbetrag(guthaben=USDT, anteil 10 %)`. Bei 0.0 gibt es eine WARNING und keine Order.
+   - Sonst `kaufe`, die Order-ID ins Log und sofort `speichere_trade`.
+5. **VERKAUFEN:**
+   - `verkaufsmenge(bestand=ganzer BTC-Bestand bei Bitget)`, also inklusive Reste aus früheren
+     Abrundungen.
+   - Bei 0.0 gibt es eine WARNING. Meldet die Datenbank eine echte Position, bei Bitget liegt aber
+     fast nichts, gibt es einen ERROR: Der Verkauf wurde wohl ausgeführt, aber nicht gespeichert.
+   - Sonst `verkaufe`, ins Log und `speichere_trade`.
+6. Erst `hole_kontostand(USDT)`, dann `speichere_signal`, dann `speichere_kontostand`. Mit dem
+   Signal gilt die Kerze als ausgewertet. Stürzt `tick()` vorher ab, wertet der nächste Durchgang
+   dieselbe Kerze nochmals aus, ohne doppelt zu kaufen.
 
-1. `neue_kerze_fertig(jetzt, intervall, speicher.letzte_signal_startzeit())`. Wenn nein: fertig.
-   `intervall = bitget_client.INTERVALLE[BOT_INTERVALL]`.
-2. `boerse.hole_kerzen(symbol, BOT_INTERVALL, n)`. Ist die neueste Kerze noch nicht die erwartete
-   (`letzte_abgeschlossene_kerze`), liefert Bitget sie noch nicht: abbrechen, nächste Minute
-   neu versuchen.
-3. `berechne_baender([k.schluss for k in kerzen], n, k)`
-4. `position = speicher.offene_position()`, dann `entscheide(schlusskurs=…, unteres_band=baender.unten,
-   mittelband=baender.mitte, kaufpreis=position.preis if position else None)`
-5. Bei `KAUFEN`: `betrag = kaufbetrag(guthaben=boerse.hole_kontostand("USDT"), anteil_prozent=…,
-   regeln=BTCUSDT_SPOT)`. Ist der Betrag 0.0, keine Order. Sonst `order = boerse.kaufe(symbol,
-   betrag)` und `speicher.speichere_trade(Trade(seite="kauf", menge=order.menge, preis=order.preis, …))`.
-   Bei `VERKAUFEN`: `menge = verkaufsmenge(bestand=position.menge, kurs=schlusskurs,
-   regeln=BTCUSDT_SPOT)`, bei 0.0 keine Order, sonst `boerse.verkaufe(symbol, menge)` und
-   `speichere_trade(Trade(seite="verkauf", …))`.
-6. `speicher.speichere_signal(SignalEintrag(…, signal=signal.value))` mit Eröffnung, Hoch, Tief der
-   Kerze, danach `speicher.speichere_kontostand(…)` mit den freien USDT (nach jeder ausgewerteten
-   Kerze eine Zeile).
+**Nicht automatisch behoben:**
 
-Offene Punkte für das `tick()`-Review (aus den Reviews von Nicolas): Absturz zwischen
-`boerse.kaufe()` und `speichere_trade()` (Bitget hat die Position, die Datei nicht), und ein
-`KeyboardInterrupt` mitten in `tick()`.
+- ein Abbruch genau zwischen Order und `speichere_trade`: ERROR mit der Order-ID im Log, den Trade
+  von Hand nachtragen
+- der Rest eines nur teilweise ausgeführten Verkaufs
+- `KeyboardInterrupt` fängt `tick()` bewusst nicht ab, damit `docker stop` sofort beendet
 
 Achtung bei den Namen: `Baender` heisst `mitte`/`oben`/`unten`, `SignalEintrag` und `entscheide`
 sagen `mittelband`/`oberes_band`/`unteres_band`, `Kerze` sagt `schluss`, `SignalEintrag` und
@@ -458,11 +631,11 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
 - **Logging** konfiguriert nur der Einstiegspunkt (mit `tick()`), einmal mit
   `logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")`.
   Module holen sich nur `logging.getLogger(__name__)`.
-- **Umgebungsvariablen** (nur auf der VM in `.env`, nie im Repo): `BITGET_API_KEY`,
+- **Umgebungsvariablen** (nur auf dem VPS in `.env`, nie im Repo): `BITGET_API_KEY`,
   `BITGET_API_SECRET`, `BITGET_PASSPHRASE` für die Demo-Keys, `BOT_DB_PFAD` für die SQLite-Datei
   (Vorschlag: `data/bot.db`, `/data/` ist gitignored, der Speicher legt den Ordner selbst an),
   `BOT_INTERVALL` im Bitget-Format (Vorschlag: `15min`, gültig sind die Schlüssel von
-  `bitget_client.INTERVALLE`). Handelspaar noch offen (Vorschlag: `BTCUSDT`).
+  `bitget_client.INTERVALLE`). Handelspaar `BTCUSDT`.
 
 ### Bitget und Risiko-Check (Valentin, entschieden im Review von PR #5)
 
@@ -502,12 +675,42 @@ etwas ändern will, spricht es im passenden PR an und führt den Entscheid hier 
 
 ### Pipeline und Deploy (Nicolas)
 
-- Pipeline: Python 3.12, Installation mit `pip install -e ".[dev]"`, Tests getrennt mit
-  `pytest tests/unit` und `pytest tests/integration`. Coverage für SonarQube Cloud mit
-  `--cov=bollinger_bot --cov-report=xml`, Testresultate mit `--junitxml=…`.
+- Pipeline: `.github/workflows/pipeline.yml`, Python 3.12, Installation mit
+  `pip install -e ".[dev]"`, Tests getrennt mit `pytest tests/unit` und `pytest tests/integration`.
+  Coverage für SonarQube Cloud mit `--cov=bollinger_bot --cov-branch --cov-report=xml`,
+  Testresultate mit `--junitxml=…`, HTML-Report mit pytest-html. Die Reports liegen pro Ordner
+  unter `reports/unit/` und `reports/integration/`.
+- SonarQube Cloud: Einstellungen in `sonar-project.properties`, Token als GitHub Secret
+  `SONAR_TOKEN`, «Automatic Analysis» im Sonar-Projekt aus. Der Job läuft nur bei grünen Tests und
+  liest `coverage.xml` und `junit.xml` beider Testordner.
+- **Image:** `Dockerfile` mit `python:3.12-slim`, `pip install --only-binary :all: .` (ohne
+  `.[dev]`), Benutzer `bot` mit UID 1000, ohne Befehl startet das Dashboard. Der Job
+  «Docker-Image» baut es in jedem PR und schiebt es nur auf `main` nach
+  `ghcr.io/nicolashunger/bollinger-bot` (Tags `latest` und Commit-SHA). Das Paket in GHCR ist
+  öffentlich, der VPS braucht kein `docker login`. Die Sichtbarkeit ändert nur Nicolas.
+- **Compose:** `docker-compose.yml`. Das Dashboard ist nur auf `127.0.0.1:8501` veröffentlicht
+  (Docker umgeht sonst die Firewall, Streamlit hat keine Anmeldung), Zugriff per SSH-Tunnel.
+  Der Bot startet nur mit `--profile bot`, bis der Branch `einstiegspunkt` auf `main` ist. Danach
+  steht `COMPOSE_PROFILES=bot` in der `.env` auf dem VPS, sonst erstellt `docker compose up -d` den
+  Bot mit dem neuen Image nicht neu (Hinweis von Lucas in #17). Beide teilen `./data:/data`. Für
+  die Demo zeigt `DASHBOARD_DB=backtest.db` die Datei aus dem Backtest.
+- **Deploy:** auf Nicolas' VPS (SSH über Tailscale), von Hand mit
+  `docker compose pull && docker compose up -d`. Befehle auf dem VPS nur nach Nicolas' OK. Der
+  VPS nimmt SSH über Tailscale SSH mit «check» an (Anmeldung im Browser). Einen automatischen
+  Deploy gibt es bewusst nicht (Entscheid Nicolas, 27.10.2026): Weder die Pipeline noch sonst
+  jemand bekommt Zugriff auf den VPS. Die Gründe stehen in der Beschreibung von PR #17.
 - Docker Compose: `stop_signal: SIGINT` für den Bot. Dann kommt im Bot ein `KeyboardInterrupt` an,
   und die Polling-Schleife endet sofort (sonst ignoriert der Prozess mit PID 1 das SIGTERM, und
   Docker beendet ihn nach 10 s hart).
+- **Start:** `python -m bollinger_bot` (Branch `einstiegspunkt`, README «Bot starten»). In Compose in
+  Exec-Form angeben: `["python", "-m", "bollinger_bot"]`, sonst kommt das Stopp-Signal bei der
+  Shell an statt beim Bot.
+- **`.env` nach der Vorlage `.env.example`**, die Werte in einfachen Anführungszeichen. In Compose
+  mit `env_file: .env` einlesen. `.env` und `.env.*` sind gitignored.
+- **`BOT_DB_PFAD` absolut im gemeinsamen Volume** von Bot und Dashboard, zum Beispiel
+  `/data/bot.db`. Ein relativer Pfad gilt ab dem Ordner, in dem der Bot startet.
+- **Exit-Codes:** 0 nach Ctrl+C oder `docker stop`, 2 bei falscher Konfiguration, 1 bei einem
+  anderen Fehler beim Start. Fehler im laufenden Betrieb beenden den Bot nicht.
 
 ## HR-Briefing für Lucas (bis auf Widerruf durch Nicolas)
 

@@ -1,0 +1,41 @@
+# Bot und Dashboard mit Docker Compose (AP 8b). Beide nehmen dasselbe Image aus der GitHub
+# Container Registry und teilen den Ordner data/ für die SQLite-Datei.
+#
+#   docker compose pull && docker compose up -d                              # nur Dashboard
+#   docker compose --profile bot pull && docker compose --profile bot up -d  # mit Bot
+#
+# Der Bot braucht die Datei .env mit den Demo-Keys (Vorlage .env.example), das Dashboard nicht.
+
+services:
+  dashboard:
+    image: ghcr.io/nicolashunger/bollinger-bot:latest
+    # Nur auf dem Rechner selbst erreichbar: Ein veröffentlichter Port umgeht die Firewall, und
+    # Streamlit hat keine Anmeldung. Von aussen über einen SSH-Tunnel oder Tailscale.
+    ports:
+      - "127.0.0.1:8501:8501"
+    environment:
+      # Standard ist die Datei des Bots. Für die Demo zeigt DASHBOARD_DB=backtest.db (in der
+      # .env oder vor dem Befehl) die Datei aus dem Backtest.
+      BOT_DB_PFAD: /data/${DASHBOARD_DB:-bot.db}
+      BOT_INTERVALL: ${BOT_INTERVALL:-15min}
+    # Nicht :ro: Mit WAL scheitert das Öffnen sonst, sobald der Bot nicht läuft.
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+
+  bot:
+    image: ghcr.io/nicolashunger/bollinger-bot:latest
+    # Startet nur mit --profile bot. python -m bollinger_bot gibt es erst, wenn der Branch
+    # einstiegspunkt auf main ist.
+    profiles: [bot]
+    # Exec-Form, damit das Stopp-Signal beim Bot ankommt und nicht bei einer Shell
+    command: ["python", "-m", "bollinger_bot"]
+    # SIGINT statt SIGTERM: Im Bot kommt ein KeyboardInterrupt an, und die Polling-Schleife endet
+    # sofort mit Exit-Code 0. SIGTERM ignoriert Python als Prozess mit PID 1.
+    stop_signal: SIGINT
+    env_file: .env
+    environment:
+      BOT_DB_PFAD: /data/bot.db   # absolut im gemeinsamen Ordner, überschreibt den Wert der .env
+    volumes:
+      - ./data:/data
+    restart: unless-stopped

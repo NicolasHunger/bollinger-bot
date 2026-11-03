@@ -151,7 +151,7 @@ def _kaufe(
         anteil_prozent=einstellungen.anteil_prozent,
         regeln=einstellungen.regeln,
     )
-    if betrag == 0.0:
+    if betrag <= 0:
         log.warning("Kaufsignal, aber zu wenig %s für eine Order", einstellungen.quotewaehrung)
         return
 
@@ -181,7 +181,7 @@ def _verkaufe(
     # Auf dem Demo-Konto gehören alle BTC dem Bot.
     bestand = boerse.hole_kontostand(einstellungen.basiswaehrung)
     menge = verkaufsmenge(bestand=bestand, kurs=kurs, regeln=einstellungen.regeln)
-    if menge == 0.0:
+    if menge <= 0:
         if position.menge * kurs >= einstellungen.regeln.mindestbetrag:
             # Laut Datenbank eine echte Position, bei Bitget fast nichts: Wohl schon verkauft,
             # aber nicht gespeichert (z.B. Absturz zwischen verkaufe() und dem Speichern).

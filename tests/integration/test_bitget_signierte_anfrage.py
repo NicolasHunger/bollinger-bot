@@ -48,6 +48,22 @@ def test_get_traegt_alle_header_fuer_die_signatur(client):
 
 
 @respx.mock
+def test_mehrere_parameter_bleiben_in_derselben_reihenfolge(client):
+    # Bitget signiert die Query so, wie sie in der URL steht. Würde der Client die Parameter beim
+    # Signieren sortieren (orderId vor symbol), wiche die Signatur von der gesendeten URL ab.
+    route = respx.get("https://api.bitget.com/api/v2/spot/trade/fills").respond(
+        json={"code": "00000", "msg": "success", "requestTime": 1, "data": []}
+    )
+
+    client._anfrage("GET", "/api/v2/spot/trade/fills", params={"symbol": "BTCUSDT", "orderId": "1"})
+
+    anfrage = route.calls.last.request
+    assert anfrage.url.query == b"symbol=BTCUSDT&orderId=1"
+    # Nachricht: 1790773200000GET/api/v2/spot/trade/fills?symbol=BTCUSDT&orderId=1
+    assert anfrage.headers["ACCESS-SIGN"] == "jUX4exHdy2lGLL5Nj3v/JDaUuNhg2hDiZAW1haeeYxg="
+
+
+@respx.mock
 def test_post_sendet_den_signierten_body_ohne_leerzeichen(client):
     route = respx.post("https://api.bitget.com/api/v2/spot/trade/place-order").respond(
         json={"code": "00000", "msg": "success", "requestTime": 1, "data": {"orderId": "1"}}
