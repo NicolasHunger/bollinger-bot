@@ -126,8 +126,8 @@ Mikrosekunden genau (z.B. `2026-10-17T12:00:00.000000+00:00`).
 
 ## Code-Übersicht
 
-Der Code liegt in `src/bollinger_bot/`, eine Datei pro Baustein. Stand 03.11.2026: Nur der
-Einstiegspunkt liegt noch auf einem Branch (Spalte «Stand»).
+Der Code liegt in `src/bollinger_bot/`, eine Datei pro Baustein. Stand 03.11.2026: Alle Dateien
+liegen auf `main` (Spalte «Stand»).
 
 | Datei | Was sie macht | Tests | Stand |
 |---|---|---|---|
@@ -139,7 +139,7 @@ Einstiegspunkt liegt noch auf einem Branch (Spalte «Stand»).
 | `polling.py` | Erkennt, ob eine neue Kerze fertig ist, und ruft in einer Schleife jede Minute `tick()` auf | `tests/unit/test_polling.py` | `main` |
 | `bitget_client.py` | Spricht mit Bitget im Demo-Modus: signierte Anfragen, Kerzen, Kontostand, Market-Orders. Erfüllt den Port | `tests/unit/test_signatur.py`, `tests/unit/test_bitget_konstruktor.py`, `tests/integration/test_bitget_*.py` | `main` |
 | `tick.py` | Ein Durchgang des Bots: Kerzen holen, Bänder berechnen, entscheiden, kaufen oder verkaufen, alles speichern | `tests/unit/test_tick.py`, `tests/integration/test_tick.py` | `main` |
-| `start.py`, `__main__.py` | Einstiegspunkt `python -m bollinger_bot`: liest die Umgebungsvariablen und startet Client, Speicher und Polling-Schleife | `tests/unit/test_start.py`, `tests/integration/test_start.py` | Branch `einstiegspunkt` |
+| `start.py`, `__main__.py` | Einstiegspunkt `python -m bollinger_bot`: liest die Umgebungsvariablen und startet Client, Speicher und Polling-Schleife | `tests/unit/test_start.py`, `tests/integration/test_start.py` | `main` |
 | `backtest.py` | Spielt `tick()` mit einer simulierten Börse auf aufgezeichneten Kursen ab und schreibt alles in eine SQLite-Datei (Demo, Testdaten fürs Dashboard) | `tests/unit/test_backtest.py`, `tests/integration/test_backtest.py` | `main` |
 | `dashboard.py` | Streamlit-Seite: Kurs als Kerzen mit den Bollinger-Bändern, Käufe und Verkäufe, Gesamtwert des Kontos und eine Warnung, wenn keine neuen Kerzen kommen. Liest die SQLite-Datei nur | `tests/unit/test_dashboard.py`, `tests/integration/test_dashboard.py` | `main` |
 
@@ -371,7 +371,7 @@ sie die [`docker-compose.yml`](docker-compose.yml) mit dem Image aus GHCR:
 | Dienst | Was | Start |
 |---|---|---|
 | `dashboard` | Streamlit auf Port 8501, nur auf dem VPS selbst erreichbar (`127.0.0.1`) | `docker compose up -d` |
-| `bot` | `python -m bollinger_bot`, die Keys kommen aus der `.env` | nur mit `--profile bot`, sobald der Einstiegspunkt (Branch `einstiegspunkt`) auf `main` ist |
+| `bot` | `python -m bollinger_bot`, die Keys kommen aus der `.env` | nur mit dem Profil `bot`: `--profile bot` oder `COMPOSE_PROFILES=bot` in der `.env` |
 
 Einrichten auf dem VPS, einmal:
 
@@ -391,9 +391,9 @@ docker compose pull && docker compose up -d
 - **Neue Version:** Nach einem Merge auf `main` von Hand: `docker compose pull && docker compose
   up -d` holt das neueste Image von `main` und startet nur die Dienste neu, deren Image sich
   geändert hat. Ins Image kommt nur, was alle Tests bestanden hat.
-- **Mit Bot:** Sobald der Einstiegspunkt auf `main` ist, kommt zusätzlich `COMPOSE_PROFILES=bot`
-  in die `.env` auf dem VPS. Dann gilt das Profil für jeden Befehl, und «Neue Version»
-  aktualisiert auch den Bot. Ohne die Zeile liefe er mit dem alten Image weiter.
+- **Mit Bot:** Für den Bot kommen die Demo-Keys und zusätzlich `COMPOSE_PROFILES=bot` in die
+  `.env` auf dem VPS. Dann gilt das Profil für jeden Befehl, und «Neue Version» aktualisiert auch
+  den Bot. Ohne die Zeile liefe er mit dem alten Image weiter.
 - **Stopp:** `docker compose stop` schickt dem Bot `SIGINT` statt `SIGTERM`. Die Polling-Schleife
   endet dann sofort mit Exit-Code 0.
 - **Rechte:** Der Container schreibt als Benutzer mit der UID 1000 in `data/`. Auf Linux muss der
@@ -422,7 +422,7 @@ Geplant am 23.09.2026, nachgeführt am 03.11.2026.
 | Mi 30.09. (Unterricht CI/CD und Deployment) | Deploy-Stage auf die Cloud-VM | Deploy auf den VPS von Nicolas statt auf eine neue Cloud-VM, ab 27.10. |
 | Herbstferien | Bitget-Client, Risiko-Check, `tick()` mit Polling, SQLite, Dashboard. Der Bot läuft spätestens Mitte Ferien auf der VM. | Lucas: Versionsgrenzen, Bollinger-Berechnung, Regeln, Port, SQLite und Polling (PR #2 bis #7, eröffnet 16. und 17.10.). Valentin: Bitget-Client und Risiko-Check (PR #8 bis #10, eröffnet 21.10.). Der Bot lief in den Ferien noch nicht |
 | Mi 21.10. (Unterricht Code Reviews) | Offene PRs abschliessen, Reflexion schreiben | Reviews zu PR #2 bis #12. Danach `tick()`, Einstiegspunkt und Backtest test-first gebaut (24.10.) |
-| 24.10. bis 03.11. | | PR #2 bis #20 gemergt: Bausteine, Bitget-Client, Risiko-Check, Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Deploy, `tick()` und Backtest |
+| 24.10. bis 03.11. | | PR #2 bis #23 gemergt: Bausteine, Bitget-Client, Risiko-Check, Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Deploy, `tick()`, Backtest und Einstiegspunkt |
 | Mi 04.11. (verschoben vom 28.10.) | Doku fertig, Präsentation (10 Minuten) | |
 
 Was anders lief als geplant:
@@ -446,11 +446,11 @@ PRs pro Person.
 | 4 | Bitget-Client: Orders und Kontostand | Valentin | Lucas | #10 |
 | 5 | Risiko-Check | Valentin | Lucas | #8, #16 |
 | 6 | `tick()`, Polling-Schleife und SQLite | Lucas | Nicolas | #5 (Port), #6, #7, #19 |
-| 7 | Dashboard | Nicolas | Valentin | #14 |
+| 7 | Dashboard | Nicolas | Valentin | #14, #22 |
 | 8a.1 | Grundgerüst (Projektstruktur, `pyproject.toml`, pytest läuft lokal) | Lucas | Valentin | #1, #2 |
-| 8a.2 | Pipeline (Build, Test, SonarQube Cloud) | Nicolas | Valentin | #12, #13 |
+| 8a.2 | Pipeline (Build, Test, SonarQube Cloud) | Nicolas | Valentin | #12, #13, #22 |
 | 8b | Deploy auf den VPS | Nicolas | Valentin | #17 |
-| – | Einstiegspunkt `python -m bollinger_bot` | Lucas | Nicolas | Branch `einstiegspunkt` |
+| – | Einstiegspunkt `python -m bollinger_bot` | Lucas | Valentin | #23 |
 | – | Backtest | Lucas | Nicolas | #20 |
 | – | Testkonzept | Valentin | Lucas, Nicolas | #11, #18 |
 
