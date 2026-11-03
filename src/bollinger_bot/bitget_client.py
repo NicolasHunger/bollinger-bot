@@ -304,6 +304,13 @@ class BitgetClient:
                 # "live" und "partially_filled" sind Zwischenstände, also weiter abfragen
                 fertig = info is not None and info.get("status") in ("filled", "cancelled")
                 ausgefuehrt = float(info.get("baseVolume") or 0) if fertig else 0.0
+                if info is not None and info.get("status") == "filled" and ausgefuehrt <= 0:
+                    # «Ganz ausgeführt», aber ohne Menge: Die Antwort ist unvollständig, die
+                    # Order aber sicher ausgeführt. Nicht «nicht ausgeführt» melden, weiter
+                    # abfragen.
+                    raise ValueError(
+                        f"Order als filled gemeldet, aber ohne Menge: {info.get('baseVolume')!r}"
+                    )
             except (BitgetFehler, AttributeError, KeyError, TypeError, ValueError) as fehler:
                 # Auch eine Antwort in unerwartetem Format zählt als fehlgeschlagene Abfrage.
                 log.warning(
@@ -311,7 +318,7 @@ class BitgetClient:
                 )
                 letzter_fehler = fehler
             else:
-                if fertig and ausgefuehrt <= 0:
+                if fertig and ausgefuehrt <= 0:  # nur noch "cancelled" ohne Menge
                     raise OrderFehler(
                         f"Order {order_id} wurde nicht ausgeführt", order_id=order_id
                     )

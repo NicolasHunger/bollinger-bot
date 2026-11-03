@@ -239,6 +239,35 @@ def test_unerwartetes_format_beim_abfragen_wird_ueberbrueckt(client, kaputt):
     assert info.call_count == 2
 
 
+@pytest.mark.parametrize("base_volume", [None, "0"])
+@respx.mock
+def test_filled_ohne_menge_wird_weiter_abgefragt(client, base_volume):
+    # «filled» heisst ganz ausgeführt. Fehlt die Menge, ist die Antwort unvollständig, die Order
+    # aber nicht «nicht ausgeführt» (Hinweis von Nicolas im Review zu #10).
+    ohne_menge = {**order_info(), "baseVolume": base_volume}
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    info = respx.get(INFO_URL)
+    info.side_effect = [
+        respx.MockResponse(json=erfolg([ohne_menge])),
+        respx.MockResponse(json=erfolg([order_info()])),
+    ]
+
+    assert client.kaufe("BTCUSDT", 100.0).preis == 85000.0
+    assert info.call_count == 2
+
+
+@respx.mock
+def test_filled_dauernd_ohne_menge_ist_unklar_nicht_unausgefuehrt(client):
+    respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
+    respx.get(INFO_URL).respond(json=erfolg([{**order_info(), "baseVolume": None}]))
+
+    meldung = "nicht bestätigt.*filled gemeldet, aber ohne Menge"
+    with pytest.raises(OrderFehler, match=meldung) as f:
+        client.kaufe("BTCUSDT", 100.0)
+
+    assert f.value.order_id == "1001"
+
+
 @respx.mock
 def test_dauernd_unerwartetes_format_nennt_die_order_id(client):
     respx.post(ORDER_URL).respond(json=erfolg({"orderId": "1001"}))
