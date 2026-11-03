@@ -68,25 +68,26 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
   statt selbst ändern. **Ausnahme:** Lucas' Code dürfen Valentin und Nicolas ändern, siehe «Auf
   Lucas' Arbeit aufbauen und sie ändern» weiter unten.
 
-### Offene Aufgaben pro Person (Stand Mo 02.11.2026)
+### Offene Aufgaben pro Person (Stand Di 03.11.2026)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
 Abgabe und Präsentation: Mi 04.11.2026 (verschoben vom 28.10.).
 
-Stand auf GitHub (Mo 02.11.): PR #1 bis #8, #11 bis #15 und #17 bis #20 gemergt
-(Grundgerüst, Versionsgrenzen, Bollinger, Regeln, Port, Speicher, Polling, Risiko-Check,
-Testkonzept, Pipeline, SonarQube Cloud, Dashboard, Doku, Deploy, `tick()`, Backtest). #19 und #20
-hat Nicolas am 02.11. reviewt, approved und gemergt. Offen:
+Stand auf GitHub (Di 03.11.): PR #1 bis #8 und #11 bis #20 gemergt (Grundgerüst,
+Versionsgrenzen, Bollinger, Regeln, Port, Speicher, Polling, Risiko-Check, Testkonzept, Pipeline,
+SonarQube Cloud, Dashboard, Doku, Deploy, Puffer im Risiko-Check, `tick()`, Backtest). #19 und #20
+hat Nicolas am 02.11. reviewt, approved und gemergt, #16 hat Valentin am 02.11. gemergt. Offen:
 
-- #9, #10 und #16 (Valentin): von Lucas am 27.10. approved (Reihenfolge unter «Mergen»). **#9 hat
-  seit dem 01.11. einen Konflikt** in der Code-Übersicht im README: `main` in `bitget-kerzen`
-  holen und beide Zeilen behalten (`bitget_client.py` aus #9, `tick.py` von `main`).
+- #9 und #10 (Valentin): `main` ist eingemergt, Lucas' Vorschläge sind umgesetzt. Nicolas hat
+  beide am 03.11. anstelle von Lucas erneut approved, **bereit zum Merge** (Reihenfolge unter
+  «Mergen»). Zusammen mit `main` ohne Konflikt, 380 Tests grün.
+- #21 (Valentin): Reflexion von Valentin, wartet auf das Review von Lucas.
 - Noch ohne PR: `einstiegspunkt` (Lucas), folgt nach #9 und #10.
 
 **#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
 Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Kommentar mit einer Frage
 nach. Lucas' Kommentare stehen seit dem 27.10., Nicolas hat sie am 02.11. beantwortet. Valentins
-fehlen noch, Nicolas antwortet darauf.
+stehen seit dem 02.11., die Antworten von Nicolas fehlen noch.
 
 **Lucas** (Strategie und Ablauf)
 
@@ -141,8 +142,8 @@ fehlen noch, Nicolas antwortet darauf.
       Demo-Konto gehören alle BTC dem Bot.
 - [ ] **Bei Änderungen an PR #9 oder #10 Lucas Bescheid geben.** Der Branch `einstiegspunkt` baut
       darauf auf, nutzt aber nur den Konstruktor, `schliessen()` und `INTERVALLE`.
-- [ ] **Jetzt mergen:** #9 und #10 warten auf ein erneutes Approve von Lucas, weil nach seinem
-      Approve noch seine Vorschläge dazukamen (02.11.). Dann #9 mit Merge-Commit mergen, den
+- [ ] **Jetzt mergen:** #9 und #10 hat Nicolas am 03.11. anstelle von Lucas erneut approved, weil
+      danach noch die Vorschläge aus Lucas' Review dazukamen. Zuerst #9 mit Merge-Commit mergen, den
       Branch `bitget-kerzen` dabei **nicht** löschen. Dann #10 auf `main` umstellen
       (`gh pr edit 10 --base main`) und mergen. Erst danach `bitget-kerzen` löschen.
 - [x] **Vorschläge aus Lucas' Reviews vom 27.10.** in #9 und #10 umgesetzt (02.11.).
@@ -179,6 +180,11 @@ bisher nur #12.
       dem `kaufe()` einen `BitgetFehler` wirft, und einer mit weniger als `n` Kerzen.
 - [x] **SonarQube in #20:** S8707 («Path Traversal», `backtest.py:34`) als «Accept» markiert, mit
       Begründung (lokales Werkzeug, den Pfad gibt man selbst an). Quality Gate grün.
+- [x] **#9 und #10** anstelle von Lucas erneut reviewt und approved (03.11.). Hinweis in #10, kein
+      Muss: Eine Order mit `filled`, aber ohne `baseVolume` meldet «wurde nicht ausgeführt».
+- [ ] **Valentins Fragen in #13, #14 und #17 beantworten:** `scripts/` in der Analyse von Sonar,
+      `INTERVALLE` doppelt im Dashboard (nach dem Merge von #9 importieren), Neustart-Regel des
+      Bots (`unless-stopped` oder `on-failure`).
 - [x] **Lucas' Fragen in #13, #14 und #17 beantwortet** (02.11.): `sonar.qualitygate.wait` bleibt
       weg, der Quality Gate ist im PR ein eigener Check. Das Intervall im Dashboard kommt aus
       derselben `.env` wie beim Bot, ein Abgleich mit den Kerzen in `signale` ist eine Idee für
@@ -419,7 +425,7 @@ Getroffene Entscheide hier und im README unter «Offene Entscheide» nachführen
   erklären können: Code erklären statt nur liefern und die KI-Nutzung im README nachführen.
 - Alle drei sind Trading-Neulinge: Fachbegriffe (Kerze, Band, σ, Spot/Futures) kurz erklären.
 
-## Stand der PRs und Schnittstellen (Di 27.10.2026)
+## Stand der PRs und Schnittstellen (Di 03.11.2026)
 
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README. Die Nummern
 stimmen nicht überein. In den älteren Abschnitten weiter oben steht «#n» allein immer für das
@@ -438,18 +444,19 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #6 | `sqlite-speicher` | Lucas | AP 6, Teil 1: `speicher.py` | ✅ gemergt |
 | #7 | `polling-schleife` | Lucas | AP 6, Teil 2: `polling.py` | ✅ gemergt |
 | #8 | `risiko-check` | Valentin | AP 5: `risiko.py` | ✅ gemergt (3 Vorschläge offen) |
-| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | approved (Lucas, 27.10.), bereit zum Merge |
-| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Basis `bitget-kerzen`, approved (Lucas, 27.10.), nach #9 mergen |
+| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | approved (Lucas 27.10., Nicolas 03.11.), bereit zum Merge |
+| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Basis `bitget-kerzen`, approved (Lucas 27.10., Nicolas 03.11.), nach #9 mergen |
 | #11 | `testkonzept` | Valentin | Testkonzept im README | ✅ gemergt |
 | #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | ✅ gemergt |
 | #13 | `pipeline-sonar` | Nicolas | AP 8a.2: SonarQube Cloud | ✅ gemergt (nur mündlich approved) |
 | #14 | `dashboard` | Nicolas | AP 7: `dashboard.py` | ✅ gemergt (nur mündlich approved) |
 | #15 | `doku-nachfuehren` | Nicolas | Doku: Planung, Architektur, Entscheide, Reflexion Nicolas | ✅ gemergt |
-| #16 | `risiko-nachtrag` | Valentin | Risiko-Check: Puffer beim Kauf, `kaufbetrag` in `Decimal` | approved (Lucas, 27.10.), bereit zum Merge |
+| #16 | `risiko-nachtrag` | Valentin | Risiko-Check: Puffer beim Kauf, `kaufbetrag` in `Decimal` | ✅ gemergt (02.11.) |
 | #17 | `deploy` | Nicolas | AP 8b: Dockerfile, Docker Compose, Image in GHCR | ✅ gemergt (ohne Review auf GitHub) |
 | #18 | `testkonzept-nachtrag` | Valentin | Testkonzept: Vorschläge aus dem Review von Nicolas | ✅ gemergt |
 | #19 | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | ✅ gemergt (02.11.) |
 | #20 | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | ✅ gemergt (02.11.) |
+| #21 | `reflexion-valentin` | Valentin | Reflexion von Valentin im README | wartet auf Review (Lucas) |
 | – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR nach #9, #10 |
 
 PR #10 baut auf PR #9 auf (Basis `bitget-kerzen`). Beim Merge von PR #9 den Branch nicht löschen,
