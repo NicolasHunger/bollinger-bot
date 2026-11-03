@@ -80,9 +80,10 @@ Sonar für `scripts/`, Einstiegspunkt). #19 und #20 hat Nicolas am 02.11. review
 gemergt, #16 hat Valentin am 02.11. gemergt. #9, #10 und #21 bis #23 hat Nicolas am 03.11.
 gemergt (#10 in `bitget-kerzen`, dann #9 auf `main`). Auf `main` laufen 430 Tests. Offen:
 
-- #24 (Valentin): `filled` ohne Menge gilt nicht mehr als «nicht ausgeführt» (Folge-PR zu #10),
-  Reviewer Nicolas und Lucas. Ob vor oder nach der Abgabe gemergt wird, ist noch offen.
-- #25 (Valentin): Reflexion, auch Einstiegspunkt und Backtest test-first, Reviewer Nicolas.
+- #24 (Valentin): `filled` ohne Menge gilt nicht mehr als «nicht ausgeführt» (Folge-PR zu #10).
+  Von Nicolas am 03.11. approved, **bereit zum Merge**, am besten vor dem Start des Bots.
+- #25 (Valentin): Reflexion, auch Einstiegspunkt und Backtest test-first. Von Nicolas am 03.11.
+  approved, **bereit zum Merge**.
 
 **#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
 Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Kommentar mit einer Frage
@@ -162,7 +163,8 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
       Einstiegspunkt und Backtest test-first) als #25 offen. Seine zwei inhaltlichen Vorschläge
       (TDD und der Fehler aus #10, was genau am Testing) brauchen Valentins eigene Antwort.
 - [ ] **#24** (Folge-PR zu #10, Hinweis von Nicolas): `filled` ohne Menge gilt nicht mehr als
-      «nicht ausgeführt». Kein Muss für die Abgabe, wartet auf Review.
+      «nicht ausgeführt». Von Nicolas approved (03.11.), mergen, am besten vor dem Start des Bots.
+- [ ] **#25** (Reflexion, Einstiegspunkt und Backtest auch test-first): von Nicolas approved, mergen.
 - [ ] **Sein Teil der Präsentation.**
 
 **Nicolas** (Infra und Dashboard). Hat 5 PRs (#12 bis #15, #17). Auf GitHub sichtbar reviewt ist
@@ -197,15 +199,17 @@ bisher nur #12.
       Herunterfahren mit Exit-Code 0). Das Profil `bot` bleibt in der Compose-Datei.
 - [x] **#22** gemergt (03.11., von Valentin approved): `scripts` in `sonar.sources` ohne Coverage,
       `INTERVALLE` im Dashboard aus `bitget_client`.
-- [ ] **Sonar-Analyse von `main` nach #22 prüfen** (Bitte von Valentin in #22): Meldet Sonar in
-      `kerzen_holen.py` S8707 wie in `backtest.py`, den Fund mit derselben Begründung akzeptieren
-      (kann nur Nicolas als Admin). Funde in `rauchtest.py` behebt Valentin in einem Folge-PR.
+- [x] **Sonar-Analyse von `main` nach #22 geprüft** (03.11., Antwort an Valentin in #22):
+      `rauchtest.py` ohne Fund. S8707 in `kerzen_holen.py:43` mit derselben Begründung wie in
+      `backtest.py` akzeptiert. Alle drei S8707-Funde (`backtest.py`, `speicher.py`,
+      `kerzen_holen.py`) stehen auf «Accepted», der Quality Gate ist grün.
 - [x] **#23 (`einstiegspunkt`)** nach der Vertretungsregel geöffnet und gemergt (03.11., von
       Valentin approved). Code-Übersicht nachgeführt.
 - [ ] **Bot auf dem VPS starten:** Keys und `COMPOSE_PROFILES=bot` in die `.env`, die Uhr mit
       `timedatectl` prüfen, dann `docker compose pull && docker compose up -d`.
-- [ ] **#24 und #25 reviewen** (Valentin): #25 ist ein Satz in der Reflexion, #24 ändert den
-      Bestellablauf im Client.
+- [x] **#24 und #25** reviewt und approved (03.11.). #24 zusammen mit `main` getestet (433 Tests
+      grün), die neuen Tests fallen mit dem alten Client durch. Empfehlung im Review: #24 vor dem
+      Start des Bots auf dem VPS mergen.
 - [x] **Lucas' Fragen in #13, #14 und #17 beantwortet** (02.11.): `sonar.qualitygate.wait` bleibt
       weg, der Quality Gate ist im PR ein eigener Check. Das Intervall im Dashboard kommt aus
       derselben `.env` wie beim Bot, ein Abgleich mit den Kerzen in `signale` ist eine Idee für
@@ -297,8 +301,8 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
 - **Nie den Basis-Branch eines offenen PR löschen.** GitHub stellt den Folge-PR dabei nicht
   automatisch um, sondern **schliesst** ihn (so passiert am 24.10. mit PR #9 beim Merge von PR #5;
   wiederhergestellt).
-- Reihenfolge ab jetzt: #24 und #25 hängen von nichts ab. Ob #24 vor oder nach der Abgabe kommt,
-  ist noch offen (Frage von Valentin in #24).
+- Reihenfolge ab jetzt: #24 und #25 sind approved und hängen von nichts ab. #24 vor dem Start des
+  Bots auf dem VPS mergen (Empfehlung von Nicolas im Review).
 
 **Notfallplan:** Läuft der Bot zur Präsentation nicht auf dem VPS, zeigt die Präsentation den
 Backtest (`python -m bollinger_bot.backtest …`, Branch `backtest`): das echte `tick()` auf drei
@@ -473,8 +477,8 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #21 | `reflexion-valentin` | Valentin | Reflexion von Valentin im README | ✅ gemergt (03.11.) |
 | #22 | `nachtrag-sonar-intervalle` | Nicolas | Sonar prüft `scripts/`, `INTERVALLE` im Dashboard aus `bitget_client` | ✅ gemergt (03.11.) |
 | #23 | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | ✅ gemergt (03.11., geöffnet von Nicolas in Vertretung) |
-| #24 | `bitget-nachtrag` | Valentin | Client: `filled` ohne Menge gilt nicht als «nicht ausgeführt» | wartet auf Review (Nicolas, Lucas) |
-| #25 | `reflexion-nachtrag` | Valentin | Reflexion: auch Einstiegspunkt und Backtest test-first | wartet auf Review (Nicolas) |
+| #24 | `bitget-nachtrag` | Valentin | Client: `filled` ohne Menge gilt nicht als «nicht ausgeführt» | approved (Nicolas, 03.11.), bereit zum Merge |
+| #25 | `reflexion-nachtrag` | Valentin | Reflexion: auch Einstiegspunkt und Backtest test-first | approved (Nicolas, 03.11.), bereit zum Merge |
 
 PR #10 wurde in `bitget-kerzen` gemergt und kam mit PR #9 auf `main` (03.11.).
 
