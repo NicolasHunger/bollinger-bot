@@ -198,11 +198,12 @@ python -m bollinger_bot               # läuft, bis man ihn mit Ctrl+C stoppt
   anderen Fehler beim Start (mit Traceback, z.B. wenn sich die Datenbank nicht öffnen lässt).
   Fehler während des Betriebs (z.B. Bitget nicht erreichbar) beenden den Bot nicht, sie stehen
   im Log, und eine Minute später versucht er es neu.
-- Für Docker Compose (Details folgen mit dem Deploy, AP 8b): `env_file: .env` liest die Datei
-  ein, `stop_signal: SIGINT` sorgt dafür, dass `docker stop` den Bot wie Ctrl+C sofort beendet.
-  Den Befehl in Exec-Form angeben (`["python", "-m", "bollinger_bot"]`), sonst kann das Signal
-  bei der Shell ankommen statt beim Bot. `BOT_DB_PFAD` absolut setzen (z.B. `/data/bot.db`), im
-  Volume, das Bot und Dashboard teilen. Die Startmeldung im Log zeigt den absoluten Pfad.
+- Für Docker Compose (Details unter [Deploy mit Docker Compose](#deploy-mit-docker-compose)):
+  `env_file: .env` liest die Datei ein, `stop_signal: SIGINT` sorgt dafür, dass `docker stop` den
+  Bot wie Ctrl+C sofort beendet. Den Befehl in Exec-Form angeben
+  (`["python", "-m", "bollinger_bot"]`), sonst kann das Signal bei der Shell ankommen statt beim
+  Bot. `BOT_DB_PFAD` absolut setzen (z.B. `/data/bot.db`), im Volume, das Bot und Dashboard
+  teilen. Die Startmeldung im Log zeigt den absoluten Pfad.
 
 ### Dashboard starten
 
