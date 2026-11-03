@@ -73,16 +73,16 @@ Die Paketnummern beziehen sich auf die Arbeitspakete-Tabelle im README.
 «PR #n» ist ein Pull Request auf GitHub, «AP n» ein Arbeitspaket aus dem README.
 Abgabe und Präsentation: Mi 04.11.2026 (verschoben vom 28.10.).
 
-Stand auf GitHub (Di 03.11.): PR #1 bis #8 und #11 bis #20 gemergt (Grundgerüst,
-Versionsgrenzen, Bollinger, Regeln, Port, Speicher, Polling, Risiko-Check, Testkonzept, Pipeline,
-SonarQube Cloud, Dashboard, Doku, Deploy, Puffer im Risiko-Check, `tick()`, Backtest). #19 und #20
-hat Nicolas am 02.11. reviewt, approved und gemergt, #16 hat Valentin am 02.11. gemergt. Offen:
+Stand auf GitHub (Di 03.11.): PR #1 bis #20 gemergt (Grundgerüst, Versionsgrenzen, Bollinger,
+Regeln, Port, Speicher, Polling, Risiko-Check, Bitget-Client, Testkonzept, Pipeline, SonarQube
+Cloud, Dashboard, Doku, Deploy, Puffer im Risiko-Check, `tick()`, Backtest). #19 und #20 hat
+Nicolas am 02.11. reviewt, approved und gemergt, #16 hat Valentin am 02.11. gemergt. #9 und #10
+hat Nicolas am 03.11. gemergt (#10 in `bitget-kerzen`, dann #9 auf `main`). Offen:
 
-- #9 und #10 (Valentin): `main` ist eingemergt, Lucas' Vorschläge sind umgesetzt. Nicolas hat
-  beide am 03.11. anstelle von Lucas erneut approved, **bereit zum Merge** (Reihenfolge unter
-  «Mergen»). Zusammen mit `main` ohne Konflikt, 380 Tests grün.
 - #21 (Valentin): Reflexion von Valentin, wartet auf das Review von Lucas.
-- Noch ohne PR: `einstiegspunkt` (Lucas), folgt nach #9 und #10.
+- Noch ohne PR: `einstiegspunkt` (Lucas), **jetzt möglich**, weil #19, #9 und #10 auf `main`
+  sind. Probe-Merge mit `main` am 03.11.: nur ein Konflikt im README («Bot starten» und
+  «Dashboard starten», beide behalten), danach 431 Tests grün.
 
 **#13, #14 und #17 sind ohne Review auf GitHub gemergt**, #13 und #14 nur mündlich approved. Die
 Lehrperson sieht nur GitHub, darum tragen Lucas und Valentin dort je einen Kommentar mit einer Frage
@@ -105,8 +105,8 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
 - [x] **#9, #10 und #16 erneut reviewt und approved** (27.10.), mit kleinen Vorschlägen, die kein
       Muss sind.
 - [x] **Kommentar mit Frage in #13, #14 und #17 nachgetragen** (27.10.).
-- [ ] **PR für `einstiegspunkt` öffnen**, sobald #9 und #10 gemergt sind. Konflikt nur im README
-      («Bot starten» und «Dashboard starten», beide behalten).
+- [ ] **PR für `einstiegspunkt` öffnen:** #9 und #10 sind seit dem 03.11. auf `main`. Konflikt nur
+      im README («Bot starten» und «Dashboard starten», beide behalten).
 - [x] **#15 reviewen:** hat Valentin übernommen, gemergt am 27.10.
 - [x] Die unsachlichen Kommentare in PR #6 sind gelöscht.
 - [x] PR #7: Konflikt mit `main` gelöst (24.10.)
@@ -140,12 +140,9 @@ stehen seit dem 02.11., Nicolas hat sie am 03.11. beantwortet.
 - [x] **Ersatz-Reviewer** für #6 und #7: nicht nötig, Nicolas hat sie reviewt.
 - [x] **Bestätigt** (in #10, 27.10.): `tick()` verkauft den ganzen BTC-Bestand bei Bitget, auf dem
       Demo-Konto gehören alle BTC dem Bot.
-- [ ] **Bei Änderungen an PR #9 oder #10 Lucas Bescheid geben.** Der Branch `einstiegspunkt` baut
-      darauf auf, nutzt aber nur den Konstruktor, `schliessen()` und `INTERVALLE`.
-- [ ] **Jetzt mergen:** #9 und #10 hat Nicolas am 03.11. anstelle von Lucas erneut approved, weil
-      danach noch die Vorschläge aus Lucas' Review dazukamen. Zuerst #9 mit Merge-Commit mergen, den
-      Branch `bitget-kerzen` dabei **nicht** löschen. Dann #10 auf `main` umstellen
-      (`gh pr edit 10 --base main`) und mergen. Erst danach `bitget-kerzen` löschen.
+- [x] **#9 und #10 gemergt** (03.11.): Nicolas hat beide anstelle von Lucas erneut approved und
+      gemergt, #10 in `bitget-kerzen`, dann #9 auf `main`. Die Branches `bitget-kerzen` und
+      `bitget-orders` können weg.
 - [x] **Vorschläge aus Lucas' Reviews vom 27.10.** in #9 und #10 umgesetzt (02.11.).
 - [x] **PR #11 (Testkonzept):** die vier Punkte aus Lucas' Review und die Begründung zu «kein
       TDD» umgesetzt, von Nicolas approved und gemergt (27.10.).
@@ -282,14 +279,10 @@ Valentin oder Nicolas (bzw. ihre Claude-Sitzungen) Folgendes übernehmen:
   PR #9, ein Squash würde Konflikte erzeugen.
 - **Nie den Basis-Branch eines offenen PR löschen.** GitHub stellt den Folge-PR dabei nicht
   automatisch um, sondern **schliesst** ihn (so passiert am 24.10. mit PR #9 beim Merge von PR #5;
-  wiederhergestellt). Darum beim Merge von PR #9 den Branch `bitget-kerzen` **nicht** löschen.
-  Zuerst PR #10 umstellen (`gh pr edit 10 --base main` oder auf GitHub «Edit» neben dem Titel),
-  erst danach `bitget-kerzen` löschen.
-- Reihenfolge ab jetzt: #9 (nach dem Lösen des Konflikts), dann #10. #16 hängt von nichts davon
-  ab. Danach der PR für `einstiegspunkt` (baut auf `tick`, #9 und #10 auf, `tick` ist seit dem
-  02.11. auf `main`). Konflikt möglich im README:
-  `einstiegspunkt` und `main` bei «Bot starten» und «Dashboard starten» (beide Abschnitte
-  behalten).
+  wiederhergestellt).
+- Reihenfolge ab jetzt: der PR für `einstiegspunkt` (baut auf `tick`, #9 und #10 auf, alle seit
+  dem 03.11. auf `main`). Konflikt im README bei «Bot starten» und «Dashboard starten» (beide
+  Abschnitte behalten). Unabhängig davon #21 und der kleine PR von Nicolas (Sonar, `INTERVALLE`).
 
 **Notfallplan:** Läuft der Bot zur Präsentation nicht auf dem VPS, zeigt die Präsentation den
 Backtest (`python -m bollinger_bot.backtest …`, Branch `backtest`): das echte `tick()` auf drei
@@ -449,8 +442,8 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #6 | `sqlite-speicher` | Lucas | AP 6, Teil 1: `speicher.py` | ✅ gemergt |
 | #7 | `polling-schleife` | Lucas | AP 6, Teil 2: `polling.py` | ✅ gemergt |
 | #8 | `risiko-check` | Valentin | AP 5: `risiko.py` | ✅ gemergt (3 Vorschläge offen) |
-| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | approved (Lucas 27.10., Nicolas 03.11.), bereit zum Merge |
-| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | Basis `bitget-kerzen`, approved (Lucas 27.10., Nicolas 03.11.), nach #9 mergen |
+| #9 | `bitget-kerzen` | Valentin | AP 3: `bitget_client.py` (Signatur, Kerzen) | ✅ gemergt (03.11.) |
+| #10 | `bitget-orders` | Valentin | AP 4: `bitget_client.py` (Orders, Kontostand), `rauchtest.py` | ✅ gemergt (03.11., über `bitget-kerzen`) |
 | #11 | `testkonzept` | Valentin | Testkonzept im README | ✅ gemergt |
 | #12 | `pipeline-tests` | Nicolas | AP 8a.2: GitHub Actions, Testreports, `pytest-html` | ✅ gemergt |
 | #13 | `pipeline-sonar` | Nicolas | AP 8a.2: SonarQube Cloud | ✅ gemergt (nur mündlich approved) |
@@ -462,10 +455,9 @@ kopieren**, sondern den PR zuerst reviewen und mergen, dann `main` pullen.
 | #19 | `tick` | Lucas | AP 6, Teil 3: `tick.py` (TDD) | ✅ gemergt (02.11.) |
 | #20 | `backtest` | Lucas | `backtest.py`, `tests/daten/btcusdt_15min.csv`, `scripts/kerzen_holen.py` (TDD) | ✅ gemergt (02.11.) |
 | #21 | `reflexion-valentin` | Valentin | Reflexion von Valentin im README | wartet auf Review (Lucas) |
-| – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR nach #9, #10 |
+| – | `einstiegspunkt` | Lucas | `start.py`, `__main__.py`, `.env.example` (TDD) | fertig, PR jetzt möglich |
 
-PR #10 baut auf PR #9 auf (Basis `bitget-kerzen`). Beim Merge von PR #9 den Branch nicht löschen,
-bevor PR #10 auf `main` umgestellt ist, sonst schliesst GitHub PR #10 (siehe «Mergen» oben).
+PR #10 wurde in `bitget-kerzen` gemergt und kam mit PR #9 auf `main` (03.11.).
 
 ### Öffentliche Schnittstellen
 
